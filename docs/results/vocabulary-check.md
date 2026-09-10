@@ -1,5 +1,11 @@
 # Phase 2.1 — FSD50K 라벨 실재 확인 결과
 
+> **이 문서는 조사 기록이다.** 여기서 제기한 쟁점은 모두 해소되었고,
+> 확정된 매핑은 **[`class-mapping.md`](class-mapping.md)** 에 있다.
+> 아래 5절의 "결정 필요 사항"은 그 문서로 대체되었다.
+> 이 문서의 수치는 US8K·ESC-50 보강과 Freesound 원본 중복 제거 **이전** 값이므로,
+> 최종 수량으로 인용하지 말 것.
+
 - 실행일: 2026-09-10
 - 스크립트: `scripts/check_vocabulary.py`
 - 입력: FSD50K ground_truth (vocabulary 200 라벨 / dev 40,966 + eval 10,231 = 51,197 클립)
@@ -116,16 +122,16 @@ siren을 "차량 소리"로 학습하지 않는다.
 
 ---
 
-## 5. 결정 필요 사항 (미해결)
+## 5. 제기한 쟁점과 결론
 
-CLAUDE.md 4장 갱신 전 확정해야 한다.
+전부 [`class-mapping.md`](class-mapping.md) 에서 해소되었다.
 
-1. **alarm 재정의** — `Alarm`에서 무엇을 배제할지.
-   (예: `Telephone`, `Ringtone`, `Vehicle_horn_*`, `Doorbell` 제외)
-2. **siren 보강** — FSD50K 128클립만으로 불가. UrbanSound8K `siren`(929클립) 필수.
-3. **baby_cry 존치 여부** — FSD50K 136 + ESC-50 `crying_baby` 40 ≈ 176클립.
-   목표 533에 크게 미달하며 보강 소스가 없다. **클래스 제외(6클래스) 검토 대상.**
-4. **glass 범위** — `Glass`+`Shatter`(1,236, 오염) vs `Shatter`만(510, 깨끗).
+| 쟁점 | 결론 |
+|---|---|
+| alarm 재정의 | **클래스 제외.** 화재경보가 586클립 중 24개뿐 → [alarm-class-analysis.md](alarm-class-analysis.md) |
+| siren 보강 | US8K·ESC-50 투입. 단 US8K 929클립은 **고유 원본 74개**뿐이라 다양성은 여전히 낮음 |
+| baby_cry 존치 | **클래스 제외.** 176클립, 보강 소스 없음 |
+| glass 범위 | `Shatter` ∪ (`Glass` − 식기류). 배제분 500클립은 하드 네거티브로 |
 
 > CLAUDE.md 4장은 `scream`을 최대 리스크로 지목했으나, **실측 결과는 반대**다.
 > scream은 703클립으로 안전하고 실제 위험은 siren·baby_cry다.

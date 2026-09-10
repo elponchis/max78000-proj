@@ -48,23 +48,25 @@
 ## Phase 2 — 데이터셋 구축 (보드 불필요, 최우선)
 
 ### 2.1 클래스 확정 — **오디오 없이 가능, 지금 즉시 착수**
-- [x] FSD50K 메타데이터만 다운로드 (4.2MB) — **Zenodo 접속 불가 → HF 미러 사용**
-- [x] `scripts/check_vocabulary.py` 작성
-      → `vocabulary.csv`에서 Siren / Alarm / Glass / Shatter / Screaming / Yell /
-      Crying / Bark 계열 실재 확인
-- [x] 클래스별 클립 수 집계 → 목표 수량(클래스당 800+) 달성 가능성 판단
-- [ ] `Smoke detector` 부재 확인됨 → **`alarm` 클래스 재정의 (미결)**
-- [ ] **siren 128클립 / baby_cry 136클립 부족 대응 (미결)**
-      siren은 US8K 보강, baby_cry는 보강 소스 부재 → 클래스 제외 검토
-- [ ] `glass` 범위 결정 (미결) — `Glass`+`Shatter` 1,236(오염) vs `Shatter` 510(깨끗)
-- [ ] **`scream` 샘플 수십 개 직접 청취** → 수량은 703로 기준 통과, 품질 미확인
-- [ ] 최종 클래스 매핑 확정 및 `CLAUDE.md` 4장 갱신
-- [ ] US8K / ESC-50 메타데이터 집계 후 합산 수량 재판정
+- [x] FSD50K 메타데이터 다운로드 — **Zenodo 접속 불가 → HF 미러 사용**
+- [x] US8K / ESC-50 메타데이터 다운로드 및 집계
+- [x] FSD50K 클립 길이 확보 (파일 크기 역산 — `clip_sizes.json`)
+- [x] `scripts/check_vocabulary.py` — 라벨 실재 확인
+- [x] `scripts/analyze_alarm_identity.py` — 제목·태그로 `alarm` 내용 검증
+- [x] `scripts/build_class_manifest.py` — 확정 매핑 → `data/interim/manifest.csv`
+- [x] `Smoke detector` 부재 확인 → **`alarm` 클래스 제외 확정**
+- [x] `baby_cry` 제외 확정 (176클립, 보강 소스 없음)
+- [x] `glass` 범위 확정 — `Shatter` ∪ (`Glass` − 식기류)
+- [x] 데이터셋 간 Freesound 원본 중복 발견 → 원본 ID 단위 전역 분할로 차단
+- [x] **최종 클래스 매핑 확정 (5클래스) 및 `CLAUDE.md` 4장 갱신**
+- [ ] **`scream` 샘플 수십 개 직접 청취** — 수량은 603원본으로 충분, 품질 미확인
+- [ ] `siren` 샘플 청취 — 고유 원본 202개로 가장 취약한 클래스
 
-> 클래스가 바뀌면 모델 정의부터 전부 영향을 받는다. 가장 먼저 확정할 것.
-> 실측 결과 전문: `docs/results/vocabulary-check.md`
-> **주의**: FSD50K는 AudioSet 조상 라벨을 함께 부여한다(`Siren`⊂`Alarm` 100%).
-> 다중라벨 필터는 온톨로지 우선순위로 해소할 것. `CLAUDE.md` 12장 참조.
+> 확정 내역 전문: `docs/results/class-mapping.md`
+> `alarm` 제외 근거: `docs/results/alarm-class-analysis.md` (논문 데이터셋 절에 사용)
+> **주의 1**: FSD50K는 AudioSet 조상 라벨을 함께 부여한다(`Siren`⊂`Alarm` 100%).
+> **주의 2**: US8K는 원본당 여러 슬라이스다(siren 929슬라이스 = 원본 74개).
+> 신뢰구간은 슬라이스가 아니라 원본 수로 계산할 것.
 
 ### 2.2 데이터 다운로드
 - [ ] FSD50K 오디오 (30GB+) — **시작 전 디스크 여유 확인 및 사용자 승인 필수**
@@ -82,6 +84,12 @@
   - [ ] 진행 상태 파일로 중단 후 이어하기 지원
 - [ ] `scripts/dataset_stats.py` — 클래스별 샘플 수·길이 분포·필터 전후 수량 표
       → **논문 데이터셋 섹션 표로 직결**
+- [ ] **윈도우 수량 실측 후 재판정** ← 현재 수치는 클립 길이 기반 상한일 뿐이다
+      RMS 에너지 필터 적용 후 목표(train 800+/test 200+) 달성 여부를 다시 판정한다.
+      특히 `glass`는 과도음이라 클립당 1윈도우만 남을 수 있어 상한의 절반 예상.
+      미달 시 대응: 정제 완화 / 클래스 축소 / 증강 강화 중 선택 — 실측 후 결정.
+- [ ] (선택) **무필터 대조 학습** — 배제 규칙을 끈 버전으로 한 번 학습해
+      오탐률 차이를 측정. 정제 규칙의 정당성을 데이터로 뒷받침한다.
 
 ### 2.4 데이터로더
 - [ ] `datasets/safesound.py` 작성 (`kws20.py`를 템플릿으로 하되 메모리 구조는 다르게)
@@ -99,7 +107,9 @@
 
 ## Phase 3 — 모델 학습 및 합성 (보드 불필요)
 
-- [ ] 클래스 수에 맞춰 KWS20 v3 백본 수정 (FC 층 21 → 7)
+- [x] 클래스 수에 맞춰 KWS20 v3 백본 수정 (FC 층 **21 → 5**)
+      `models/ai85net-safesound.py`. 1× 165,457 params (442KB의 36.6%)
+      ⚠️ 채널 스윕은 2×가 아니라 **1.5×가 8bit 상한**이다 (params가 채널에 제곱 비례)
 - [ ] `.pt` 캐시를 Drive 업로드 → Colab에서 본 학습
       (**대량 학습 전 사용자 확인 필수**)
 - [ ] **Colab 1 epoch 소요 시간 기록** → 실험 일정 산출 기준값
@@ -110,7 +120,7 @@
 - [ ] **G9** 비트폭 스윕 8/4/2bit → 파레토 곡선의 **정확도 축 완성**
       (4/2bit는 8bit fine-tuning으로, 처음부터 학습 금지)
 - [ ] **G8 대조군**: MFCC-on-M4 + 2D CNN 모델 별도 학습
-- [ ] **도전 1순위**: 채널 수 0.25×/0.5×/1×/2× 스윕 학습
+- [ ] **도전 1순위**: 채널 수 0.25×/0.5×/1×/1.5× 스윕 학습 (2×는 442KB 초과)
 - [ ] SNR 20/10/0dB 고정 평가셋 생성 및 정확도 측정
 
 ---
@@ -204,5 +214,8 @@
 |---|---|---|
 | 2026-09 | Phase 0 완료 | 로컬 77분/epoch, 합성 169KB, Colab 환경 구축 |
 | 2026-09-10 | Phase 1 레포 구성 | `github.com/elponchis/max78000-proj` 연결, 구조·patches 배치 |
-| 2026-09-10 | Phase 2.1 라벨 조사 | 부재 라벨 5종 확인, 클립 수 집계 완료. 클래스 확정은 미결 |
+| 2026-09-10 | Phase 2.1 라벨 조사 | 부재 라벨 5종 확인, 클립 수 집계 완료 |
+| 2026-09-10 | **클래스 매핑 확정** | 5클래스(siren/glass/scream/dog_bark/background). alarm·baby_cry 제외 |
+| 2026-09-10 | 데이터 누수 차단 | Freesound 원본 중복 337건 발견 → 원본 ID 단위 전역 분할 |
+| 2026-09-10 | 모델 정의 | `ai85net-safesound.py` FC 21→5. 채널 스윕 상한 2×→1.5× 정정 |
 | | | |

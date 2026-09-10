@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""FSD50K 라벨 실재 확인 및 클래스별 클립 수 집계.
+"""FSD50K 라벨 실재 확인 및 클래스별 클립 수 집계 — 조사용 스크립트.
+
+⚠️ 이 파일의 CLASS_MAP 은 조사 당시의 후보 매핑(6클래스)이며 **확정안이 아니다.**
+확정된 5클래스 매핑과 분할 규칙은 scripts/build_class_manifest.py 에 있다.
+이 스크립트는 라벨 실재 여부와 클래스 오염도 확인용으로 남겨둔 것이다
+(결과: docs/results/vocabulary-check.md).
 
 TASKS.md Phase 2.1 대응. 오디오 없이 메타데이터(ground_truth)만으로 실행한다.
 

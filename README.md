@@ -15,14 +15,16 @@ NPU 탑재 MCU에서의 파이프라인 설계 지침을 정량적으로 도출�
 |---|---|
 | [`CLAUDE.md`](CLAUDE.md) | 프로젝트 불변 컨텍스트 — 제약·규칙·목표. **작업 전 필독** |
 | [`TASKS.md`](TASKS.md) | 실행 체크리스트 |
-| [`docs/results/`](docs/results/) | 실험·조사 결과 |
+| [`docs/results/class-mapping.md`](docs/results/class-mapping.md) | **클래스 매핑 확정안** |
+| [`docs/results/`](docs/results/) | 그 외 실험·조사 결과 |
 | [`docs/data-layout.md`](docs/data-layout.md) | `data/` 디렉터리 구조 (git 제외) |
 
 ## 현재 상태
 
 - Phase 0 (환경 구축) 완료 — 로컬 WSL2 + Colab, 합성 169KB / 442KB
 - Phase 1 (레포 구성) 완료
-- Phase 2.1 (클래스 확정) 진행 중 — 라벨 조사 완료, 클래스 매핑 미확정
+- Phase 2.1 (클래스 확정) 완료 — **5클래스**: `siren` `glass` `scream` `dog_bark` `background`
+- Phase 2.2~2.4 (데이터 다운로드·전처리·데이터로더) 다음 작업
 - **MAX78000FTHR 보드 미확보** — Phase 4 이후 착수 불가
 
 ## 실행 환경
