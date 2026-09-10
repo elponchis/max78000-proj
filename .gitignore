@@ -1,0 +1,25 @@
+# 데이터셋 — 절대 커밋하지 않는다 (FSD50K 30GB+)
+data/
+logs/
+
+# 파이썬 환경
+venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# 체크포인트 / 아카이브
+*.pt
+*.pth
+*.tar
+*.tar.gz
+*.zip
+
+# 합성 산출물
+synthesized/
+
+# 에디터
+.vscode/
+.idea/
+*.swp
+.DS_Store

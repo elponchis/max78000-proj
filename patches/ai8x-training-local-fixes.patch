@@ -1,0 +1,42 @@
+diff --git a/datasets/kws20.py b/datasets/kws20.py
+index 8444ab0..c487a15 100644
+--- a/datasets/kws20.py
++++ b/datasets/kws20.py
+@@ -66,7 +66,7 @@ class KWS:
+ 
+     url_speechcommand = 'http://download.tensorflow.org/data/speech_commands_v0.02.tar.gz'
+     url_test = 'http://download.tensorflow.org/data/speech_commands_test_set_v0.02.tar.gz'
+-    url_librispeech = 'http://us.openslr.org/resources/12/dev-clean.tar.gz'
++    url_librispeech = 'https://openslr.elda.org/resources/12/dev-clean.tar.gz'
+     fs = 16000
+ 
+     class_dict = {'_silence_': 0, 'backward': 1, 'bed': 2, 'bird': 3, 'cat': 4, 'dog': 5,
+diff --git a/distiller b/distiller
+--- a/distiller
++++ b/distiller
+@@ -1 +1 @@
+-Subproject commit 922fcacfed7728e4ade14bbb6d409c29bf73531b
++Subproject commit 922fcacfed7728e4ade14bbb6d409c29bf73531b-dirty
+diff --git a/requirements-base.txt b/requirements-base.txt
+index 3dc1632..ca00eba 100644
+--- a/requirements-base.txt
++++ b/requirements-base.txt
+@@ -11,4 +11,4 @@ scipy==1.14.0
+ tensorboard==2.17.0
+ tk==0.1.0
+ torchmetrics==1.4.0.post0
+-torchnet==0.0.4
++#torchnet==0.0.4
+diff --git a/requirements-datasets.txt b/requirements-datasets.txt
+index a49df76..57c7ffa 100644
+--- a/requirements-datasets.txt
++++ b/requirements-datasets.txt
+@@ -4,7 +4,7 @@ batch-face==1.4.0
+ h5py==3.11.0
+ kornia==0.7.3
+ opencv-python==4.10.0.84
+-pyffmpeg==2.4.2.18.1
++pyffmpeg==2.5.2.3.2
+ pytube==15.0.0
+ soundfile==0.12.1
+ qrcode==7.4.2
