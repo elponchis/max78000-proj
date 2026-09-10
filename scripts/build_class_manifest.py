@@ -68,6 +68,14 @@ HARD_NEG_MARKERS = {
 TEST_RATIO = 0.30          # 목표 test 비율 (원본 클립 기준)
 BYTES_PER_SEC = 44100 * 2  # FSD50K: PCM 16bit / 44.1kHz / mono
 
+# 원본 하나에서 취할 슬라이스 상한.
+# UrbanSound8K 는 긴 필드 녹음을 4초씩 잘라 만든 데이터셋이라, 한 원본에서
+# 슬라이스가 최대 100개까지 나온다. 같은 녹음의 슬라이스 N개가 N배의 정보를
+# 주지는 않으며, 모델이 사이렌 자체가 아니라 **그 녹음의 배경 잡음 패턴**을
+# 외울 위험이 있다(G4 온디바이스 실측에서 드러날 유형의 과적합).
+# → 원본당 상한을 두고, 취할 때는 녹음 전체에 고르게 퍼뜨린다.
+SLICES_PER_ORIGINAL = 4
+
 US8K_MAP = {"siren": "siren", "dog_bark": "dog_bark"}
 ESC50_MAP = {"siren": "siren", "glass_breaking": "glass", "dog": "dog_bark"}
 
@@ -161,6 +169,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", default="data/raw", help="원본 메타데이터 디렉터리")
     ap.add_argument("--out", default="data/interim/manifest.csv")
+    ap.add_argument("--slice-cap", type=int, default=SLICES_PER_ORIGINAL,
+                    help="원본 하나에서 취할 슬라이스 상한 (US8K 대상)")
     args = ap.parse_args()
 
     fsd = load_fsd(args.raw)
@@ -222,19 +232,41 @@ def main():
     for fsid, (labels, _official, d) in fsd.items():
         c = cls_of.get(fsid)
         if c:
-            rows.append((fsid, fsid, c, split_of[fsid], "FSD50K", round(d, 3)))
+            rows.append((fsid, fsid, c, split_of[fsid], "FSD50K", round(d, 3), ""))
+            continue
+        # 배제된 클립은 버리지 않고 배경음 하드 네거티브로 편입한다 (5장 규칙 3-1)
+        reason = hard_negative_reason(labels)
+        if reason:
+            sp = "test" if fsd[fsid][1] == "eval" else "train"
+            rows.append((fsid, fsid, "background", sp, "FSD50K", round(d, 3),
+                         f"hard_neg:{reason}"))
 
+    # US8K: 원본별로 모은 뒤 녹음 전체에 고르게 SLICES_PER_ORIGINAL 개만 취한다
+    us_by_origin = defaultdict(list)
     for r in us_rows:
         c = US8K_MAP.get(r["class"])
         if not c:
             continue
-        fsid = r["fsID"]
-        if fsid in fsd_originals:
+        if r["fsID"] in fsd_originals:
             dropped[f"{c}: US8K 슬라이스(원본이 FSD50K에 있음)"] += 1
             continue
-        d = float(r["end"]) - float(r["start"])
-        rows.append((r["slice_file_name"], fsid, c, split_of[fsid],
-                     "US8K", round(d, 3)))
+        us_by_origin[(r["fsID"], c)].append(r)
+
+    for (fsid, c), slices in us_by_origin.items():
+        slices.sort(key=lambda r: float(r["start"]))
+        n = len(slices)
+        if n > args.slice_cap:
+            # 균등 간격으로 뽑아 녹음의 서로 다른 구간을 담는다
+            idx = [round(i * (n - 1) / (args.slice_cap - 1))
+                   for i in range(args.slice_cap)]
+            picked = [slices[i] for i in sorted(set(idx))]
+            dropped[f"{c}: US8K 원본당 상한 초과"] += n - len(picked)
+        else:
+            picked = slices
+        for r in picked:
+            d = float(r["end"]) - float(r["start"])
+            rows.append((r["slice_file_name"], fsid, c, split_of[fsid],
+                         "US8K", round(d, 3), ""))
 
     for r in esc_rows:
         c = ESC50_MAP.get(r["category"])
@@ -244,18 +276,19 @@ def main():
         if fsid in fsd_originals:
             dropped[f"{c}: ESC-50 클립(원본이 FSD50K에 있음)"] += 1
             continue
-        rows.append((r["filename"], fsid, c, split_of[fsid], "ESC-50", 5.0))
+        rows.append((r["filename"], fsid, c, split_of[fsid], "ESC-50", 5.0, ""))
 
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["clip_id", "fsid", "cls", "split", "source", "duration_sec"])
+        w.writerow(["clip_id", "fsid", "cls", "split", "source",
+                    "duration_sec", "note"])
         w.writerows(sorted(rows, key=lambda x: (x[2], x[3], x[1])))
 
     # ── 3. 보고 ────────────────────────────────────────────────────────────
     by = defaultdict(lambda: defaultdict(list))          # 클래스 -> split -> 길이
     orig = defaultdict(lambda: defaultdict(set))         # 클래스 -> split -> fsid
-    for _cid, fsid, c, sp, _src, d in rows:
+    for _cid, fsid, c, sp, _src, d, _n in rows:
         by[c][sp].append(d)
         orig[c][sp].add(fsid)
 
@@ -273,7 +306,7 @@ def main():
         tr, te = orig[c]["train"], orig[c]["test"]
         n = len(tr) + len(te)
         srcmap = defaultdict(set)
-        for _cid, fsid, cc, _sp, s, _d in rows:
+        for _cid, fsid, cc, _sp, s, _d, _n in rows:
             if cc == c:
                 srcmap[s].add(fsid)
         srctxt = " ".join(f"{k}:{len(v)}" for k, v in
