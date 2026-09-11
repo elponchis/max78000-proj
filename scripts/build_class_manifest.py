@@ -187,7 +187,6 @@ def main():
     # ── 1. 클래스별 원본 집합을 모은 뒤 원본 단위로 분할 ───────────────────
     cls_of = {}          # fsid -> class
     forced_test = set()  # FSD50K 공식 eval 원본
-    hard_neg = Counter()
     fsd_originals = set()
 
     for fsid, (labels, official, _d) in fsd.items():
@@ -197,10 +196,6 @@ def main():
             fsd_originals.add(fsid)
             if official == "eval":
                 forced_test.add(fsid)
-        else:
-            reason = hard_negative_reason(labels)
-            if reason:
-                hard_neg[reason] += 1
 
     for r in us_rows:
         c = US8K_MAP.get(r["class"])
@@ -231,8 +226,16 @@ def main():
 
     for fsid, (labels, _official, d) in fsd.items():
         c = cls_of.get(fsid)
-        if c:
+        if c and fsid in fsd_originals:
             rows.append((fsid, fsid, c, split_of[fsid], "FSD50K", round(d, 3), ""))
+            continue
+        if c:
+            # FSD50K 라벨로는 타깃이 아닌데 US8K/ESC-50 이 같은 원본을 이벤트로 라벨한
+            # 경계 케이스 (예: FSD50K `Applause` 클립의 한 구간이 US8K `dog_bark` 슬라이스).
+            # 클립 전체를 이벤트로 올리면 에너지 최대 구간이 박수일 수 있고(라벨 오염),
+            # 배경음으로 두면 같은 녹음이 이벤트와 배경음에 동시에 들어간다.
+            # → FSD50K 사본은 폐기하고, 구간 단위로 라벨된 US8K/ESC-50 사본만 쓴다.
+            dropped[f"{c}: FSD50K 클립(FSD50K 라벨상 비타깃, 타 데이터셋 사본 사용)"] += 1
             continue
         # 배제된 클립은 버리지 않고 배경음 하드 네거티브로 편입한다 (5장 규칙 3-1)
         reason = hard_negative_reason(labels)
@@ -337,6 +340,10 @@ def main():
     print("  ⚠️ 목표 달성 여부를 이 표로 판정하지 말 것. RMS 에너지 임계값 필터")
     print("     적용 후 실측이 필요하다 (TASKS.md Phase 2.3 '실측 후 재판정').")
 
+    # 판정 도중의 카운터가 아니라 **실제로 기록된 행**에서 센다. 예전에는 교차
+    # 데이터셋 판정 전에 세어 매니페스트와 1개 어긋났다 (보고 2,478 / 행 2,477).
+    hard_neg = Counter(n.split(":", 1)[1] for *_r, n in rows
+                       if n.startswith("hard_neg"))
     print("\n[확정] 배경음 하드 네거티브 (배제분 재활용)")
     for k, v in hard_neg.most_common():
         print(f"  {v:5d}  {k}")
