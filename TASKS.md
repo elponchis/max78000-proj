@@ -59,8 +59,13 @@
 - [x] `glass` 범위 확정 — `Shatter` ∪ (`Glass` − 식기류)
 - [x] 데이터셋 간 Freesound 원본 중복 발견 → 원본 ID 단위 전역 분할로 차단
 - [x] **최종 클래스 매핑 확정 (5클래스) 및 `CLAUDE.md` 4장 갱신**
+- [x] 교차 데이터셋 승격 경계 케이스 7건 수정 (하드 네거티브 2,478 → 2,477)
 - [ ] **`scream` 샘플 수십 개 직접 청취** — 수량은 603원본으로 충분, 품질 미확인
 - [ ] `siren` 샘플 청취 — 고유 원본 202개로 가장 취약한 클래스
+      표본: `data/interim/listen/` (Windows 사본 `C:\dev\listen\`), 클래스당 30개·클립당 1윈도우
+      ⚠️ US8K siren 원본 159738 / 159742 / 159747 의 슬라이스 6개는 최대 윈도우 RMS가
+      −60~−74dBFS다. 먼 사이렌인지 사실상 무음인지 원본(`data/raw/US8K_audio/`)을 들어
+      판정할 것 — 절대 하한 선택에 직결된다
 
 > 확정 내역 전문: `docs/results/class-mapping.md`
 > `alarm` 제외 근거: `docs/results/alarm-class-analysis.md` (논문 데이터셋 절에 사용)
@@ -75,11 +80,22 @@
 미러 무결성은 표본 검증 완료 (44.1kHz/16bit/mono, 크기·길이 일치).
 
 - [x] 미러 무결성 표본 검증
-- [ ] **1단계**: 이벤트 4클래스 + 하드 네거티브 — **4,883클립 / 3.0GB**
+- [x] **1단계**: 이벤트 4클래스 + 하드 네거티브 — **4,883클립 / 3.1GB**
       `python3 scripts/download_clips.py --stage events`
-- [ ] UrbanSound8K (siren·dog_bark 슬라이스만), ESC-50 (600MB)
+      전량 `clip_sizes.json` 크기 일치. 매니페스트 수정(교차 데이터셋 승격 7건 폐기) 후
+      사용분 4,876클립 — `docs/results/class-mapping.md` A-5
+- [x] UrbanSound8K (siren·dog_bark 슬라이스만), ESC-50 — **매니페스트분만 선별**
+      US8K 854슬라이스 / 599MB: HF 미러 `MahiA/UrbanSound8K`. 공식 Zenodo tar.gz와
+      sha256 150/150 일치, 파일별 sha256 검증. ESC-50 52클립 / 22MB: 저자 GitHub.
+      `python3 scripts/download_clips.py --source us8k` / `--source esc50`
 - [ ] **2단계**: `prepare_safesound.py` 완성 → 에너지 필터 실측 윈도우 수 확정
       (작은 데이터로 스크립트를 디버깅할 수 있어 반복이 빠르다)
+  - [x] 리샘플러 `scipy.signal.resample_poly` 교체 (이전: 이동평균 + 선형보간, 앨리어싱)
+  - [x] 절대 하한 + 클립 내 상대 기준 병용, 임계값 인자화
+  - [x] 민감도표 실측 → `docs/results/energy-filter-sweep.md` (5,782클립, 클래스×split)
+  - [ ] **임계값 선택** → 클래스별 윈도우 수 확정, 목표(train 800+/test 200+) 판정
+  - [ ] 캐시 생성(build) 이어하기 버그 수정 — 샤드 flush 전에 진행 상태를 저장하고
+        재실행 시 `shard_0000`부터 덮어쓴다
 - [ ] **3단계**: 실측 윈도우 수의 2~3배로 배경음 목표량 계산 → 배경음 클립 선별
       후 매니페스트 확장 → `--stage background`
 
@@ -236,4 +252,7 @@
 | 2026-09-10 | **클래스 매핑 확정** | 5클래스(siren/glass/scream/dog_bark/background). alarm·baby_cry 제외 |
 | 2026-09-10 | 데이터 누수 차단 | Freesound 원본 중복 337건 발견 → 원본 ID 단위 전역 분할 |
 | 2026-09-10 | 모델 정의 | `ai85net-safesound.py` FC 21→5. 채널 스윕 상한 2×→1.5× 정정 |
-| | | |
+| 2026-09-10 | FSD50K 1단계 다운로드 | 4,883클립 / 3.1GB, 크기 전량 일치 |
+| 2026-09-11 | 매니페스트 경계 케이스 수정 | 교차 데이터셋 승격 7건 폐기, 하드 네거티브 2,477 |
+| 2026-09-11 | US8K·ESC-50 다운로드 | 매니페스트분 854 / 52, Zenodo 공식 해시 150/150 일치 |
+| 2026-09-11 | 전처리 민감도표 | 리샘플러 교체, 필터 병용, `energy-filter-sweep.md` |
