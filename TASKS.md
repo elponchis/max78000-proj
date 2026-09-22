@@ -60,9 +60,21 @@
 - [x] 데이터셋 간 Freesound 원본 중복 발견 → 원본 ID 단위 전역 분할로 차단
 - [x] **최종 클래스 매핑 확정 (5클래스) 및 `CLAUDE.md` 4장 갱신**
 - [x] 교차 데이터셋 승격 경계 케이스 7건 수정 (하드 네거티브 2,478 → 2,477)
-- [ ] **`scream` 샘플 수십 개 직접 청취** — 수량은 603원본으로 충분, 품질 미확인
-- [ ] `siren` 샘플 청취 — 고유 원본 202개로 가장 취약한 클래스
-      표본: `data/interim/listen/` (Windows 사본 `C:\dev\listen\`), 클래스당 30개·클립당 1윈도우
+- [x] **1차 청취 (listen_v2)** — 라벨 노이즈 발견: `scream` 에 말소리만 든 윈도우,
+      `glass` 에 파손음이 아닌 울림. → glass 하위유형 게이트 + 클래스별 윈도우 선택
+      + PANNs 태거 필터로 대응 (`docs/results/label-noise-filter.md`)
+- [x] **2차 청취 (listen_v3 채택분 150창 + listen_rejected 경계 40창)** 완료
+      → `docs/results/listening-verification.md`, 판정 기록 `data_overrides.csv` (48행)
+      · glass 50창 정답 72% — **태거 점수가 파손음 여부와 무관**(0.02~0.05 는 78%,
+        0.05~0.10 은 31% 로 순서가 뒤집힘) → glass 태거 해제, 순위는 onset 으로
+      · scream 50창 정답 80% — 0.10 아래는 무작위(50~57%), 확인된 비명 최저 0.026
+        → 임계값 0.05 → **0.025**
+      · siren 30창 중 3창 오답(확률 0.40~0.50) — 임계값으로 못 거름, override 폐기
+      · dog_bark·background 각 30창 오답 0 → 유지
+- [ ] **3차 청취 — glass Glass-only 통과분 30창** ← 다음 청취
+      onset 게이트 8.0 을 통과한 Glass-only 클립이 실제 파손음인지 미검증이다
+      (2차에서 표본이 2창뿐이었고 둘 다 오답). 게이트 8.0 유지 / 상향 /
+      `Shatter` 전용(train 461) 중 선택이 여기에 달려 있다
       ⚠️ US8K siren 원본 159738 / 159742 / 159747 의 슬라이스 6개는 최대 윈도우 RMS가
       −60~−74dBFS다. 먼 사이렌인지 사실상 무음인지 원본(`data/raw/US8K_audio/`)을 들어
       판정할 것 — 절대 하한 선택에 직결된다
@@ -93,7 +105,29 @@
   - [x] 리샘플러 `scipy.signal.resample_poly` 교체 (이전: 이동평균 + 선형보간, 앨리어싱)
   - [x] 절대 하한 + 클립 내 상대 기준 병용, 임계값 인자화
   - [x] 민감도표 실측 → `docs/results/energy-filter-sweep.md` (5,782클립, 클래스×split)
-  - [ ] **임계값 선택** → 클래스별 윈도우 수 확정, 목표(train 800+/test 200+) 판정
+        floor −70~−30 × rel 0.00~0.50 (−45/−35/−30 추가로 무릎 구간을 채웠다)
+  - [x] 라벨 노이즈 대응 3종 → `docs/results/label-noise-filter.md`
+        glass 하위유형 게이트(Shatter 필수 / Glass-only 는 onset ≥ 8.0),
+        hop 250ms 중첩 후보 + 겹침 없는 최종 선택, PANNs Cnn14(16k) 태거 필터
+  - [x] 청취 검증으로 임계값 확정 → `docs/results/listening-verification.md`
+  - [ ] **수량 미달 대응** → 목표(train 800+/test 200+) 판정
+        청취 반영 후 실측 (hop 250ms, 태거 glass 해제 / scream 0.025 /
+        siren·dog_bark 0.10, override 48행 적용):
+        siren 539/151, glass 633/326, scream 490/228, dog_bark 1938/782,
+        background 3466/1863 — **siren·glass·scream 이 train 800 미달**
+        (test 200 은 glass·scream·dog_bark 충족, siren 151 미달)
+        · 배경음이 이벤트 합(3,260)의 1.06배다. 규칙 4(2~3배) 미달 → 3단계에서 확장
+        · dog_bark 불일치 중 최상위 라벨 `Animal` 인 1,540윈도우는 자식(Dog) 확률
+          중앙값 0.034 다. 0.05 로 내리면 544윈도우가 살아난다 — 청취로 판정할 것
+        · siren 불일치 중 `Alarm` 최상위 87윈도우는 Siren 확률이 0.033 으로 낮다.
+          FSD50K siren 이 전량 `Alarm` 을 함께 보유하는 것과 같은 문제일 수 있다
+        이전 에너지 전용 실측에서 드러난 것 (모두 rel 0.30 기준):
+        · `siren` train 은 **어떤 설정에서도 800 미달**이다. 필터를 전부 끄고
+          상한 3만 걸어도 797이 최대다. 상한을 4로 올리든 목표를 낮추든 선택이 필요하다
+        · `siren` test 200 선은 floor −45 (204) 에서 끊긴다. −40 은 198 로 미달
+        · floor 를 −40 이하로 조이면 **`glass` 가 먼저 무너진다**. 클립 전량 탈락률이
+          −40 에서 glass 10.5% vs scream 0.5% — 과도음 클래스 편향이 실측으로 확인됐다
+        · 따라서 후보는 floor −45 ~ −50 / rel 0.30. 최종 판정은 청취 결과로 한다
   - [ ] 캐시 생성(build) 이어하기 버그 수정 — 샤드 flush 전에 진행 상태를 저장하고
         재실행 시 `shard_0000`부터 덮어쓴다
 - [ ] **3단계**: 실측 윈도우 수의 2~3배로 배경음 목표량 계산 → 배경음 클립 선별

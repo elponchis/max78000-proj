@@ -1,0 +1,54 @@
+# 청취 검증으로 내린 윈도우 단위 판정. 자동 필터보다 우선한다.
+# 근거·방법: docs/results/listening-verification.md
+# keep=태거 불일치여도 채택(에너지 필터는 적용), drop=폐기, relabel=cls 로 이동
+# cls: keep/drop 은 청취로 확인한 실제 내용, relabel 은 목적지 클래스
+# 키는 (clip_id, start_sample) 이라 --hop-ms 를 바꾸면 매칭이 깨진다
+clip_id,start_sample,action,cls,reason
+115916,56000,drop,background,청취 파손음 아님 (유리 울림·부딪힘); 태거 0.3490 top=Glass
+164782-8-0-2.wav,28000,drop,background,청취 사이렌 아님; 태거 0.3980 top=Siren
+174749,104000,drop,background,"청취 파손음 아님 (유리 울림·부딪힘); 태거 0.1880 top=Chink, clink"
+178313,4000,drop,background,청취 비명 아님; 태거 0.0790 top=Animal
+179239,52000,drop,background,"청취 파손음 아님; 태거 0.0966 top=Chink, clink"
+208652,116000,drop,background,청취 사이렌 아님; 태거 0.4040 top=Siren
+212710,8000,drop,background,청취 비명 아님; 태거 0.0273 top=Thunk
+216287,0,drop,background,청취 파손음 아님; 태거 0.0213 top=Coin (dropping)
+216296,0,drop,background,"청취 파손음 아님 (유리 울림·부딪힘); 태거 0.2520 top=Chink, clink"
+216748,28000,drop,background,청취 파손음 아님; 태거 0.0643 top=Stir
+242498,236000,drop,background,청취 비명 아님; 태거 0.0249 top=Speech
+323082,12000,drop,background,"청취 비명 아님; 태거 0.0884 top=Baby cry, infant cry"
+323084,8000,drop,background,청취 비명 아님; 태거 0.0772 top=Groan
+326539,224000,drop,background,청취 비명 아님; 태거 0.0872 top=Speech
+326565,16000,drop,background,"청취 파손음 아님 (유리 울림·부딪힘); 태거 0.0510 top=Chink, clink"
+342568,32000,drop,background,"청취 파손음 아님; 태거 0.0619 top=Chink, clink"
+343887,8000,drop,background,청취 비명 아님; 태거 0.0426 top=Speech
+350448,4000,drop,background,청취 비명 아님; 태거 0.0948 top=Speech
+355340,20000,drop,background,청취 파손음 아님; 태거 0.0972 top=Coin (dropping)
+360410,16000,drop,background,청취 파손음 아님; 태거 0.0988 top=Glass
+377046,16000,drop,background,"청취 파손음 아님; 태거 0.0287 top=Chink, clink"
+37789,28000,drop,background,청취 파손음 아님; 태거 0.0842 top=Clang
+434437,8000,drop,background,청취 파손음 아님; 태거 0.0635 top=Glass
+57323-8-0-8.wav,36000,drop,background,청취 사이렌 아님; 태거 0.5020 top=Siren
+59599,0,drop,background,청취 비명 아님; 태거 0.0782 top=Speech
+71510,4000,drop,background,"청취 파손음 아님 (유리 울림·부딪힘); 태거 0.0670 top=Chink, clink"
+9429,8000,drop,background,청취 비명 아님; 태거 0.0216 top=Siren
+173600,4000,keep,glass,청취 파손음 맞음 (태거가 놓침); 태거 0.0300 top=Whip
+173601,16000,keep,glass,"청취 파손음 맞음 (태거가 놓침); 태거 0.0546 top=Chink, clink"
+204122,0,keep,glass,"청취 파손음 맞음 (태거가 놓침); 태거 0.0875 top=Chink, clink"
+216292,8000,keep,glass,청취 파손음 맞음 (태거가 놓침); 태거 0.0324 top=Coin (dropping)
+216299,4000,keep,glass,"청취 파손음 맞음 (태거가 놓침); 태거 0.0372 top=Chink, clink"
+245167,4000,keep,glass,청취 파손음 맞음 (태거가 놓침); 태거 0.0363 top=Keys jangling
+250710,12000,keep,glass,"청취 파손음 맞음 (태거가 놓침); 태거 0.0410 top=Chink, clink"
+255114,8000,keep,glass,청취 파손음 맞음 (태거가 놓침); 태거 0.0316 top=Glass
+344272,8000,keep,glass,청취 파손음 맞음 (태거가 놓침); 태거 0.0367 top=Coin (dropping)
+348106,32000,keep,glass,"청취 파손음 맞음 (태거가 놓침); 태거 0.0523 top=Chink, clink"
+93964,264000,keep,glass,"청취 파손음 맞음 (태거가 놓침); 태거 0.0956 top=Chink, clink"
+180315,40000,keep,scream,청취 비명 맞음 (태거가 놓침); 태거 0.0938 top=Screaming
+180344,0,keep,scream,청취 비명 맞음 (태거가 놓침); 태거 0.0648 top=Groan
+220818,0,keep,scream,청취 비명 맞음 (태거가 놓침); 태거 0.0938 top=Speech
+222648,16000,keep,scream,"청취 비명 맞음 (태거가 놓침); 태거 0.0289 top=Baby cry, infant cry"
+26720,108000,keep,scream,청취 비명 맞음 (태거가 놓침); 태거 0.0661 top=Groan
+30279,20000,keep,scream,청취 비명 맞음 (태거가 놓침); 태거 0.0468 top=Music
+321230,4000,keep,scream,청취 비명 맞음 (태거가 놓침); 태거 0.0261 top=Crowd
+344037,0,keep,scream,청취 비명 맞음 (태거가 놓침); 태거 0.0895 top=Screaming
+345933,0,keep,scream,청취 비명 맞음 (태거가 놓침); 태거 0.0360 top=Music
+353288,12000,keep,scream,청취 비명 맞음 (태거가 놓침); 태거 0.0262 top=Whir

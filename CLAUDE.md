@@ -135,6 +135,25 @@ NPU 탑재 MCU에서의 파이프라인 설계 지침을 정량적으로 도출�
 Siren → glass(Shatter | Glass−식기류) → scream(−군중류) → dog_bark → background
 ```
 
+**glass 는 라벨만으로 끝나지 않는다 (2026-09-21 추가).** 청취에서 `Glass` 만 가진
+클립에 파손음이 아닌 울림(잔 부딪힘·병 공명)이 섞여 있었다. 매니페스트는 `note` 에
+`glass:shatter`(513) / `glass:glass_only`(228) 를 남기고, Glass-only 는
+`prepare_safesound.py` 가 클립 최대 onset strength ≥ `--glass-onset-thr` 일 때만
+채택한다. 탈락분은 규칙 3-1 대로 배경음 하드 네거티브다.
+
+**윈도우 단위 라벨 노이즈는 PANNs 태거로 거르되, 클래스마다 쓸모가 다르다
+(2026-09-22 청취 검증, `docs/results/listening-verification.md`).**
+`DEFAULT_TAG_THR = {siren 0.10, glass 0.0, scream 0.025, dog_bark 0.10}` — **0 은
+그 클래스에 태거를 쓰지 않는다는 뜻**이다. glass 를 0 으로 둔 근거는 태거 점수와
+파손음 여부가 단조롭지 않다는 실측이다(0.02~0.05 구간 78% 파손음 vs 0.05~0.10 구간
+31%). PANNs 는 `Shatter` 를 거의 내놓지 않고 파손과 부딪힘을 모두 `Chink, clink` ·
+`Glass` 로 몰아준다. 임계값으로 해결할 수 없으므로 glass 는 어택 세기로 순위를 매긴다.
+
+**청취 판정은 `data_overrides.csv`(레포 루트)에 남기고 자동 필터보다 우선한다.**
+열은 `clip_id, start_sample, action, cls, reason`, action 은 keep/drop/relabel 이다.
+`keep` 은 태거를 덮지만 에너지 필터는 덮지 않는다. 키가 시작 샘플이라
+**`--hop-ms` 를 바꾸면 매칭이 깨진다** — 실행 때마다 매칭 수를 확인할 것.
+
 FSD50K는 AudioSet 조상 라벨을 함께 부여한다. `Siren` 클립 132개 **전부(100%)가
 `Alarm`을 동시 보유**하므로, 다중라벨 필터를 라벨 문자열에 그대로 적용하면
 siren이 0개가 된다. 구체 클래스가 먼저 판정되어야 한다.
@@ -142,7 +161,10 @@ siren이 0개가 된다. 구체 클래스가 먼저 판정되어야 한다.
 - `scream`은 데이터 품질 리스크가 가장 크다고 보았으나 **실측 결과 반대였다.**
   scream 603원본으로 안전하고, 실제 취약 클래스는 **siren(고유 원본 202개)**이다.
   US8K siren 929개는 고유 원본이 74개뿐이다(원본당 중앙값 9슬라이스).
-- 샘플 청취는 아직 하지 않았다.
+- **샘플 청취 2회 완료 (2026-09-22).** 채택분 150창 + 경계 40창.
+  클래스별 정답률 siren 90% / glass 72% / scream 80% / dog_bark 100% /
+  background 100%. 방법·판정·한계는 `docs/results/listening-verification.md`.
+  다음은 glass Glass-only 통과분 30창 청취(게이트 8.0 검증) — `TASKS.md`.
 
 ---
 

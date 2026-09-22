@@ -98,6 +98,18 @@ def classify(labels):
     return None
 
 
+def glass_note(labels):
+    """glass 클립의 하위유형 → 매니페스트 `note`.
+
+    청취 결과 `Glass` 만 가진 클립에 파손음이 아닌 울림(잔 부딪힘·풍경·병 공명)이
+    섞여 있었다. **`Shatter` 보유 클립만 무조건 채택**하고, `Glass` 만 가진 클립은
+    `glass:glass_only` 로 표시해 `prepare_safesound.py` 가 오디오의 onset strength
+    로 재판정하게 한다. 메타데이터만으로는 울림과 파손을 가를 수 없어서다.
+    판정에 떨어진 클립은 5장 규칙 3-1 에 따라 배경음 하드 네거티브로 간다.
+    """
+    return "glass:shatter" if "Shatter" in set(labels) else "glass:glass_only"
+
+
 def hard_negative_reason(labels):
     """배경음으로 보내되 하드 네거티브로 표시할 사유. 없으면 None."""
     s = set(labels)
@@ -227,7 +239,8 @@ def main():
     for fsid, (labels, _official, d) in fsd.items():
         c = cls_of.get(fsid)
         if c and fsid in fsd_originals:
-            rows.append((fsid, fsid, c, split_of[fsid], "FSD50K", round(d, 3), ""))
+            note = glass_note(labels) if c == "glass" else ""
+            rows.append((fsid, fsid, c, split_of[fsid], "FSD50K", round(d, 3), note))
             continue
         if c:
             # FSD50K 라벨로는 타깃이 아닌데 US8K/ESC-50 이 같은 원본을 이벤트로 라벨한
@@ -279,7 +292,9 @@ def main():
         if fsid in fsd_originals:
             dropped[f"{c}: ESC-50 클립(원본이 FSD50K에 있음)"] += 1
             continue
-        rows.append((r["filename"], fsid, c, split_of[fsid], "ESC-50", 5.0, ""))
+        # ESC-50 `glass_breaking` 은 라벨 자체가 파손이므로 Shatter 와 동급으로 둔다
+        note = "glass:shatter" if c == "glass" else ""
+        rows.append((r["filename"], fsid, c, split_of[fsid], "ESC-50", 5.0, note))
 
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "w", newline="", encoding="utf-8") as f:
@@ -348,6 +363,11 @@ def main():
     for k, v in hard_neg.most_common():
         print(f"  {v:5d}  {k}")
     print(f"  {sum(hard_neg.values()):5d}  합계")
+
+    glass_sub = Counter((n, sp) for _cid, _f, c, sp, _s, _d, n in rows if c == "glass")
+    print("\n[확정] glass 하위유형 (glass_only 는 prepare 단계 onset 판정 대상)")
+    for n in ("glass:shatter", "glass:glass_only"):
+        print(f"  {n:<18} train {glass_sub[(n, 'train')]:5d}  test {glass_sub[(n, 'test')]:5d}")
 
     if dropped:
         print("\n[확정] 원본 중복으로 폐기된 사본")
