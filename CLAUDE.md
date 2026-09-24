@@ -116,7 +116,7 @@ NPU 탑재 MCU에서의 파이프라인 설계 지침을 정량적으로 도출�
 | ID | 이름 | 주 출처 | 알림 등급 | train/test 원본 |
 |---|---|---|---|---|
 | 0 | `siren` | FSD50K(Siren), US8K, ESC-50 | 즉시 | 137 / 65 |
-| 1 | `glass` | FSD50K(Shatter, Glass−식기류), ESC-50 glass_breaking | 즉시 | 518 / 223 |
+| 1 | `glass` | FSD50K(**Shatter만**), ESC-50 glass_breaking | 즉시 | 359 / 154 |
 | 2 | `scream` | FSD50K(Screaming/Yell/Shout −군중류) | 즉시 | 412 / 191 |
 | 3 | `dog_bark` | FSD50K(Bark/Dog), US8K, ESC-50 | 기록 | 788 / 339 |
 | 4 | `background` | 위 4종 외 전부 + 하드 네거티브 + LibriSpeech + MSnoise | — | 샘플링 |
@@ -132,14 +132,17 @@ NPU 탑재 MCU에서의 파이프라인 설계 지침을 정량적으로 도출�
 **라벨 판정 순서 (이 순서가 규칙이다)**
 
 ```
-Siren → glass(Shatter | Glass−식기류) → scream(−군중류) → dog_bark → background
+Siren → glass(Shatter) → scream(−군중류) → dog_bark → background
 ```
 
-**glass 는 라벨만으로 끝나지 않는다 (2026-09-21 추가).** 청취에서 `Glass` 만 가진
-클립에 파손음이 아닌 울림(잔 부딪힘·병 공명)이 섞여 있었다. 매니페스트는 `note` 에
-`glass:shatter`(513) / `glass:glass_only`(228) 를 남기고, Glass-only 는
-`prepare_safesound.py` 가 클립 최대 onset strength ≥ `--glass-onset-thr` 일 때만
-채택한다. 탈락분은 규칙 3-1 대로 배경음 하드 네거티브다.
+**glass 양성은 `Shatter` 보유 클립만이다 (2026-09-24 청취 확정).**
+`Glass` 만 있고 `Shatter` 가 없는 클립(228개)은 대부분 파손음이 아니라 잔 부딪힘·
+병 공명·울림이었다. 중간에 onset strength 게이트로 건져 보려 했으나
+(2026-09-21) **게이트를 통과한 것도 청취에서 파손음이 아니어서** 라벨 단계에서
+끊는 것으로 확정했다. 근거는 `docs/results/listening-verification.md`.
+배제분 228클립은 규칙 3-1 대로 배경음 하드 네거티브(`glass_ring`)로 간다 —
+파손음과 가장 헷갈리는 소리라 오히려 좋은 네거티브다.
+게이트 코드(`--glass-onset-thr`)는 남아 있으나 판정 대상이 없어 동작하지 않는다.
 
 **윈도우 단위 라벨 노이즈는 PANNs 태거로 거르되, 클래스마다 쓸모가 다르다
 (2026-09-22 청취 검증, `docs/results/listening-verification.md`).**

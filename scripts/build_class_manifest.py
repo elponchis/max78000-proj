@@ -99,7 +99,12 @@ def classify(labels):
     s = set(labels)
     if s & L_SIREN:
         return "siren"
-    if "Shatter" in s or ("Glass" in s and not (s & EX_DISH)):
+    # glass 양성은 **`Shatter` 보유 클립만**이다 (2026-09-24, 청취 확정).
+    # `Glass` 만 있고 `Shatter` 가 없는 클립은 대부분 파손음이 아니라 잔 부딪힘·
+    # 병 공명·울림이었다. onset 게이트로 걸러 보려 했으나 통과분도 파손음이
+    # 아니어서 라벨 단계에서 끊는다. 배제분은 규칙 3-1 대로 하드 네거티브로 간다
+    # (`hard_negative_reason` 의 `glass_ring`).
+    if "Shatter" in s:
         return "glass"
     if (s & L_SCREAM) and not (s & EX_CROWD):
         return "scream"
@@ -111,11 +116,13 @@ def classify(labels):
 def glass_note(labels):
     """glass 클립의 하위유형 → 매니페스트 `note`.
 
-    청취 결과 `Glass` 만 가진 클립에 파손음이 아닌 울림(잔 부딪힘·풍경·병 공명)이
-    섞여 있었다. **`Shatter` 보유 클립만 무조건 채택**하고, `Glass` 만 가진 클립은
-    `glass:glass_only` 로 표시해 `prepare_safesound.py` 가 오디오의 onset strength
-    로 재판정하게 한다. 메타데이터만으로는 울림과 파손을 가를 수 없어서다.
-    판정에 떨어진 클립은 5장 규칙 3-1 에 따라 배경음 하드 네거티브로 간다.
+    이제 glass 양성은 `Shatter` 보유 클립뿐이라 전부 `glass:shatter` 다. 열을
+    남겨 두는 것은 과거 매니페스트와의 대조, 그리고 ESC-50 `glass_breaking` 을
+    같은 표기로 묶기 위해서다.
+
+    경위: 처음에는 `Glass` 만 가진 클립도 받고 onset strength 로 재판정했다
+    (2026-09-21). 그러나 게이트를 통과한 것도 청취에서 파손음이 아니었다
+    (`docs/results/listening-verification.md`) → 라벨 단계에서 끊는 것으로 확정.
     """
     return "glass:shatter" if "Shatter" in set(labels) else "glass:glass_only"
 
@@ -129,6 +136,9 @@ def hard_negative_reason(labels):
         return "baby_cry"
     if "Glass" in s and (s & EX_DISH):
         return "glass_dishes"
+    # Shatter 없는 Glass — 파손음이 아닌 유리 소리. 오히려 좋은 하드 네거티브다.
+    if "Glass" in s:
+        return "glass_ring"
     if (s & L_SCREAM) and (s & EX_CROWD):
         return "scream_crowd"
     return None
