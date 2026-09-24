@@ -76,6 +76,16 @@ BYTES_PER_SEC = 44100 * 2  # FSD50K: PCM 16bit / 44.1kHz / mono
 # → 원본당 상한을 두고, 취할 때는 녹음 전체에 고르게 퍼뜨린다.
 SLICES_PER_ORIGINAL = 4
 
+# 일반 배경음 클립 수 (Phase 2.2 3단계). 하드 네거티브 2,477클립과 별도로 더한다.
+# 산출 근거 — 2026-09-22 실측(`docs/results/label-noise-filter.md` B절):
+#   이벤트 윈도우 train 3,600 / test 1,487 → 목표 2.5배 9,000 / 3,718
+#   현재 배경음      train 3,466 / test 1,863 → 부족 5,534 / 1,855 윈도우
+#   배경음 클립당 윈도우 train 1.97 / test 2.28 → 필요 2,808 / 813 클립
+# 읽기 실패·전 윈도우 탈락을 감안해 약 10% 얹었다. 실제 윈도우 수는 prepare
+# 실행 후 재확인하고, 넘치면 이 값을 줄여 매니페스트를 다시 만든다.
+BG_GENERAL_TRAIN = 3100
+BG_GENERAL_TEST = 900
+
 US8K_MAP = {"siren": "siren", "dog_bark": "dog_bark"}
 ESC50_MAP = {"siren": "siren", "glass_breaking": "glass", "dog": "dog_bark"}
 
@@ -122,6 +132,57 @@ def hard_negative_reason(labels):
     if (s & L_SCREAM) and (s & EX_CROWD):
         return "scream_crowd"
     return None
+
+
+def general_background(fsd, cls_of, n_train, n_test, min_dur=1.0):
+    """타깃이 아닌 FSD50K 클립에서 일반 배경음을 뽑는다 (Phase 2.2 3단계).
+
+    CLAUDE.md 5장 규칙 4 — 배경음은 이벤트 합의 2~3배이고 **최대한 다양해야** 한다.
+    무작위로 뽑으면 FSD50K 라벨 분포를 그대로 따라가 Music·Speech 가 절반을 먹는다.
+    그러면 실배치의 "그 외 전부"를 대표하지 못한다.
+
+    → **클립의 가장 희귀한 라벨**을 대표 라벨로 삼아 묶고, 희귀한 묶음부터
+    라운드로빈으로 한 개씩 가져간다. 묶음 안에서는 원본 ID 해시 순(재현 가능).
+    흔한 소리도 들어오지만 한 묶음이 쿼터를 독식하지 못한다.
+
+    제외: 이벤트 원본(타 데이터셋 경유 포함), 이미 하드 네거티브인 클립,
+    1초 미만 클립(윈도우가 통째로 패딩이 된다).
+    분할은 FSD50K 공식 dev/eval 을 그대로 쓴다 — 이 원본들은 어느 클래스에도
+    등장하지 않으므로 5장 규칙 1의 전역 분할과 충돌하지 않는다.
+    """
+    cand = {"train": [], "test": []}
+    freq = Counter()
+    for fsid, (labels, official, d) in fsd.items():
+        if fsid in cls_of or d < min_dur or hard_negative_reason(labels) or not labels:
+            continue
+        freq.update(labels)
+        cand["test" if official == "eval" else "train"].append((fsid, labels, d))
+
+    out = []
+    for sp, need in (("train", n_train), ("test", n_test)):
+        groups = defaultdict(list)
+        for fsid, labels, d in cand[sp]:
+            groups[min(labels, key=lambda l: (freq[l], l))].append((fsid, d))
+        for v in groups.values():
+            v.sort(key=lambda x: rank(x[0]))
+        # 희귀한 묶음부터, 한 바퀴에 한 개씩
+        order = sorted(groups, key=lambda k: (len(groups[k]), k))
+        picked, cursor = [], 0
+        while len(picked) < need:
+            took = 0
+            for k in order:
+                if cursor < len(groups[k]):
+                    picked.append(groups[k][cursor])
+                    took += 1
+                    if len(picked) >= need:
+                        break
+            if not took:
+                break                       # 풀 고갈
+            cursor += 1
+        for fsid, d in picked:
+            out.append((fsid, fsid, "background", sp, "FSD50K", round(d, 3),
+                        "bg:general"))
+    return out
 
 
 def wilson_halfwidth(p, n, z=1.96):
@@ -183,6 +244,10 @@ def main():
     ap.add_argument("--out", default="data/interim/manifest.csv")
     ap.add_argument("--slice-cap", type=int, default=SLICES_PER_ORIGINAL,
                     help="원본 하나에서 취할 슬라이스 상한 (US8K 대상)")
+    ap.add_argument("--bg-train", type=int, default=BG_GENERAL_TRAIN,
+                    help="일반 배경음 클립 수 (train). 0=하드 네거티브만")
+    ap.add_argument("--bg-test", type=int, default=BG_GENERAL_TEST,
+                    help="일반 배경음 클립 수 (test)")
     args = ap.parse_args()
 
     fsd = load_fsd(args.raw)
@@ -296,6 +361,10 @@ def main():
         note = "glass:shatter" if c == "glass" else ""
         rows.append((r["filename"], fsid, c, split_of[fsid], "ESC-50", 5.0, note))
 
+    # 일반 배경음 (3단계). 이벤트·하드 네거티브가 다 정해진 뒤에 더한다.
+    bg_rows = general_background(fsd, cls_of, args.bg_train, args.bg_test)
+    rows += bg_rows
+
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -363,6 +432,18 @@ def main():
     for k, v in hard_neg.most_common():
         print(f"  {v:5d}  {k}")
     print(f"  {sum(hard_neg.values()):5d}  합계")
+
+    if bg_rows:
+        gen = Counter(sp for *_a, sp, _s, _d, _n in
+                      [(r[0], r[1], r[2], r[3], r[4], r[5], r[6]) for r in bg_rows])
+        labels_of = {r[0]: fsd[r[0]][0] for r in bg_rows}
+        rep = Counter()
+        for fsid in labels_of:
+            rep.update(labels_of[fsid])
+        print("\n[확정] 일반 배경음 (타깃 아닌 FSD50K, 라벨 다양성 우선 샘플링)")
+        print(f"  train {gen['train']}  test {gen['test']}  "
+              f"(서로 다른 AudioSet 라벨 {len(rep)}종)")
+        print("  최다 라벨: " + ", ".join(f"{k} {v}" for k, v in rep.most_common(8)))
 
     glass_sub = Counter((n, sp) for _cid, _f, c, sp, _s, _d, n in rows if c == "glass")
     print("\n[확정] glass 하위유형 (glass_only 는 prepare 단계 onset 판정 대상)")
