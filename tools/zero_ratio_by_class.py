@@ -51,14 +51,18 @@ def main():
     ap.add_argument("--threads", type=int, default=8)
     ap.add_argument("--fill-mode", choices=["background", "zero"], default="background",
                     help="짧은 클립 채움 방식. zero 로 두면 변경 전 상태를 잰다")
+    ap.add_argument("--floor-zero", type=float, default=1.01,
+                    help="int8 0비율 상한. 기본 1.01 = 하한을 끄고 **분포 전체**를 "
+                         "본다 (임계값을 정하려면 잘리지 않은 분포가 필요하다)")
     a = ap.parse_args()
 
     # 파이프라인 기본값을 그대로 쓴다 (`prepare_safesound.default_args`).
     # 도구가 설정을 따로 들고 있으면 스크립트와 어긋난다.
     args = P.default_args(manifest=a.manifest, fsd_dir=a.fsd_dir, us8k_dir=a.us8k_dir,
                           esc50_dir=a.esc50_dir, overrides=a.overrides,
-                          threads=a.threads, fill_mode=a.fill_mode)
-    print(f"설정: floor {args.floor_db}dBFS, rel {args.rel_ratio}, hop {args.hop_ms}ms, "
+                          threads=a.threads, fill_mode=a.fill_mode,
+                          floor_zero=a.floor_zero)
+    print(f"설정: int8 0비율 ≤ {args.floor_zero}, rel {args.rel_ratio}, hop {args.hop_ms}ms, "
           f"채움 {args.fill_mode}, 태거 {args.thr}")
     roots = args.roots
     rows = P.iter_rows(a.manifest, roots, 0, a.per_class, a.seed)
@@ -66,7 +70,7 @@ def main():
     print(f"표본 클립 {len(rows)}개 (클래스당 최대 {a.per_class or '전량'})")
 
     tagger = P.Tagger(args)
-    floor = 10 ** (args.floor_db / 20.0)
+    floor = args.floor_zero
     zr = defaultdict(list)          # 실효 클래스 -> 윈도우별 0 비율 (원본 float)
     zq = defaultdict(list)          # 같은 것을 int8 양자화 후로
     rms_db = defaultdict(list)
@@ -88,8 +92,7 @@ def main():
             # 양자화 후 0 이 되므로, 두 영역을 나란히 봐야 판단이 선다.
             # 캐시 생성과 **같은 키**로 디더를 적용한다 — 디더를 빼고 재면 실제
             # 학습 데이터가 아니라 그 전 단계를 재는 셈이 된다.
-            key = f"{r['clip_id']}:{s}" if args.zero_dither else None
-            zq[res["cls"]].append(float((P.to_int8(w, key) == 0).mean()))
+            zq[res["cls"]].append(float((P.to_int8(w) == 0).mean()))
             rms_db[res["cls"]].append(20 * np.log10(max(float(res["rms"][j]), 1e-12)))
         if i % 250 == 0:
             print(f"  {i}/{len(rows)}", flush=True)
@@ -108,8 +111,8 @@ def main():
     print("\n  p50/p90/p99/최대 = 창 하나의 0 샘플 비율 분포")
     print("  >1% / >10% / >50% = 그 비율을 넘는 창의 **비중**")
 
-    print(f"\n★ int8 기준 (모델이 보는 값, 디더 {'적용' if args.zero_dither else '없음'}) "
-          f"— 1 LSB = −42.1dBFS")
+    print(f"\n★ int8 기준 (모델이 보는 값) — 1 LSB = −42.1dBFS, "
+          f"채움 {args.fill_mode}")
     print(f"{'클래스':<12}{'창':>7}{'int8 0비율 p50':>16}{'p90':>8}{'p99':>8}"
           f"{'>10%':>8}{'>50%':>8}")
     print("-" * 67)
@@ -120,6 +123,16 @@ def main():
         print(f"{c:<12}{len(v):>7}{100*pct(v,50):>15.2f}%{100*pct(v,90):>7.2f}%"
               f"{100*pct(v,99):>7.2f}%{100*(v>0.10).mean():>7.1f}%"
               f"{100*(v>0.50).mean():>7.1f}%")
+
+    # 베드를 깔 수 없는 창 — 이벤트가 너무 조용하면 "이벤트−10dB" 베드가
+    # 1 LSB(−42.1dBFS) 아래가 되어 int8 에서 사라진다. 경계는 약 −32dBFS 다.
+    print(f"\n[베드 표현 한계] 창 RMS < −32dBFS = 10dB 아래 베드가 int8 에서 소멸")
+    print(f"  {'클래스':<12}{'창':>7}{'<−32dBFS':>11}{'비중':>8}")
+    for c in a.cls:
+        v = np.array(rms_db.get(c, []))
+        if len(v):
+            print(f"  {c:<12}{len(v):>7}{int((v < -32).sum()):>11}"
+                  f"{100*(v < -32).mean():>7.1f}%")
 
     ev = [c for c in a.cls if c in P.EVENTS and len(zr.get(c, []))]
     if "background" in zr and ev:

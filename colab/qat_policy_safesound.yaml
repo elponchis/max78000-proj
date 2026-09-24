@@ -1,0 +1,16 @@
+---
+# SafeSound QAT 정책 (ai8x-training `--qat-policy`)
+#
+# MAX78000 은 가중치 1/2/4/8bit, 활성화 8bit 라 **QAT 가 필수**다 (CLAUDE.md 3장).
+# 학습 후 양자화(PTQ)만 하면 8bit 가중치에서도 정확도가 떨어진다.
+#
+# start_epoch 은 float 학습이 충분히 수렴한 뒤여야 한다. ai8x 기본값은 30이고
+# KWS20 도 그대로 쓴다. 우리 데이터는 KWS20(325k창)의 20분의 1 규모라 epoch 당
+# step 수가 훨씬 적으므로, **총 epoch 을 늘리고 start_epoch 도 비례해 뒤로** 민다.
+# 여기서는 총 150 epoch 기준 60 이다. 바꿀 때는 학습 곡선을 보고 판단할 것.
+#
+# ⚠️ G9(비트폭 파레토)에서 4bit / 2bit 를 볼 때는 이 파일을 복사해
+# `weight_bits` 만 바꾼다. 8bit 모델을 fine-tuning 하는 편이 처음부터 학습하는
+# 것보다 빠르다 (CLAUDE.md 8장 G9).
+start_epoch: 60
+weight_bits: 8

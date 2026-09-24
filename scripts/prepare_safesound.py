@@ -85,6 +85,12 @@ except ImportError:
 
 SR = 16000              # 목표 샘플레이트 (CLAUDE.md 4장)
 WIN = 16384             # 1초 윈도우 = 16384 샘플 → (128,128) reshape
+# 저장은 창보다 양옆 100ms 씩 넓게 한다 (1.2초). 학습의 시간축 shift 를
+# **재절단**으로 처리하기 위해서다. 순환(roll)으로 밀면 연속음에서 이음매 클릭이
+# 생기고, 0 으로 밀면 전처리에서 없앤 디지털 0 이 되살아난다.
+# 모델 입력은 어디까지나 가운데 WIN 이다.
+MARGIN = 1600           # ±100ms
+STORE = WIN + 2 * MARGIN
 MAX_WIN_PER_CLIP = 3    # 클립당 윈도우 상한
 SHARD = 2048            # 샤드당 윈도우 수 (2048 × 16384 int8 = 32MB)
 CLASSES = ["siren", "glass", "scream", "dog_bark", "background"]
@@ -190,7 +196,7 @@ class FillerPool:
 
     def _build(self, split):
         rows = sorted(self.rows.get(split, []), key=lambda r: rank_id(r["clip_id"]))
-        segs, used = [], []
+        segs, used, rmss = [], [], []
         for r in rows:
             if len(segs) >= self.args.fill_pool_clips:
                 break
@@ -202,7 +208,14 @@ class FillerPool:
                 continue
             starts = np.arange(0, len(x) - WIN + 1, WIN, dtype=np.int64)
             rms = window_rms(x, starts)
-            for i in np.argsort(rms):            # 조용한 구간부터
+            # 조용한 구간부터 보되 **1 LSB 근처 아래로는 내려가지 않는다**
+            # (`--fill-bed-min-db`). 더 조용한 베드는 int8 에서 0 이 되어, 0 을
+            # 덮으려고 채운 것이 다시 0 이 된다. 조건을 만족하는 구간이 없으면
+            # 그 클립에서 가장 조용한 구간을 쓴다.
+            floor_bed = 10 ** (self.args.fill_bed_min_db / 20.0)
+            order = list(np.argsort(rms))
+            order = [i for i in order if rms[i] >= floor_bed] or order
+            for i in order:
                 w = x[starts[i]:starts[i] + WIN]
                 if float((w == 0.0).mean()) > 0.001:
                     continue                     # 디지털 무음이 섞인 구간은 제외
@@ -210,24 +223,98 @@ class FillerPool:
                     continue
                 segs.append(w.astype(np.float32))
                 used.append((r["clip_id"], int(starts[i])))
+                rmss.append(float(rms[i]))
                 break
         if not segs:
             sys.exit(f"[에러] {split} 배경음 채움 구간을 찾지 못했다. "
                      "먼저 download_clips.py --stage background 를 실행할 것.")
-        self.cache[split] = (segs, used)
+        self.cache[split] = (segs, used, np.array(rmss))
         return self.cache[split]
 
-    def pick(self, split, key):
-        """클립 ID 로 결정적으로 하나 고른다 (재실행 시 같은 결과)."""
-        segs, used = self.cache.get(split) or self._build(split)
-        i = rank_id(key) % len(segs)
-        return segs[i], used[i]
+    def pick(self, split, key, max_rms=None):
+        """클립 ID 로 결정적으로 하나 고른다 (재실행 시 같은 결과).
+
+        `max_rms` 를 주면 **그 이하인 구간만** 후보로 본다. 베드가 이벤트만큼
+        크면 라벨이 흐려진다 — 채움은 암소음이어야지 두 번째 음원이 아니다.
+        조건을 만족하는 구간이 없으면 가장 조용한 구간을 그 레벨까지 줄여 쓰고
+        `scaled` 로 표시한다 (폐기하면 짧은 클립을 통째로 잃는다).
+        """
+        segs, used, rmss = self.cache.get(split) or self._build(split)
+        idx = np.arange(len(segs))
+        if max_rms is not None:
+            ok = idx[rmss <= max_rms]
+            if len(ok):
+                # 조건을 만족하는 것 중 **큰 쪽 절반**에서 고른다. 가장 조용한 구간을
+                # 집으면 베드가 1 LSB(−42.1dBFS) 아래로 내려가 int8 에서 사라진다 —
+                # 0 을 덮으려고 채웠는데 다시 0 이 되는 셈이다.
+                ok = ok[np.argsort(-rmss[ok])][:max(1, len(ok) // 2)]
+                i = int(ok[rank_id(key) % len(ok)])
+                return segs[i], used[i], 1.0
+            i = int(np.argmin(rmss))             # 조건을 만족하는 구간이 없다
+            return segs[i], used[i], max_rms / max(rmss[i], 1e-12)
+        i = int(rank_id(key) % len(segs))
+        return segs[i], used[i], 1.0
 
 
 def rank_id(s):
     """문자열 → 결정적 정수. 난수 시드 없이 재현 가능한 선택에 쓴다."""
     import hashlib
     return int(hashlib.md5(str(s).encode()).hexdigest(), 16)
+
+
+def zero_runs(x, min_len):
+    """길이 `min_len` 이상인 **정확히 0인 구간**의 (시작, 끝) 목록.
+
+    파형은 정상적으로도 0 을 스쳐 지나가므로 낱개 0 은 건드리지 않는다. 길게
+    이어진 0 만 노이즈 게이트로 편집된 흔적이다.
+    """
+    z = np.concatenate(([0], (x == 0.0).view(np.int8), [0]))
+    d = np.diff(z)
+    starts, ends = np.where(d == 1)[0], np.where(d == -1)[0]
+    return [(int(a), int(b)) for a, b in zip(starts, ends) if b - a >= min_len]
+
+
+def _bed(n, seg, gain, offset):
+    """베드 구간을 필요한 길이만큼 이어 붙인다 (원형)."""
+    reps = int(np.ceil((n + offset) / len(seg))) + 1
+    return np.tile(seg, reps)[offset:offset + n] * gain
+
+
+def fill_zero_runs(x, r, args, pool):
+    """1초 이상 클립의 **내부 디지털 무음**을 배경음 베드로 덮는다.
+
+    노이즈 게이트로 편집된 원본은 소리 사이가 정확히 0 이다. 마이크 스트림에는
+    없는 값이고 특정 클래스(glass)에 몰려 있어 지름길이 된다. 예전에는 ±1 LSB
+    디더로 0 만 깨뜨렸지만, 그건 "0 이 아닌 값"일 뿐 실제 암소음은 아니었다.
+    같은 split 의 조용한 구간을 이벤트보다 10dB 이상 낮은 레벨로 덮는다.
+
+    반환: (오디오, 채움 정보 또는 None)
+    """
+    runs = zero_runs(x, args.zero_run_min)
+    if not runs or pool is None:
+        return x, None
+    nz = x[x != 0.0]
+    if not len(nz):
+        return x, None
+    ev_rms = float(np.sqrt(np.mean(nz.astype(np.float64) ** 2)))
+    seg, src, scale = pool.pick(r["split"], r["clip_id"] + ":runs",
+                                max_rms=ev_rms * 10 ** (args.fill_snr_db / -20.0))
+    y = x.astype(np.float32).copy()
+    f = max(1, int(SR * args.fill_fade_ms / 1000))
+    total = 0
+    for a, b in runs:
+        n = b - a
+        bed = _bed(n, seg, scale, a % len(seg))
+        if n > 2 * f:                            # 런 가장자리에서 베드를 서서히
+            ramp = 0.5 - 0.5 * np.cos(np.linspace(0, np.pi, f, dtype=np.float32))
+            bed[:f] *= ramp
+            bed[-f:] *= ramp[::-1]
+        y[a:b] = bed
+        total += n
+    bed_db = 20 * np.log10(max(float(np.sqrt(np.mean((seg * scale) ** 2))), 1e-12))
+    return y, {"kind": "runs", "n_runs": len(runs), "n_samples": total,
+               "bg_dbfs": bed_db, "src_clip": src[0], "src_start": src[1],
+               "scaled": scale != 1.0}
 
 
 def prepare_audio(x, r, args, pool=None):
@@ -241,22 +328,29 @@ def prepare_audio(x, r, args, pool=None):
     구간 밖만 채우면 경계에서 파형이 튀어 클릭이 생기고, 그 클릭이야말로
     모델이 잡기 좋은 인공 단서다. 이벤트 가장자리에는 짧은 페이드를 건다.
 
+    길이와 무관하게 **내부 디지털 무음 런**도 같은 베드로 덮는다
+    (`fill_zero_runs`). 예전의 ±1 LSB 디더를 대체한 것이다.
+
     반환: (오디오, 채움 정보 dict 또는 None)
     """
-    if len(x) >= WIN:
-        return x, None
     if args.fill_mode == "zero" or pool is None:
-        return pad_to_win(x), None
+        return (pad_to_win(x), None)
+    x, run_info = fill_zero_runs(x, r, args, pool)
+    if len(x) >= WIN:
+        return x, run_info
 
-    seg, src = pool.pick(r["split"], r["clip_id"])
+    ev_rms = float(np.sqrt(np.mean(x.astype(np.float64) ** 2)))
+    # 베드는 이벤트보다 최소 `--fill-snr-db` 만큼 작아야 한다. 같은 크기면
+    # 채움이 아니라 두 번째 음원이 되어 라벨이 흐려진다.
+    seg, src, scale = pool.pick(r["split"], r["clip_id"],
+                                max_rms=ev_rms * 10 ** (args.fill_snr_db / -20.0))
     n = len(x)
     off = rank_id(r["clip_id"] + ":off") % (WIN - n + 1)
-    # 기본은 **배경 구간의 원래 레벨 그대로** 다. 이벤트 RMS 에 맞춰 스케일하면
-    # 정규화를 하지 않는다는 절대 레벨 정책(7장)과 어긋난다 — 실기기에서 암소음의
-    # 크기는 이벤트 크기와 무관하다. `--fill-db` 를 주면 이벤트 상대 레벨로 맞춘다.
-    gain = 1.0
+    # 레벨은 **배경 구간 원래 값** 이다. 이벤트 RMS 에 맞춰 스케일하면 정규화를
+    # 하지 않는다는 절대 레벨 정책(7장)과 어긋난다 — 실기기에서 암소음 크기는
+    # 이벤트 크기와 무관하다. `--fill-db` 를 주면 이벤트 상대 레벨로 맞춘다.
+    gain = scale
     if args.fill_db is not None:
-        ev_rms = float(np.sqrt(np.mean(x.astype(np.float64) ** 2)))
         bg_rms = float(np.sqrt(np.mean(seg.astype(np.float64) ** 2)))
         gain = (ev_rms * 10 ** (args.fill_db / 20.0) / bg_rms) if bg_rms > 0 else 0.0
     y = seg * gain
@@ -270,18 +364,50 @@ def prepare_audio(x, r, args, pool=None):
     y = y.copy()
     y[off:off + n] += ev
     bg_db = 20 * np.log10(max(float(np.sqrt(np.mean((seg * gain) ** 2))), 1e-12))
-    return np.clip(y, -1.0, 1.0), {
-        "src_clip": src[0], "src_start": src[1], "offset": off,
-        "event_len": n, "fill_db": args.fill_db, "bg_dbfs": bg_db}
+    info = {"kind": "short", "src_clip": src[0], "src_start": src[1], "offset": off,
+            "event_len": n, "fill_db": args.fill_db, "bg_dbfs": bg_db,
+            "scaled": scale != 1.0}
+    if run_info:                                  # 내부 무음도 채웠다면 함께 기록
+        info["runs"] = run_info["n_runs"]
+        info["run_samples"] = run_info["n_samples"]
+    return np.clip(y, -1.0, 1.0), info
+
+
+def store_row(x, s, r, args, pool):
+    """저장용 STORE 길이 행을 만든다 — 가운데 WIN 이 모델 입력, 양옆이 shift 여유.
+
+    클립 경계라 여유가 모자라면 그만큼 **베드로 채운다**. 0 으로 채우면 안 된다.
+    반환: (int8 STORE 배열, 확보된 왼쪽 여유, 오른쪽 여유)
+    """
+    left = int(min(MARGIN, s))
+    right = int(min(MARGIN, len(x) - (s + WIN)))
+    core = x[s - left:s + WIN + right]
+    if left == MARGIN and right == MARGIN:
+        return to_int8(core), left, right
+
+    row = np.zeros(STORE, dtype=np.float32)
+    if pool is not None:
+        ev = float(np.sqrt(np.mean(core.astype(np.float64) ** 2)))
+        seg, _src, scale = pool.pick(r["split"], r["clip_id"] + ":margin",
+                                     max_rms=ev * 10 ** (args.fill_snr_db / -20.0))
+        row[:] = _bed(STORE, seg, scale, rank_id(r["clip_id"]) % len(seg))
+    row[MARGIN - left:MARGIN + WIN + right] = core
+    return to_int8(row), left, right
 
 
 def fill_note(info):
     """채움 정보를 인덱스 CSV 한 칸에 넣을 문자열로."""
     if not info:
         return ""
+    if info["kind"] == "runs":
+        return (f"bgfill:runs={info['n_runs']}:{info['n_samples']}샘플:"
+                f"{info['bg_dbfs']:.1f}dBFS:src={info['src_clip']}@{info['src_start']}"
+                + (":scaled" if info["scaled"] else ""))
     lvl = "orig" if info["fill_db"] is None else f"{info['fill_db']:.0f}dBrel"
-    return (f"bgfill:{lvl}:{info['bg_dbfs']:.1f}dBFS:off={info['offset']}:"
-            f"len={info['event_len']}:src={info['src_clip']}@{info['src_start']}")
+    return (f"bgfill:short:{lvl}:{info['bg_dbfs']:.1f}dBFS:off={info['offset']}:"
+            f"len={info['event_len']}:src={info['src_clip']}@{info['src_start']}"
+            + (f":runs={info['runs']}" if info.get("runs") else "")
+            + (":scaled" if info["scaled"] else ""))
 
 
 # ────────────────────────────────────────────────────────── 후보 윈도우 생성
@@ -340,6 +466,32 @@ def policy_of(cls, args):
 def window_rms(x, starts):
     return np.array([float(np.sqrt(np.mean(x[s:s + WIN].astype(np.float64) ** 2)))
                      for s in starts])
+
+
+def energy_mask(cls, zfrac, rms, floor_zero, rel, quiet_bg=False):
+    """에너지 필터 마스크. **클래스에 따라 기준이 다르다.**
+
+    이벤트 클래스: int8 0 비율 ≤ `floor_zero`. 양자화 후 비어 있는 창은 그
+    이벤트의 근거가 남지 않는다.
+    background: **하한을 걸지 않는다.** 조용한 방이 실기기에서 가장 흔한 입력이라
+    거의 빈 창·완전 0 창도 배경음으로는 정상이며, 오히려 학습에 있어야 한다.
+    `quiet_bg` 로 뽑힌 클립은 클립 내 상대 기준(rel)도 풀어 조용한 구간을 남긴다.
+    """
+    if cls == "background":
+        return (np.ones_like(zfrac, dtype=bool) if quiet_bg
+                else rms >= rms.max() * rel)
+    return (zfrac <= floor_zero) & (rms >= rms.max() * rel)
+
+
+def window_zero_frac(x, starts):
+    """창별 **int8 양자화 후 0 인 샘플의 비율**.
+
+    절대 하한을 이 값으로 건다. float RMS dBFS 로 자르면 "모델이 실제로 무엇을
+    받는가"와 어긋난다 — 같은 −45dBFS 라도 과도음이면 int8 에 피크가 남고,
+    정상 잡음이면 통째로 0 이 된다. 모델이 보는 것은 int8 이므로 int8 에서 잰다.
+    1 LSB = −42.1dBFS.
+    """
+    return np.array([float((to_int8(x[s:s + WIN]) == 0).mean()) for s in starts])
 
 
 # ───────────────────────────────────────────────────────────────── 태거
@@ -504,7 +656,7 @@ def analyze_clip(r, x, args, tagger=None):
     out = dict(cls=cls, split=r["split"], orig=r["cls"], note=note, gate=gate,
                onset=onset, starts=None, rms=None, score=None, rank=None,
                energy=None, tag=None, top=None, topp=None, own=None, par=None,
-               onset_win=None, fill=fill)
+               onset_win=None, fill=fill, zfrac=None)
     if cls is None:
         return out
 
@@ -522,9 +674,16 @@ def analyze_clip(r, x, args, tagger=None):
     if env is not None and pol != "onset":
         onset_score = np.array([float(env[s // ONSET_HOP:(s + WIN) // ONSET_HOP]
                                       .max(initial=0.0)) for s in starts])
-    energy = (rms >= 10 ** (args.floor_db / 20.0)) & (rms >= rms.max() * args.rel_ratio)
+    zfrac = window_zero_frac(x, starts)
+    # 배경음은 **조용한 클립을 일부러 일정 비율 남긴다**. 조용한 방이 실기기의
+    # 가장 흔한 입력이고, int8 에서 거의 빈 창도 배경음으로는 정상 데이터다.
+    # 해시로 정해 재현 가능하게 고른다.
+    quiet_bg = (cls == "background" and
+                rank_id(r["clip_id"] + ":quiet") % 1000 < args.bg_quiet_frac * 1000)
+    out["quiet_bg"] = quiet_bg
+    energy = energy_mask(cls, zfrac, rms, args.floor_zero, args.rel_ratio, quiet_bg)
     out.update(starts=starts, rms=rms, score=score, rank=score, energy=energy,
-               onset_win=onset_score)
+               onset_win=onset_score, zfrac=zfrac)
     ov_keep, ov_drop, ov_hit = override_masks(r, out, getattr(args, "ov", None))
     out.update(ov_keep=ov_keep, ov_drop=ov_drop, ov_hit=ov_hit)
 
@@ -556,7 +715,9 @@ def analyze_clip(r, x, args, tagger=None):
             if cls == "background":
                 # 이벤트 확률이 낮은 순으로 고르면 가장 안 헷갈리는 배경음만 남는다.
                 # 하드 네거티브의 목적과 반대라 RMS 를 유지한다.
-                out["rank"] = rms
+                # 단 `quiet_bg` 로 뽑힌 클립은 **조용한 쪽부터** 가져간다 —
+                # 조용한 방 입력을 일부러 학습에 넣기 위해서다.
+                out["rank"] = -rms if quiet_bg else rms
             elif thr[cls] > 0:
                 out["rank"] = np.nan_to_num(tag, nan=-1.0)
             elif onset_score is not None:
@@ -582,7 +743,7 @@ def tag_ok(res, thr, bg_thr):
         return res["tag"] >= thr[res["cls"]]
 
 
-def choose(res, floor_lin, rel, max_win, agree=None):
+def choose(res, floor_zero, rel, max_win, agree=None):
     """에너지 필터(+태거 마스크) 통과 후보를 순위 점수 순으로 최대 max_win 개.
 
     hop 이 WIN 보다 짧으면 후보가 서로 겹친다. 겹친 윈도우를 함께 담으면 같은
@@ -594,7 +755,8 @@ def choose(res, floor_lin, rel, max_win, agree=None):
     """
     rms = res["rms"]
     starts = res["starts"]
-    energy = (rms >= floor_lin) & (rms >= rms.max() * rel)
+    energy = energy_mask(res["cls"], res["zfrac"], rms, floor_zero, rel,
+                         res.get("quiet_bg", False))
     keep = energy if agree is None else energy & agree
     if res.get("ov_keep") is not None:
         keep = (keep | (energy & res["ov_keep"])) & ~res["ov_drop"]
@@ -611,29 +773,23 @@ def choose(res, floor_lin, rel, max_win, agree=None):
     return sorted(picked, key=lambda i: starts[i]), int(energy.sum()), int(keep.sum())
 
 
-def to_int8(w, key=None):
-    """[-1,1] float → int8 [-128,127]. 클리핑 포함. **정규화는 하지 않는다.**
+def to_int8(w):
+    """[-1,1] float → int8 [-128,127]. 포화(클램프) 포함. **정규화는 하지 않는다.**
 
     스케일이 고정(×127)인 이유는 실기기 경로에 정규화가 없기 때문이다. 펌웨어는
     마이크 샘플을 그대로 NPU 에 넣으므로, 학습 데이터만 정규화하면 train/serve
     불일치가 된다. ai8x 의 `kws20.py` 는 파일 단위 peak 정규화를 하지만
     (`data / max(abs(data))`) 우리는 따르지 않는다 — CLAUDE.md 7장.
 
-    `key` 를 주면 **원본이 정확히 0인 샘플**에만 ±1 LSB 잡음을 넣는다.
-    디지털 0 은 마이크 스트림에서 나올 수 없는 값이고, 노이즈 게이트로 편집된
-    원본에만 몰려 있어 "정확한 0 → 그 클래스" 지름길이 된다
-    (`tools/zero_ratio_by_class.py` 실측: 채움 적용 후에도 glass 가 배경음의 4.1배).
-    1 LSB 는 8bit 양자화 잡음과 같은 크기라 정보 손실이 없고, 전 클래스에 같은
-    규칙으로 적용하므로 새 단서를 만들지 않는다. `key` 로 시드를 고정해 재현한다.
+    디지털 0 대응은 여기서 하지 않는다. ±1 LSB 디더를 쓰다가 **배경음 베드로
+    덮는 방식으로 교체**했다 (`fill_zero_runs`) — 디더는 "0 이 아닌 값"일 뿐
+    실제 암소음이 아니었다.
+
+    ⚠️ 여기서는 포화시키지만 **MSDK `kws20_demo` 는 포화시키지 않는다**
+    (int32→int8_t 대입이라 하위 8bit 절단 = 랩어라운드). 우리 펌웨어에서는
+    포화로 구현해야 이 전처리와 일치한다 — CLAUDE.md 7장, TASKS.md Phase 5.
     """
-    q = np.round(w * 127.0)
-    if key is not None:
-        z = (w == 0.0)
-        n = int(z.sum())
-        if n:
-            rng = np.random.default_rng(rank_id(key) % (2 ** 32))
-            q[z] = rng.integers(0, 2, n) * 2 - 1        # −1 또는 +1
-    return np.clip(q, -128, 127).astype(np.int8)
+    return np.clip(np.round(w * 127.0), -128, 127).astype(np.int8)
 
 
 # ──────────────────────────────────────────────────────────── 경로 해석
@@ -669,8 +825,14 @@ class ShardWriter:
         self.index = []          # (shard, row, clip_id, fsid, start_sample, note)
         self.shard_id = 0
 
-    def add(self, w_int8, clip_id, fsid, start, note=""):
-        self.index.append((self.shard_id, len(self.buf), clip_id, fsid, start, note))
+    def add(self, w_int8, clip_id, fsid, start, note="", left=MARGIN, right=MARGIN):
+        """`w_int8` 은 STORE 길이다. `left`/`right` 는 실제로 확보된 여유(샘플).
+
+        클립 가장자리에서는 여유가 모자랄 수 있다. 데이터로더가 shift 범위를
+        그만큼 줄이도록 인덱스에 남긴다.
+        """
+        self.index.append((self.shard_id, len(self.buf), clip_id, fsid, start,
+                           left, right, note))
         self.buf.append(w_int8)
         if len(self.buf) >= self.shard_size:
             self.flush()
@@ -688,7 +850,8 @@ class ShardWriter:
         with open(os.path.join(self.dir, "index.csv"), "w", newline="",
                   encoding="utf-8") as f:
             w = csv.writer(f)
-            w.writerow(["shard", "row", "clip_id", "fsid", "start_sample", "note"])
+            w.writerow(["shard", "row", "clip_id", "fsid", "start_sample",
+                        "left_margin", "right_margin", "note"])
             w.writerows(self.index)
         return len(self.index)
 
@@ -794,13 +957,14 @@ def sweep(rows, args):
     def row(a, b, win, dead):
         return [a, b] + [win[k] for k in cols] + [sum(win.values()), dead]
 
-    head = ["floor(dBFS)", "rel"] + [f"{c}/{sp}" for c, sp in cols] + ["합계", "하한 탈락 클립"]
+    head = ["int8 0비율 상한", "rel"] + [f"{c}/{sp}" for c, sp in cols] \
+        + ["합계", "하한 탈락 클립"]
     src = Counter(r["source"] for r in recs)
-    body = [row("필터 없음", "상한 없음", tally(0.0, 0.0, 10 ** 9)[0], 0),
-            row("필터 없음", f"상한 {args.max_win}", tally(0.0, 0.0, args.max_win)[0], 0)]
-    for floor_db, rel in combos:
-        win, dead = tally(10 ** (floor_db / 20.0), rel, args.max_win)
-        body.append(row(f"{floor_db:.0f}", f"{rel:.2f}", win, dead))
+    body = [row("필터 없음", "상한 없음", tally(1.01, 0.0, 10 ** 9)[0], 0),
+            row("필터 없음", f"상한 {args.max_win}", tally(1.01, 0.0, args.max_win)[0], 0)]
+    for fz, rel in combos:
+        win, dead = tally(fz, rel, args.max_win)
+        body.append(row(f"{fz:.2f}", f"{rel:.2f}", win, dead))
 
     lines = [
         "# 에너지 필터 민감도표",
@@ -819,7 +983,8 @@ def sweep(rows, args):
         + " 기준이다. 실제 캐시 생성은 `--policy tag`(태거 확률 순)를 쓴다",
         f"- glass 게이트: Glass-only 클립은 onset ≥ {args.glass_onset_thr} 만 glass, "
         f"미달은 {args.glass_reject}",
-        "- floor: 윈도우 RMS 절대 하한 (dBFS, 최대 진폭 1.0 기준)",
+        "- int8 0비율 상한: **양자화 후 0 인 샘플 비율**의 상한. 모델이 보는 것이 "
+        "int8 이므로 여기서 잰다 (1 LSB = −42.1dBFS). 이 값을 넘으면 창이 사실상 비었다",
         "- rel: 클립 후보 최대 RMS 대비 비율 (진폭 기준). 두 기준 모두 통과해야 채택",
         "- 태거 필터는 적용하지 않은 수치다 → `label-noise-filter.md`",
         "- 값은 **윈도우 수**다. 원본 수가 아니므로 신뢰구간 계산에 쓰지 말 것",
@@ -833,14 +998,13 @@ def sweep(rows, args):
     # 클립이 통째로 빠지는 것은 절대 하한뿐이다(최대 후보는 상대 기준을 항상 통과).
     n_cls = Counter(r["cls"] for r in recs)
     lines += ["", "## 절대 하한으로 통째로 탈락한 클립 (클래스별)", "",
-              "최대 후보 RMS 조차 floor 미만인 클립 수 / 전체. rel 과 무관하다.", ""]
+              "가장 덜 빈 후보조차 상한을 넘는 클립 수 / 전체. rel 과 무관하다.", ""]
     body = []
-    for floor_db in args.sweep_floor:
-        fl = 10 ** (floor_db / 20.0)
-        dead = Counter(r["cls"] for r in recs if r["rms"].max() < fl)
-        body.append([f"{floor_db:.0f}"] + [
+    for fz in args.sweep_floor:
+        dead = Counter(r["cls"] for r in recs if r["zfrac"].min() > fz)
+        body.append([f"{fz:.2f}"] + [
             f"{dead[c]}/{n_cls[c]} ({100 * dead[c] / max(n_cls[c], 1):.1f}%)" for c in CLASSES])
-    lines += md_table(["floor(dBFS)"] + CLASSES, body)
+    lines += md_table(["int8 0비율 상한"] + CLASSES, body)
     write_md(args.sweep_out, lines)
 
 
@@ -854,7 +1018,7 @@ def filter_report(rows, args, tagger):
     if tagger is None:
         sys.exit("[에러] --filter-report 는 태거가 필요하다 (--no-tagger 와 함께 쓸 수 없음)")
     recs, n_fail = analyze_all(rows, args, tagger)
-    floor_lin = 10 ** (args.floor_db / 20.0)
+    floor_lin = args.floor_zero
     thr = tag_thresholds(args)
     cols = [(c, sp) for c in CLASSES for sp in SPLITS]
     live = [r for r in recs if r["cls"]]
@@ -865,7 +1029,7 @@ def filter_report(rows, args, tagger):
         "`scripts/prepare_safesound.py --filter-report` 자동 생성. 손으로 고치지 말 것.",
         "",
         f"- 입력: 오디오가 있는 클립 {len(recs)}개, 읽기 실패 {n_fail}",
-        f"- 에너지 필터: floor {args.floor_db:.0f}dBFS, rel {args.rel_ratio:.2f}, "
+        f"- 에너지 필터: int8 0비율 ≤ {args.floor_zero:.2f}, rel {args.rel_ratio:.2f}, "
         f"클립당 최대 {args.max_win}윈도우, hop {args.hop_ms}ms",
         f"- 윈도우 선택 정책: `--policy {args.policy}`",
         "- 태거: PANNs Cnn14 16kHz (`Cnn14_16k_mAP=0.438.pth`), AudioSet 527클래스, "
@@ -978,7 +1142,7 @@ def filter_report(rows, args, tagger):
             if r["cls"] != c:
                 continue
             rms = r["rms"]
-            en = (rms >= floor_lin) & (rms >= rms.max() * args.rel_ratio)
+            en = (r["zfrac"] <= floor_lin) & (rms >= rms.max() * args.rel_ratio)
             ok = tag_ok(r, thr, args.tag_bg_thr)
             if ok is None:                       # 태거를 쓰지 않는 클래스
                 n = -1
@@ -1126,7 +1290,7 @@ def export_samples(rows, args, tagger):
     `samples.csv` 에 출처·게이트·onset·태거 최상위 라벨을 함께 남긴다.
     """
     out = args.sample_dir
-    floor_lin = 10 ** (args.floor_db / 20.0)
+    floor_lin = args.floor_zero
     thr = tag_thresholds(args)
     # 매니페스트는 클래스·소스 순으로 묶여 있다. 앞에서부터 N개를 취하면
     # 소스 편향이 생기므로 섞는다 (시드 고정).
@@ -1180,7 +1344,7 @@ def export_samples(rows, args, tagger):
         wr.writerows(sorted(records))
 
     print(f"청취용 표본을 {out} 에 저장했다 "
-          f"(floor {args.floor_db}dBFS, rel {args.rel_ratio}, "
+          f"(int8 0비율 ≤ {args.floor_zero}, rel {args.rel_ratio}, "
           f"클립당 최대 {args.max_win}윈도우, 시드 {args.seed}, "
           f"태거 {'끔' if tagger is None else thr}, 배경 < {args.tag_bg_thr}).")
     for c in CLASSES:
@@ -1212,7 +1376,7 @@ def export_audit(rows, args, tagger):
         res = analyze_clip(r, x, args, tagger)
         if res["cls"] != want:                 # 게이트 탈락분은 이 클래스가 아니다
             continue
-        picked = choose(res, 10 ** (args.floor_db / 20.0), args.rel_ratio,
+        picked = choose(res, args.floor_zero, args.rel_ratio,
                         args.max_win, tag_ok(res, tag_thresholds(args), args.tag_bg_thr))[0]
         for i in picked:
             got.append((r, res, int(i), prepare_audio(x, r, args, getattr(args, "pool", None))[0]))
@@ -1259,7 +1423,7 @@ def export_audit(rows, args, tagger):
 # ──────────────────────────────────────────────────────────── 캐시 생성
 def build(rows, args, tagger):
     """실제 캐시 생성. 클립 하나씩 처리해 즉시 샤드에 append."""
-    floor_lin = 10 ** (args.floor_db / 20.0)
+    floor_lin = args.floor_zero
     thr = tag_thresholds(args)
     os.makedirs(args.out, exist_ok=True)
     prog_path = os.path.join(args.out, "progress.json")
@@ -1305,8 +1469,8 @@ def build(rows, args, tagger):
             if wk not in writers:
                 writers[wk] = ShardWriter(args.out, cls_out, r["split"])
             s = int(res["starts"][j])
-            key = f"{r['clip_id']}:{s}" if args.zero_dither else None
-            writers[wk].add(to_int8(x[s:s + WIN], key), r["clip_id"], r["fsid"], s, note)
+            w8, lm, rm = store_row(x, s, r, args, args.pool)
+            writers[wk].add(w8, r["clip_id"], r["fsid"], s, note, lm, rm)
             stats[f"채택:{cls_out}"] += 1
 
         for j in picked:
@@ -1358,10 +1522,15 @@ def build_parser():
                     help="청취 판정 override CSV (없으면 무시). `load_overrides` 참조")
 
     g = ap.add_argument_group("에너지 필터")
-    g.add_argument("--floor-db", type=float, default=-50.0,
-                   help="절대 하한 (dBFS). 기본 −50 은 하드웨어에서 유도한 값이다 "
-                        "(MAX78000 입력 8bit ±127 → −50dBFS 는 크레스트 팩터 15dB 를 "
-                        "가정해도 피크가 1 LSB 언저리다). 끄려면 --floor-db=-inf")
+    g.add_argument("--bg-quiet-frac", type=float, default=0.15,
+                   help="배경음 클립 중 **조용한 구간을 일부러 뽑을** 비율. "
+                        "실기기 입력의 대부분이 조용한 방이라 거의 빈 창도 "
+                        "학습에 있어야 한다. 이 비율의 클립은 하한·상대기준을 풀고 "
+                        "조용한 순으로 고른다")
+    g.add_argument("--floor-zero", type=float, default=0.95,
+                   help="절대 하한 — 창의 **int8 0 샘플 비율** 상한. 모델이 보는 것이 "
+                        "int8 이므로 float RMS 가 아니라 여기서 잰다 (1 LSB = −42.1dBFS). "
+                        "끄려면 1.01")
     g.add_argument("--rel-ratio", type=float, default=0.30,
                    help="클립 후보 최대 RMS 대비 비율 (0~1, 진폭 기준)")
     g.add_argument("--hop-ms", type=int, default=250,
@@ -1392,8 +1561,15 @@ def build_parser():
                    help="이벤트 가장자리 페이드 (ms). 경계 클릭이 인공 단서가 되는 것을 막는다")
     g.add_argument("--fill-pool-clips", type=int, default=48,
                    help="split 별 채움용 배경 클립 수")
-    g.add_argument("--no-zero-dither", dest="zero_dither", action="store_false",
-                   help="디지털 0 샘플에 ±1 LSB 잡음을 넣지 않는다 (대조용)")
+    g.add_argument("--fill-snr-db", type=float, default=10.0,
+                   help="베드는 이벤트 RMS 보다 최소 이만큼 작아야 한다 (dB). "
+                        "채움이 두 번째 음원이 되어 라벨을 흐리는 것을 막는다")
+    g.add_argument("--fill-bed-min-db", type=float, default=-45.0,
+                   help="베드 후보의 최소 RMS (dBFS). 1 LSB = −42.1dBFS 라 이보다 "
+                        "조용한 베드는 int8 에서 사라진다")
+    g.add_argument("--zero-run-min", type=int, default=16,
+                   help="이 길이 이상 이어진 0 구간만 베드로 덮는다 (샘플, 16=1ms). "
+                        "파형이 정상적으로 스쳐 가는 낱개 0 은 건드리지 않는다")
 
     g = ap.add_argument_group("태거 필터 (PANNs)")
     g.add_argument("--no-tagger", action="store_true", help="태거 필터 끄기")
@@ -1409,13 +1585,16 @@ def build_parser():
                    default=os.path.join(HOME, "panns_data", "Cnn14_16k_mAP=0.438.pth"))
     g.add_argument("--tag-labels",
                    default=os.path.join(HOME, "panns_data", "class_labels_indices.csv"))
-    g.add_argument("--tag-cache", default="data/interim/tagger_cache/cnn14_16k")
+    # v2: 디지털 무음 베드 채움(2026-09-25)으로 입력 파형이 바뀌어 캐시를 갈았다.
+    # 전처리가 파형을 건드리면 반드시 디렉터리를 새로 판다 — 캐시 키는 (클립,
+    # 시작 샘플)뿐이라 내용 변화를 스스로 알아채지 못한다.
+    g.add_argument("--tag-cache", default="data/interim/tagger_cache/cnn14_16k_v2")
     g.add_argument("--threads", type=int, default=8, help="태거 CPU 스레드")
 
     g = ap.add_argument_group("모드")
     g.add_argument("--sweep", action="store_true", help="에너지 민감도표만 출력")
     g.add_argument("--sweep-floor", type=float, nargs="+",
-                   default=[-70, -60, -50, -45, -40, -35, -30])
+                   default=[0.99, 0.95, 0.90, 0.80, 0.70, 0.50])
     g.add_argument("--sweep-rel", type=float, nargs="+",
                    default=[0.0, 0.2, 0.3, 0.5])
     g.add_argument("--sweep-out", default="docs/results/energy-filter-sweep.md")

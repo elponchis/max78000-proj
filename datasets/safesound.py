@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+"""SafeSound 데이터로더 — `prepare_safesound.py` 가 만든 int8 샤드를 읽는다.
+
+`ai8x-training/datasets/safesound.py` 로 심볼릭 링크해서 쓴다 (CLAUDE.md 11장):
+    ln -s ~/max78000-proj/datasets/safesound.py ~/ai8x-training/datasets/safesound.py
+    python train.py --dataset SafeSound ...
+
+── 메모리 설계 (CLAUDE.md 6장, OOM 3회의 교훈) ─────────────────────────────
+`kws20.py` 는 전체를 메모리에 올린 뒤 concat 해서 로컬(15GB)·Colab(12GB) 양쪽에서
+터졌다. 여기서는 **한 샘플도 미리 올리지 않는다.**
+  - 인덱스(CSV)만 읽어 (클래스, 샤드, 행) 목록을 만든다. 16,000창 기준 수 MB다
+  - 샤드는 `np.load(mmap_mode='r')` 로 매핑만 한다. 실제 페이지는 `__getitem__`
+    이 그 행을 건드릴 때 OS 가 올린다
+  - 매핑 핸들은 **워커 프로세스마다** 따로 연다 (fork 후 첫 접근 때). mmap 객체를
+    부모에서 열어 물려주면 워커 간에 상태가 꼬인다
+샤드 하나는 2048 × 16384 int8 = 32MB 이므로, 워커 4개가 각자 몇 개를 열어도
+상주 메모리는 수백 MB 를 넘지 않는다.
+
+── 증강 (학습셋 전용, CLAUDE.md 5장 규칙 6) ───────────────────────────────
+  - 시간축 shift ±100ms — **재절단**이다. 샤드가 1.2초(STORE)로 저장돼 있어
+    가운데 1초를 어디서 자를지만 바꾼다. 순환(roll)은 연속음에서 이음매 클릭을
+    만들고 0 으로 미는 것은 전처리에서 없앤 디지털 0 을 되살린다. 클립 가장자리
+    창은 여유가 모자랄 수 있어 인덱스의 `left_margin`/`right_margin` 만큼만 민다
+  - **랜덤 게인 ±12dB, 전 클래스 동일** (background 포함). 범위를 클래스마다
+    달리하면 레벨 분포 자체가 단서가 된다. 근거는 실기기 `SAMPLE_SCALE_FACTOR`
+    가 빌드 타임 상수라는 것 — CLAUDE.md 7장
+  - 게인 결과가 **int8 에서 비면 다시 뽑는다.** 판정 기준(`--floor-zero`)은
+    전처리의 절대 하한과 같은 값이어야 한다. 다르면 하한이 거른 창을 증강이
+    되살리거나 그 반대가 된다
+  - **MSnoise 혼합은 v1 에 넣지 않는다.** v1 기준선을 학습한 뒤 별도 비교 실험으로
+    추가한다 (증강을 한꺼번에 넣으면 어느 것이 효과였는지 분리되지 않는다).
+    `_mix_noise` 는 후크만 남겨 두었다
+
+테스트셋은 무증강이다.
+"""
+
+import csv
+import os
+import sys
+
+import numpy as np
+import torch
+from torch.utils.data import Dataset
+
+import ai8x
+
+CLASSES = ["siren", "glass", "scream", "dog_bark", "background"]
+WIN = 16384          # 1초 @ 16kHz — 모델 입력
+MARGIN = 1600        # 샤드에 저장된 양옆 여유 (±100ms). shift 재절단용
+STORE = WIN + 2 * MARGIN
+ROW = 128            # (128,128) reshape
+
+# 전처리와 **반드시 같은 값**이어야 한다 (prepare_safesound.py --floor-zero).
+# 게인 증강 후 창이 int8 에서 비었는지 판정하는 기준이다.
+FLOOR_ZERO = 0.95
+GAIN_DB = 12.0       # 랜덤 게인 범위 ±dB
+SHIFT_MS = 100       # 시간축 shift 범위 ±ms
+GAIN_TRIES = 8       # 재추출 횟수 상한
+
+
+class SafeSound(Dataset):
+    """int8 샤드 lazy 로더.
+
+    인자:
+      root      `prepare_safesound.py --out` 경로 (기본 data/processed/safesound)
+      d_type    'train' 또는 'test'
+      transform ai8x.normalize 등
+      augment   학습 증강 적용 여부 (test 는 무조건 False)
+      noise_dir MSnoise wav 디렉터리 (미연결, TODO)
+    """
+
+    def __init__(self, root, d_type, transform=None, augment=None,
+                 floor_zero=FLOOR_ZERO, gain_db=GAIN_DB, shift_ms=SHIFT_MS,
+                 noise_dir=None, seed=0):
+        if d_type not in ("train", "test"):
+            raise ValueError(f"d_type 은 train/test 여야 한다: {d_type}")
+        self.root = root
+        self.d_type = d_type
+        self.transform = transform
+        self.augment = (d_type == "train") if augment is None else augment
+        self.floor_zero = floor_zero
+        self.gain_db = gain_db
+        self.shift = max(1, int(16000 * shift_ms / 1000))
+        self.noise_dir = noise_dir
+        self.seed = seed
+
+        self.index = []          # (target, 샤드 경로, 행, 왼쪽 여유, 오른쪽 여유)
+        self.meta = []           # (clip_id, fsid) — 분석·디버깅용
+        for target, cls in enumerate(CLASSES):
+            d = os.path.join(root, d_type, cls)
+            idx_path = os.path.join(d, "index.csv")
+            if not os.path.isfile(idx_path):
+                continue
+            with open(idx_path, encoding="utf-8") as f:
+                for r in csv.DictReader(f):
+                    shard = os.path.join(d, f"shard_{int(r['shard']):04d}.npy")
+                    self.index.append((target, shard, int(r["row"]),
+                                       int(r.get("left_margin", MARGIN)),
+                                       int(r.get("right_margin", MARGIN))))
+                    self.meta.append((r["clip_id"], r["fsid"]))
+        if not self.index:
+            sys.exit(f"[에러] 샤드가 없다: {root}/{d_type}. "
+                     "먼저 prepare_safesound.py 를 실행할 것.")
+        self._maps = {}          # 워커별 mmap 핸들 (fork 후 새로 연다)
+        self._pid = None
+
+    def __len__(self):
+        return len(self.index)
+
+    def _shard(self, path):
+        """샤드 mmap 핸들. 프로세스가 바뀌면(fork) 새로 연다."""
+        pid = os.getpid()
+        if self._pid != pid:
+            self._maps = {}
+            self._pid = pid
+        m = self._maps.get(path)
+        if m is None:
+            m = np.load(path, mmap_mode="r")
+            self._maps[path] = m
+        return m
+
+    # ────────────────────────────────────────────────────────────── 증강
+    def _crop(self, row, left, right, rng):
+        """STORE 행에서 1초를 잘라낸다. 학습이면 여유 안에서 위치를 흔든다.
+
+        이것이 시간축 shift 다 — 파형을 미는 게 아니라 **자르는 위치**를 바꾼다.
+        순환 시프트는 연속음(사이렌 등)에서 이음매 클릭을 만들고, 그 클릭은
+        전 클래스에 고르게 퍼지지 않아 인공 단서가 된다.
+        """
+        if not self.augment:
+            return row[MARGIN:MARGIN + WIN]
+        lo = MARGIN - min(left, self.shift)
+        hi = MARGIN + min(right, self.shift)
+        off = int(rng.integers(lo, hi + 1)) if hi > lo else MARGIN
+        return row[off:off + WIN]
+
+    def _rand_gain(self, w, rng):
+        """랜덤 게인 ±gain_db. 클리핑을 만들지 않고, int8 에서 비면 다시 뽑는다.
+
+        반환: int8 배열. `GAIN_TRIES` 번 안에 조건을 못 맞추면 원본을 그대로 쓴다
+        (창을 버리는 것은 데이터 손실이고, 원본은 이미 하한을 통과했다).
+        """
+        f = w.astype(np.float32)
+        for _ in range(GAIN_TRIES):
+            g = 10.0 ** (float(rng.uniform(-self.gain_db, self.gain_db)) / 20.0)
+            y = f * g
+            peak = float(np.abs(y).max())
+            if peak > 127.0:                  # 인위적 클리핑 금지 — 넘는 만큼만 되돌린다
+                y *= 127.0 / peak
+            q = np.clip(np.round(y), -128, 127)
+            if float((q == 0).mean()) <= self.floor_zero:
+                return q.astype(np.int8)
+        return w
+
+    def _mix_noise(self, w, rng):
+        """MSnoise 혼합 (SNR 0~20dB). **v1 에서는 쓰지 않는다** (CLAUDE.md 규칙 6).
+
+        v1 기준선 학습 뒤 별도 비교 실험으로 붙인다. 붙일 때는 ai8x-training 의
+        MSnoise 전처리 결과를 16kHz 창으로 변환해 `noise_dir` 에 넣고, 채움 베드와
+        같은 규칙(같은 split 안에서만)을 적용한다.
+        """
+        return w
+
+    # ──────────────────────────────────────────────────────────── 샘플
+    def __getitem__(self, i):
+        target, shard, row, left, right = self.index[i]
+        stored = np.asarray(self._shard(shard)[row])      # int8, (STORE,)
+
+        rng = np.random.default_rng()
+        w = self._crop(stored, left, right, rng)          # (WIN,)
+        if self.augment:
+            w = self._rand_gain(w, rng)
+            w = self._mix_noise(w, rng)
+
+        # int8 [-128,127] → [0,1) → ai8x.normalize 가 다시 [-128,127] 로 되돌린다.
+        # kws20.py 와 같은 관례다: 거기서는 uint8 로 저장해 `inp /= 256`
+        # (datasets/kws20.py:592) 한 뒤 `ai8x.normalize` (ai8x.py:29, 즉
+        # `img.sub(0.5).mul(256.).round().clamp(-128,127)`) 를 태운다.
+        # 우리는 int8 로 저장하므로 +128 을 먼저 더해 같은 [0,1) 구간으로 맞춘다.
+        x = (torch.from_numpy(np.ascontiguousarray(w).astype(np.int16)) + 128)
+        x = x.float() / 256.0
+        # (128,128) 변환도 kws20.py 와 동일하다 — `__reshape_audio`
+        # (datasets/kws20.py:558-560): `torch.transpose(audio.reshape((-1,128)), 1, 0)`.
+        # 즉 16384 를 128행씩 끊어 (128,128) 로 만든 뒤 전치한다. 전치를 빼먹으면
+        # 시간축과 채널축이 뒤바뀌어 합성 결과와 어긋난다.
+        x = torch.transpose(x.reshape((-1, ROW)), 1, 0)   # (128,128)
+        if self.transform is not None:
+            x = self.transform(x)
+        return x, target
+
+
+def safesound_get_datasets(data, load_train=True, load_test=True):
+    """ai8x-training 규약 로더. `data` 는 (data_dir, args)."""
+    (data_dir, args) = data
+    root = os.path.join(data_dir, "SafeSound")
+    transform = ai8x.normalize(args=args)
+
+    train_ds = SafeSound(root, "train", transform=transform) if load_train else None
+    test_ds = SafeSound(root, "test", transform=transform) if load_test else None
+    return train_ds, test_ds
+
+
+# 배경음 가중치는 실측 비율의 역수다(약 3배 → 0.34). 그대로 두면 손실이 배경음에
+# 끌려간다. ⚠️ 이 값은 **오탐률을 보고 조정할 파라미터**다 — 낮추면 배경음을 덜
+# 배워 오탐이 늘고, 높이면 이벤트 재현율이 떨어진다. G7 측정 후 재설정하고 바꾼
+# 값과 그때의 오탐률을 논문에 함께 적는다 (CLAUDE.md 7장).
+# 비율 자체는 재집계 때마다 확인할 것 (docs/results/label-noise-filter.md B절).
+datasets = [
+    {
+        "name": "SafeSound",
+        "input": (128, 128),
+        "output": tuple(CLASSES),
+        "weight": (1, 1, 1, 1, 0.34),
+        "loader": safesound_get_datasets,
+    },
+]

@@ -1,0 +1,19 @@
+---
+# SafeSound 학습률 스케줄 (ai8x-training `--compress`)
+#
+# KWS20 의 `policies/schedule_kws20.yaml` (200 epoch) 을 150 epoch 으로 줄인 것이다.
+# 데이터가 20분의 1 규모라 200 epoch 은 과하고, 후반 감쇠 지점만 비례 축소했다.
+# QAT 가 60 epoch 에서 시작하므로(`qat_policy_safesound.yaml`) 그 직후에 감쇠가
+# 한 번 오도록 75 를 넣었다 — QAT 전환 직후에 학습률이 높으면 흔들린다.
+lr_schedulers:
+  training_lr:
+    class: MultiStepLR
+    milestones: [75, 105, 130, 142, 147]
+    gamma: 0.5
+
+policies:
+  - lr_scheduler:
+      instance_name: training_lr
+    starting_epoch: 0
+    ending_epoch: 150
+    frequency: 1
