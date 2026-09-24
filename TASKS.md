@@ -111,11 +111,25 @@
         hop 250ms 중첩 후보 + 겹침 없는 최종 선택, PANNs Cnn14(16k) 태거 필터
   - [x] 청취 검증으로 임계값 확정 → `docs/results/listening-verification.md`
   - [ ] **수량 미달 대응** → 목표(train 800+/test 200+) 판정
-        청취 반영 후 실측 (hop 250ms, 태거 glass 해제 / scream 0.025 /
-        siren·dog_bark 0.10, override 48행 적용):
-        siren 539/151, glass 633/326, scream 490/228, dog_bark 1938/782,
-        background 3466/1863 — **siren·glass·scream 이 train 800 미달**
-        (test 200 은 glass·scream·dog_bark 충족, siren 151 미달)
+        배경음 확장까지 반영한 실측 (hop 250ms, 태거 glass 해제 / scream 0.025 /
+        siren·dog_bark 0.10, override 48행, 클립 9,782개):
+
+        | 클래스 | train | test | 목표 대비 |
+        |---|---:|---:|---|
+        | siren | 539 | 151 | train·test 모두 미달 |
+        | glass | 633 | 326 | train 미달 |
+        | scream | 490 | 228 | train 미달 |
+        | dog_bark | 1938 | 782 | 충족 |
+        | background | 10134 | 3988 | 이벤트 합의 2.82× / 2.68× |
+
+        · 배경음은 규칙 4(2~3배)를 충족한다. 목표 2.5배보다 train 1,134창 많은데,
+          클립당 윈도우가 예측 1.97 보다 높은 2.15 로 나왔기 때문이다.
+          정확히 2.5배로 맞추려면 `BG_GENERAL_TRAIN` 3100→2570, `_TEST` 900→810
+          으로 줄여 매니페스트를 다시 만든다 (오디오 재다운로드 불필요)
+        · siren train 800 은 상한을 4로 올려도 578 이라 도달 불가 —
+          원본 자체가 부족하다(고유 원본 train 129). 증강 강화(규칙 6)로 대응
+        · siren 상한은 3 유지 확정 (2026-09-22). 상한을 올려도 고유 원본 수가
+          늘지 않아 신뢰구간이 좁아지지 않는다
         · 배경음이 이벤트 합(3,260)의 1.06배다. 규칙 4(2~3배) 미달 → 3단계에서 확장
         · dog_bark 불일치 중 최상위 라벨 `Animal` 인 1,540윈도우는 자식(Dog) 확률
           중앙값 0.034 다. 0.05 로 내리면 544윈도우가 살아난다 — 청취로 판정할 것
