@@ -251,9 +251,14 @@ def prepare_audio(x, r, args, pool=None):
     seg, src = pool.pick(r["split"], r["clip_id"])
     n = len(x)
     off = rank_id(r["clip_id"] + ":off") % (WIN - n + 1)
-    ev_rms = float(np.sqrt(np.mean(x.astype(np.float64) ** 2)))
-    bg_rms = float(np.sqrt(np.mean(seg.astype(np.float64) ** 2)))
-    gain = (ev_rms * 10 ** (args.fill_db / 20.0) / bg_rms) if bg_rms > 0 else 0.0
+    # 기본은 **배경 구간의 원래 레벨 그대로** 다. 이벤트 RMS 에 맞춰 스케일하면
+    # 정규화를 하지 않는다는 절대 레벨 정책(7장)과 어긋난다 — 실기기에서 암소음의
+    # 크기는 이벤트 크기와 무관하다. `--fill-db` 를 주면 이벤트 상대 레벨로 맞춘다.
+    gain = 1.0
+    if args.fill_db is not None:
+        ev_rms = float(np.sqrt(np.mean(x.astype(np.float64) ** 2)))
+        bg_rms = float(np.sqrt(np.mean(seg.astype(np.float64) ** 2)))
+        gain = (ev_rms * 10 ** (args.fill_db / 20.0) / bg_rms) if bg_rms > 0 else 0.0
     y = seg * gain
 
     ev = x.astype(np.float32).copy()
@@ -264,16 +269,18 @@ def prepare_audio(x, r, args, pool=None):
         ev[-f:] *= ramp[::-1]
     y = y.copy()
     y[off:off + n] += ev
+    bg_db = 20 * np.log10(max(float(np.sqrt(np.mean((seg * gain) ** 2))), 1e-12))
     return np.clip(y, -1.0, 1.0), {
         "src_clip": src[0], "src_start": src[1], "offset": off,
-        "event_len": n, "fill_db": args.fill_db}
+        "event_len": n, "fill_db": args.fill_db, "bg_dbfs": bg_db}
 
 
 def fill_note(info):
     """채움 정보를 인덱스 CSV 한 칸에 넣을 문자열로."""
     if not info:
         return ""
-    return (f"bgfill:{info['fill_db']:.0f}dB:off={info['offset']}:"
+    lvl = "orig" if info["fill_db"] is None else f"{info['fill_db']:.0f}dBrel"
+    return (f"bgfill:{lvl}:{info['bg_dbfs']:.1f}dBFS:off={info['offset']}:"
             f"len={info['event_len']}:src={info['src_clip']}@{info['src_start']}")
 
 
@@ -428,11 +435,15 @@ def load_overrides(path):
         for r in csv.DictReader(l for l in f if not l.startswith("#")):
             if r["action"] not in ("keep", "drop", "relabel"):
                 sys.exit(f"[에러] 알 수 없는 override action: {r['action']}")
-            # start_sample 이 `*` 또는 빈 칸이면 **그 클립의 전 윈도우**에 적용한다.
-            # 창 하나가 아니라 원본 전체를 버려야 하는 경우에 쓴다.
-            s = r["start_sample"].strip()
-            out[(r["clip_id"], "*" if s in ("", "*") else int(s))] = r
+            out[ov_key(r)] = r
     return out
+
+
+def ov_key(row):
+    """override 행 → 조회 키. `start_sample` 이 `*` 또는 빈 칸이면 **그 클립의
+    전 윈도우**에 적용한다. 창 하나가 아니라 원본 전체를 버릴 때 쓴다."""
+    s = str(row["start_sample"]).strip()
+    return (row["clip_id"], "*" if s in ("", "*") else int(s))
 
 
 def override_masks(r, res, ov):
@@ -1020,7 +1031,7 @@ def filter_report(rows, args, tagger):
         for r in live:
             for row in r["ov_hit"]:
                 hit[(row["action"], r["cls"])] += 1
-                seen.add((row["clip_id"], int(row["start_sample"])))
+                seen.add(ov_key(row))
         miss = [k for k in args.ov if k not in seen]
         lines += ["## G. 청취 판정 override", "",
                   f"`{args.overrides}` 의 {len(args.ov)}행 중 **{len(seen)}행이 현재 후보 "
@@ -1374,8 +1385,9 @@ def build_parser():
     g.add_argument("--fill-mode", choices=["background", "zero"], default="background",
                    help="1초 미만 클립의 빈 구간 처리. background=같은 split 의 조용한 "
                         "배경 구간(기본), zero=0 패딩(이전 동작, 대조용)")
-    g.add_argument("--fill-db", type=float, default=-25.0,
-                   help="채움 배경의 레벨 — 이벤트 RMS 대비 dB (기본 −25)")
+    g.add_argument("--fill-db", type=float, default=None,
+                   help="채움 배경 레벨을 이벤트 RMS 대비 dB 로 맞춘다. "
+                        "기본은 미지정 = **배경 구간 원래 레벨 그대로** (절대 레벨 정책)")
     g.add_argument("--fill-fade-ms", type=float, default=2.0,
                    help="이벤트 가장자리 페이드 (ms). 경계 클릭이 인공 단서가 되는 것을 막는다")
     g.add_argument("--fill-pool-clips", type=int, default=48,

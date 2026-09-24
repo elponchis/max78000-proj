@@ -86,7 +86,10 @@ def main():
             zr[res["cls"]].append(float((w == 0.0).mean()))
             # 모델이 실제로 보는 것은 int8 이다. 조용한 구간은 원본이 0 이 아니어도
             # 양자화 후 0 이 되므로, 두 영역을 나란히 봐야 판단이 선다.
-            zq[res["cls"]].append(float((P.to_int8(w) == 0).mean()))
+            # 캐시 생성과 **같은 키**로 디더를 적용한다 — 디더를 빼고 재면 실제
+            # 학습 데이터가 아니라 그 전 단계를 재는 셈이 된다.
+            key = f"{r['clip_id']}:{s}" if args.zero_dither else None
+            zq[res["cls"]].append(float((P.to_int8(w, key) == 0).mean()))
             rms_db[res["cls"]].append(20 * np.log10(max(float(res["rms"][j]), 1e-12)))
         if i % 250 == 0:
             print(f"  {i}/{len(rows)}", flush=True)
@@ -105,7 +108,9 @@ def main():
     print("\n  p50/p90/p99/최대 = 창 하나의 0 샘플 비율 분포")
     print("  >1% / >10% / >50% = 그 비율을 넘는 창의 **비중**")
 
-    print(f"\n{'클래스':<12}{'창':>7}{'int8 0비율 p50':>16}{'p90':>8}{'p99':>8}"
+    print(f"\n★ int8 기준 (모델이 보는 값, 디더 {'적용' if args.zero_dither else '없음'}) "
+          f"— 1 LSB = −42.1dBFS")
+    print(f"{'클래스':<12}{'창':>7}{'int8 0비율 p50':>16}{'p90':>8}{'p99':>8}"
           f"{'>10%':>8}{'>50%':>8}")
     print("-" * 67)
     for c in a.cls:
