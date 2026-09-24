@@ -155,8 +155,126 @@ def resample(x, sr_in, sr_out):
 
 
 def pad_to_win(x):
-    """WIN 보다 짧은 클립은 뒤를 0으로 채운다. 이후 모든 윈도우는 x[s:s+WIN]."""
+    """WIN 보다 짧은 클립을 0으로 채운다 — `--fill-mode zero` 전용(대조군).
+
+    기본 경로는 `FillerPool` 을 쓰는 `prepare_audio` 다. 아래 설명을 볼 것.
+    """
     return np.pad(x, (0, WIN - len(x))) if len(x) < WIN else x
+
+
+class FillerPool:
+    """1초보다 짧은 클립의 빈 구간을 채울 **조용한 배경 구간** 풀.
+
+    0 으로 채우면 두 가지가 깨진다.
+      1. 마이크 스트림에는 디지털 0 이 나오지 않는다. 그런 창에 대한 정확도는
+         현장 성능을 대변하지 못한다. glass 는 0.3초 과도음이라 test 창의 10%가
+         이 상태였다 (`tools/audit_silence.py` 실측).
+      2. 0 이 특정 클래스에만 몰리면 "정확한 0 → glass" 지름길이 생긴다
+         (`tools/zero_ratio_by_class.py`).
+    실배치에서 1초 창에 담기는 것은 **파손음 + 방 안의 암소음**이다. 그대로 만든다.
+
+    ⚠️ **채움용 배경은 같은 split 안에서만 뽑는다.** test 창을 train 배경으로
+    채우면 그 자체가 새로운 누수다.
+    조용한 구간을 고르되 **디지털 0 이 섞인 구간은 제외**한다 — 0 을 지우려고
+    채우면서 다시 0 을 들여오면 의미가 없다.
+    """
+
+    def __init__(self, manifest, roots, args):
+        self.roots = roots
+        self.args = args
+        self.rows = defaultdict(list)
+        for r in csv.DictReader(open(manifest, encoding="utf-8")):
+            if r["cls"] == "background":
+                self.rows[r["split"]].append(r)
+        self.cache = {}
+
+    def _build(self, split):
+        rows = sorted(self.rows.get(split, []), key=lambda r: rank_id(r["clip_id"]))
+        segs, used = [], []
+        for r in rows:
+            if len(segs) >= self.args.fill_pool_clips:
+                break
+            p = clip_path(r, self.roots)
+            if not p:
+                continue
+            x = load_audio(p)
+            if x is None or len(x) < WIN:
+                continue
+            starts = np.arange(0, len(x) - WIN + 1, WIN, dtype=np.int64)
+            rms = window_rms(x, starts)
+            for i in np.argsort(rms):            # 조용한 구간부터
+                w = x[starts[i]:starts[i] + WIN]
+                if float((w == 0.0).mean()) > 0.001:
+                    continue                     # 디지털 무음이 섞인 구간은 제외
+                if rms[i] <= 0:
+                    continue
+                segs.append(w.astype(np.float32))
+                used.append((r["clip_id"], int(starts[i])))
+                break
+        if not segs:
+            sys.exit(f"[에러] {split} 배경음 채움 구간을 찾지 못했다. "
+                     "먼저 download_clips.py --stage background 를 실행할 것.")
+        self.cache[split] = (segs, used)
+        return self.cache[split]
+
+    def pick(self, split, key):
+        """클립 ID 로 결정적으로 하나 고른다 (재실행 시 같은 결과)."""
+        segs, used = self.cache.get(split) or self._build(split)
+        i = rank_id(key) % len(segs)
+        return segs[i], used[i]
+
+
+def rank_id(s):
+    """문자열 → 결정적 정수. 난수 시드 없이 재현 가능한 선택에 쓴다."""
+    import hashlib
+    return int(hashlib.md5(str(s).encode()).hexdigest(), 16)
+
+
+def prepare_audio(x, r, args, pool=None):
+    """윈도우 추출 전 오디오를 WIN 이상으로 만든다.
+
+    WIN 이상이면 그대로. 짧으면 `--fill-mode` 에 따라 0(대조군) 또는 배경음으로
+    채운다. 배경음 채움은 **결정적**이다 — 클립 ID 해시로 구간과 위치를 정하므로
+    build / 보고서 / 청취 표본이 모두 같은 파형을 본다.
+
+    합성 방식: 배경 구간을 창 전체에 깔고(bed) 그 위에 이벤트를 더한다.
+    구간 밖만 채우면 경계에서 파형이 튀어 클릭이 생기고, 그 클릭이야말로
+    모델이 잡기 좋은 인공 단서다. 이벤트 가장자리에는 짧은 페이드를 건다.
+
+    반환: (오디오, 채움 정보 dict 또는 None)
+    """
+    if len(x) >= WIN:
+        return x, None
+    if args.fill_mode == "zero" or pool is None:
+        return pad_to_win(x), None
+
+    seg, src = pool.pick(r["split"], r["clip_id"])
+    n = len(x)
+    off = rank_id(r["clip_id"] + ":off") % (WIN - n + 1)
+    ev_rms = float(np.sqrt(np.mean(x.astype(np.float64) ** 2)))
+    bg_rms = float(np.sqrt(np.mean(seg.astype(np.float64) ** 2)))
+    gain = (ev_rms * 10 ** (args.fill_db / 20.0) / bg_rms) if bg_rms > 0 else 0.0
+    y = seg * gain
+
+    ev = x.astype(np.float32).copy()
+    f = max(1, int(SR * args.fill_fade_ms / 1000))
+    if n > 2 * f:                                 # 경계 클릭 방지용 짧은 페이드
+        ramp = 0.5 - 0.5 * np.cos(np.linspace(0, np.pi, f, dtype=np.float32))
+        ev[:f] *= ramp
+        ev[-f:] *= ramp[::-1]
+    y = y.copy()
+    y[off:off + n] += ev
+    return np.clip(y, -1.0, 1.0), {
+        "src_clip": src[0], "src_start": src[1], "offset": off,
+        "event_len": n, "fill_db": args.fill_db}
+
+
+def fill_note(info):
+    """채움 정보를 인덱스 CSV 한 칸에 넣을 문자열로."""
+    if not info:
+        return ""
+    return (f"bgfill:{info['fill_db']:.0f}dB:off={info['offset']}:"
+            f"len={info['event_len']}:src={info['src_clip']}@{info['src_start']}")
 
 
 # ────────────────────────────────────────────────────────── 후보 윈도우 생성
@@ -310,7 +428,10 @@ def load_overrides(path):
         for r in csv.DictReader(l for l in f if not l.startswith("#")):
             if r["action"] not in ("keep", "drop", "relabel"):
                 sys.exit(f"[에러] 알 수 없는 override action: {r['action']}")
-            out[(r["clip_id"], int(r["start_sample"]))] = r
+            # start_sample 이 `*` 또는 빈 칸이면 **그 클립의 전 윈도우**에 적용한다.
+            # 창 하나가 아니라 원본 전체를 버려야 하는 경우에 쓴다.
+            s = r["start_sample"].strip()
+            out[(r["clip_id"], "*" if s in ("", "*") else int(s))] = r
     return out
 
 
@@ -322,7 +443,7 @@ def override_masks(r, res, ov):
     hit = []
     if ov:
         for i, s in enumerate(res["starts"]):
-            row = ov.get((r["clip_id"], int(s)))
+            row = ov.get((r["clip_id"], int(s))) or ov.get((r["clip_id"], "*"))
             if not row:
                 continue
             hit.append(row)
@@ -353,7 +474,7 @@ def analyze_clip(r, x, args, tagger=None):
       own      자기 라벨 묶음의 라벨별 확률 (n, len(LABEL_SETS[cls]))
       par      상위 라벨 확률 dict (siren/dog_bark 만)
     """
-    x = pad_to_win(x)
+    x, fill = prepare_audio(x, r, args, getattr(args, "pool", None))
     cls, note = r["cls"], r.get("note", "")
     gate, onset, env = None, float("nan"), None
     if cls == "glass":
@@ -371,7 +492,8 @@ def analyze_clip(r, x, args, tagger=None):
 
     out = dict(cls=cls, split=r["split"], orig=r["cls"], note=note, gate=gate,
                onset=onset, starts=None, rms=None, score=None, rank=None,
-               energy=None, tag=None, top=None, topp=None, own=None, par=None)
+               energy=None, tag=None, top=None, topp=None, own=None, par=None,
+               onset_win=None, fill=fill)
     if cls is None:
         return out
 
@@ -390,7 +512,8 @@ def analyze_clip(r, x, args, tagger=None):
         onset_score = np.array([float(env[s // ONSET_HOP:(s + WIN) // ONSET_HOP]
                                       .max(initial=0.0)) for s in starts])
     energy = (rms >= 10 ** (args.floor_db / 20.0)) & (rms >= rms.max() * args.rel_ratio)
-    out.update(starts=starts, rms=rms, score=score, rank=score, energy=energy)
+    out.update(starts=starts, rms=rms, score=score, rank=score, energy=energy,
+               onset_win=onset_score)
     ov_keep, ov_drop, ov_hit = override_masks(r, out, getattr(args, "ov", None))
     out.update(ov_keep=ov_keep, ov_drop=ov_drop, ov_hit=ov_hit)
 
@@ -477,9 +600,29 @@ def choose(res, floor_lin, rel, max_win, agree=None):
     return sorted(picked, key=lambda i: starts[i]), int(energy.sum()), int(keep.sum())
 
 
-def to_int8(w):
-    """[-1,1] float → int8 [-128,127]. 클리핑 포함."""
-    return np.clip(np.round(w * 127.0), -128, 127).astype(np.int8)
+def to_int8(w, key=None):
+    """[-1,1] float → int8 [-128,127]. 클리핑 포함. **정규화는 하지 않는다.**
+
+    스케일이 고정(×127)인 이유는 실기기 경로에 정규화가 없기 때문이다. 펌웨어는
+    마이크 샘플을 그대로 NPU 에 넣으므로, 학습 데이터만 정규화하면 train/serve
+    불일치가 된다. ai8x 의 `kws20.py` 는 파일 단위 peak 정규화를 하지만
+    (`data / max(abs(data))`) 우리는 따르지 않는다 — CLAUDE.md 7장.
+
+    `key` 를 주면 **원본이 정확히 0인 샘플**에만 ±1 LSB 잡음을 넣는다.
+    디지털 0 은 마이크 스트림에서 나올 수 없는 값이고, 노이즈 게이트로 편집된
+    원본에만 몰려 있어 "정확한 0 → 그 클래스" 지름길이 된다
+    (`tools/zero_ratio_by_class.py` 실측: 채움 적용 후에도 glass 가 배경음의 4.1배).
+    1 LSB 는 8bit 양자화 잡음과 같은 크기라 정보 손실이 없고, 전 클래스에 같은
+    규칙으로 적용하므로 새 단서를 만들지 않는다. `key` 로 시드를 고정해 재현한다.
+    """
+    q = np.round(w * 127.0)
+    if key is not None:
+        z = (w == 0.0)
+        n = int(z.sum())
+        if n:
+            rng = np.random.default_rng(rank_id(key) % (2 ** 32))
+            q[z] = rng.integers(0, 2, n) * 2 - 1        # −1 또는 +1
+    return np.clip(q, -128, 127).astype(np.int8)
 
 
 # ──────────────────────────────────────────────────────────── 경로 해석
@@ -930,7 +1073,7 @@ def export_rejected(rows, args, tagger):
             continue
         i = int(idx[np.argmax(res["tag"][idx])])   # 클립당 경계에 가장 가까운 1개
         s = int(res["starts"][i])
-        x = pad_to_win(x)
+        x = prepare_audio(x, r, args, getattr(args, "pool", None))[0]
         t = float(res["tag"][i])
         db = 20.0 * np.log10(max(float(res["rms"][i]), 1e-12))
         d = os.path.join(out, c)
@@ -995,7 +1138,7 @@ def export_samples(rows, args, tagger):
             continue
         picked = choose(res, floor_lin, args.rel_ratio, args.max_win,
                         tag_ok(res, thr, args.tag_bg_thr))[0]
-        x = pad_to_win(x)
+        x = prepare_audio(x, r, args, getattr(args, "pool", None))[0]
         d = os.path.join(out, c)
         os.makedirs(d, exist_ok=True)
         for i in picked:
@@ -1033,6 +1176,73 @@ def export_samples(rows, args, tagger):
         print(f"  {c:<12}{written[c]:>4}개")
     print("\n⚠️ 직접 들어볼 것. 숫자로는 통과인데 무음이거나 엉뚱한 소리일 수 있다.")
     print("   이벤트 클래스는 이름순 앞쪽(태거 점수 낮음)이 경계선이다.")
+
+
+# ────────────────────────────────────────────── 한 클래스·split 전수 감사
+def export_audit(rows, args, tagger):
+    """한 클래스·split 의 **실제 채택 윈도우**를 청취용으로 내보낸다.
+
+    `--export-samples` 와 다른 점은 클래스당 균등 표본이 아니라 **그 클래스가
+    데이터셋에 실제로 싣는 윈도우**를 대상으로 한다는 것이다. `--audit-n 0` 이면
+    전량 — test 셋 라벨 품질을 통째로 확인할 때 쓴다.
+
+    파일명: `{클래스}_{하위유형}_on{윈도우 onset}_{|dBFS|}dBFS_{클립}_{시작}.wav`
+    이름순으로 정렬하면 하위유형별로 묶이고 그 안에서 onset 오름차순이 된다 —
+    **각 묶음 앞쪽이 어택이 가장 약한, 즉 게이트 경계에 있는 표본**이다.
+    """
+    want = args.audit_cls
+    got = []
+    for r, path in rows:
+        if r["cls"] != want or r["split"] != args.audit_split:
+            continue
+        x = load_audio(path)
+        if x is None:
+            continue
+        res = analyze_clip(r, x, args, tagger)
+        if res["cls"] != want:                 # 게이트 탈락분은 이 클래스가 아니다
+            continue
+        picked = choose(res, 10 ** (args.floor_db / 20.0), args.rel_ratio,
+                        args.max_win, tag_ok(res, tag_thresholds(args), args.tag_bg_thr))[0]
+        for i in picked:
+            got.append((r, res, int(i), prepare_audio(x, r, args, getattr(args, "pool", None))[0]))
+
+    rng = np.random.default_rng(args.seed)
+    if args.audit_n and len(got) > args.audit_n:
+        sel = sorted(rng.choice(len(got), args.audit_n, replace=False))
+        got = [got[i] for i in sel]
+
+    out = args.sample_dir
+    os.makedirs(out, exist_ok=True)
+    records = []
+    for r, res, i, x in got:
+        s = int(res["starts"][i])
+        sub = {"shatter": "shatter", "pass": "glassonly"}.get(res["gate"], "-")
+        onw = float(res["onset_win"][i]) if res["onset_win"] is not None else float("nan")
+        db = 20.0 * np.log10(max(float(res["rms"][i]), 1e-12))
+        stem = os.path.splitext(r["clip_id"])[0]
+        name = (f"{res['cls']}_{sub}_on{onw:03.0f}_{abs(db):03.0f}dBFS_"
+                f"{stem}_{s}.wav")
+        sf.write(os.path.join(out, name), x[s:s + WIN], SR)
+        tag = float(res["tag"][i]) if res["tag"] is not None else float("nan")
+        records.append([name, res["cls"], sub, r["split"], r["source"], r["clip_id"],
+                        r["fsid"], s, f"{onw:.1f}", f"{res['onset']:.1f}",
+                        f"{db:.1f}", "" if tag != tag else f"{tag:.4f}",
+                        res["top"][i] if res["top"] else "", fill_note(res["fill"])])
+    with open(os.path.join(out, "samples.csv"), "w", newline="",
+              encoding="utf-8") as f:
+        wr = csv.writer(f)
+        wr.writerow(["file", "cls", "subtype", "split", "source", "clip_id", "fsid",
+                     "start_sample", "onset_window", "onset_clip", "rms_dbfs",
+                     "tag_score", "tag_top_label", "fill"])
+        wr.writerows(sorted(records))
+
+    sub_n = Counter(x[2] for x in records)
+    print(f"{want}/{args.audit_split} 감사 표본 {len(records)}개 → {out}")
+    print("  하위유형: " + ", ".join(f"{k} {v}" for k, v in sub_n.most_common()))
+    if records:
+        onw = np.array([float(x[8]) for x in records])
+        print(f"  윈도우 onset: 최소 {onw.min():.1f} / 중앙 {np.median(onw):.1f} "
+              f"/ 최대 {onw.max():.1f}")
 
 
 # ──────────────────────────────────────────────────────────── 캐시 생성
@@ -1077,18 +1287,19 @@ def build(rows, args, tagger):
             done.add(key)
             continue
 
-        x = pad_to_win(x)
+        x = prepare_audio(x, r, args, getattr(args, "pool", None))[0]
 
         def emit(cls_out, j, note):
             wk = (cls_out, r["split"])
             if wk not in writers:
                 writers[wk] = ShardWriter(args.out, cls_out, r["split"])
             s = int(res["starts"][j])
-            writers[wk].add(to_int8(x[s:s + WIN]), r["clip_id"], r["fsid"], s, note)
+            key = f"{r['clip_id']}:{s}" if args.zero_dither else None
+            writers[wk].add(to_int8(x[s:s + WIN], key), r["clip_id"], r["fsid"], s, note)
             stats[f"채택:{cls_out}"] += 1
 
         for j in picked:
-            emit(c, j, res["note"])
+            emit(c, j, " ".join(filter(None, [res["note"], fill_note(res["fill"])])))
         # relabel override — 다른 클래스로 보낸다. choose 는 현재 클래스에서
         # 이미 뺐으므로 여기서만 기록한다.
         for i, s in enumerate(res["starts"]):
@@ -1124,7 +1335,7 @@ def build(rows, args, tagger):
     print(f"\n캐시: {args.out}")
 
 
-def main():
+def build_parser():
     ap = argparse.ArgumentParser()
     ap.add_argument("--manifest", default="data/interim/manifest.csv")
     ap.add_argument("--fsd-dir", default="data/raw/FSD50K_clips")
@@ -1136,9 +1347,10 @@ def main():
                     help="청취 판정 override CSV (없으면 무시). `load_overrides` 참조")
 
     g = ap.add_argument_group("에너지 필터")
-    g.add_argument("--floor-db", type=float, default=-60.0,
-                   help="절대 하한 (dBFS). 무음 제거 전용, 낮게 잡는다. "
-                        "끄려면 --floor-db=-inf")
+    g.add_argument("--floor-db", type=float, default=-50.0,
+                   help="절대 하한 (dBFS). 기본 −50 은 하드웨어에서 유도한 값이다 "
+                        "(MAX78000 입력 8bit ±127 → −50dBFS 는 크레스트 팩터 15dB 를 "
+                        "가정해도 피크가 1 LSB 언저리다). 끄려면 --floor-db=-inf")
     g.add_argument("--rel-ratio", type=float, default=0.30,
                    help="클립 후보 최대 RMS 대비 비율 (0~1, 진폭 기준)")
     g.add_argument("--hop-ms", type=int, default=250,
@@ -1157,6 +1369,19 @@ def main():
     g.add_argument("--glass-reject", choices=["background", "drop"],
                    default="background",
                    help="게이트 탈락 Glass-only 클립 처리 (기본: 하드 네거티브, 규칙 3-1)")
+
+    g = ap.add_argument_group("짧은 클립 채움")
+    g.add_argument("--fill-mode", choices=["background", "zero"], default="background",
+                   help="1초 미만 클립의 빈 구간 처리. background=같은 split 의 조용한 "
+                        "배경 구간(기본), zero=0 패딩(이전 동작, 대조용)")
+    g.add_argument("--fill-db", type=float, default=-25.0,
+                   help="채움 배경의 레벨 — 이벤트 RMS 대비 dB (기본 −25)")
+    g.add_argument("--fill-fade-ms", type=float, default=2.0,
+                   help="이벤트 가장자리 페이드 (ms). 경계 클릭이 인공 단서가 되는 것을 막는다")
+    g.add_argument("--fill-pool-clips", type=int, default=48,
+                   help="split 별 채움용 배경 클립 수")
+    g.add_argument("--no-zero-dither", dest="zero_dither", action="store_false",
+                   help="디지털 0 샘플에 ±1 LSB 잡음을 넣지 않는다 (대조용)")
 
     g = ap.add_argument_group("태거 필터 (PANNs)")
     g.add_argument("--no-tagger", action="store_true", help="태거 필터 끄기")
@@ -1193,6 +1418,11 @@ def main():
     g.add_argument("--report-out", default="docs/results/label-noise-filter.md")
     g.add_argument("--export-samples", action="store_true",
                    help="청취용 표본 wav 추출 (채택된 윈도우)")
+    g.add_argument("--export-audit", action="store_true",
+                   help="한 클래스·split 의 실제 채택 윈도우를 내보낸다 (전수 감사)")
+    g.add_argument("--audit-cls", default="glass")
+    g.add_argument("--audit-split", choices=SPLITS, default="test")
+    g.add_argument("--audit-n", type=int, default=0, help="0=전량, N=무작위 N개")
     g.add_argument("--export-rejected", action="store_true",
                    help="태거가 거른 경계 윈도우 추출 (임계값 검증용)")
     g.add_argument("--reject-band", type=float, nargs=2, default=[0.02, 0.10],
@@ -1204,18 +1434,42 @@ def main():
                    help="클래스별 N클립만 무작위 추출 (민감도표·청취 표본용)")
     g.add_argument("--seed", type=int, default=0)
     g.add_argument("--restart", action="store_true", help="진행 상태 무시하고 처음부터")
-    args = ap.parse_args()
-    args.hop = max(1, int(SR * args.hop_ms / 1000))
+    return ap
 
+
+def finalize(args, quiet=False):
+    """파싱된 인자를 실행 가능한 상태로 만든다 — 파생값·override·채움 풀.
+
+    CLI 와 `tools/` 의 분석 도구가 **같은 기본값**을 쓰도록 한 곳에 모았다.
+    """
+    args.hop = max(1, int(SR * args.hop_ms / 1000))
     rels = [args.rel_ratio] + (args.sweep_rel if args.sweep else [])
     if any(not 0.0 <= v <= 1.0 for v in rels):
-        ap.error("rel 비율은 0~1 이어야 한다")
+        sys.exit("[에러] rel 비율은 0~1 이어야 한다")
     args.thr = tag_thresholds(args)              # 형식 오류를 먼저 잡는다
     args.ov = load_overrides(args.overrides)
-    if args.ov:
+    if args.ov and not quiet:
         print(f"청취 override {len(args.ov)}행 — {args.overrides}")
+    args.roots = {"fsd": args.fsd_dir, "us8k": args.us8k_dir, "esc50": args.esc50_dir}
+    # 채움 풀은 lazy 다 — 1초 미만 클립이 없으면 배경음을 한 개도 읽지 않는다.
+    args.pool = (FillerPool(args.manifest, args.roots, args)
+                 if args.fill_mode == "background" else None)
+    return args
 
-    roots = {"fsd": args.fsd_dir, "us8k": args.us8k_dir, "esc50": args.esc50_dir}
+
+def default_args(**kw):
+    """CLI 기본값으로 만든 args (도구·노트북용). 키워드로 일부만 덮어쓴다."""
+    args = build_parser().parse_args([])
+    for k, v in kw.items():
+        if not hasattr(args, k):
+            sys.exit(f"[에러] 알 수 없는 인자: {k}")
+        setattr(args, k, v)
+    return finalize(args, quiet=True)
+
+
+def main():
+    args = finalize(build_parser().parse_args())
+    roots = args.roots
     rows = iter_rows(args.manifest, roots, args.limit, args.per_class, args.seed)
     if not rows:
         sys.exit("[에러] 처리할 오디오가 없다. 먼저 download_clips.py 를 실행할 것.")
@@ -1230,6 +1484,8 @@ def main():
     tagger = None if args.no_tagger else Tagger(args)
     if args.filter_report:
         filter_report(rows, args, tagger)
+    elif args.export_audit:
+        export_audit(rows, args, tagger)
     elif args.export_rejected:
         export_rejected(rows, args, tagger)
     elif args.export_samples:

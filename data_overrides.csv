@@ -52,3 +52,4 @@ clip_id,start_sample,action,cls,reason
 344037,0,keep,scream,청취 비명 맞음 (태거가 놓침); 태거 0.0895 top=Screaming
 345933,0,keep,scream,청취 비명 맞음 (태거가 놓침); 태거 0.0360 top=Music
 353288,12000,keep,scream,청취 비명 맞음 (태거가 놓침); 태거 0.0262 top=Whir
+379138,*,drop,background,"무음 감사: 창 3개가 전부 −54~−56dBFS. MAX78000 입력 8bit ±127 기준 피크가 1 LSB 언저리라 양자화 후 신호가 남지 않는다 (tools/audit_silence.py)"
