@@ -127,13 +127,26 @@ PY
 |---|---|
 | `--qat-policy` | MAX78000 은 QAT 필수 (CLAUDE.md 3장). 60 epoch 부터 8bit |
 | `--confusion` | **혼동행렬이 1순위 산출물**. 배경음 3배라 전체 정확도는 과대평가된다 |
+
+**클래스 가중치는 데이터로더가 들고 있다.** `datasets/safesound.py` 의
+`class_weights()` 가 역빈도(`N/(K·n_c)`)를 계산해 `datasets` 딕셔너리의 `weight`
+로 넘기고, ai8x 가 그대로 `nn.CrossEntropyLoss(weight=...)` 에 넣는다 (train.py:452).
+v1 값은 siren 4.93 / glass 5.45 / scream 5.30 / dog_bark 1.35 / background 0.27 이다.
+
+> 배경음만 낮추는 것으로는 부족하다 — 이벤트끼리도 dog_bark 1,934 vs glass 477 로
+> **4배** 차이라, 가중치 없이 학습하면 dog_bark 쪽으로 기울고 정작 취약한
+> glass·siren 재현율이 낮게 수렴한다. 정규화가 `N/(K·n_c)` 라 표본당 평균
+> 가중치가 1이므로 학습률을 다시 잡을 필요는 없다.
+> 재집계로 수량이 바뀌면 `class_weights('<샤드 경로>')` 로 다시 뽑아 상수를 갱신할 것.
 | `--deterministic` | 논문 재현 절차에 시드 고정이 필요하다 |
 | `--device MAX78000` | 지원 연산·반올림 규칙을 학습에 반영 |
 
 > Colab 무료 티어는 세션이 끊긴다. `logs` 가 Drive 심볼릭 링크라 체크포인트는
 > 남는다. 재개는 `--resume-from logs/safesound-v1/checkpoint.pth.tar`.
 
-### 셀 8 — 혼동행렬·클래스별 지표 뽑기
+### 셀 8 — 혼동행렬·클래스별 지표 뽑기 (두 단위 + 신뢰구간)
+
+먼저 ai8x 자체 평가(창 단위, 로그 대조용):
 
 ```python
 %cd /content/ai8x-training
@@ -143,8 +156,29 @@ PY
   --confusion --batch-size 128 --out-dir logs --name safesound-v1-eval
 ```
 
-> 로그의 혼동행렬을 `docs/results/` 로 옮겨 적을 것. **macro-F1 과 클래스별
-> 재현율을 함께** 기록한다 — 특히 siren(원본 129개)과 glass 가 취약 후보다.
+그다음 **원본 단위까지** 내는 우리 스크립트:
+
+```python
+!conda run -n ai8x --no-capture-output python /content/max78000-proj/tools/eval_confusion.py \
+  --checkpoint logs/safesound-v1/best.pth.tar \
+  --data /content/ai8x-training/data --ai8x /content/ai8x-training
+```
+
+내는 것이 셋이다.
+
+1. **창 단위 혼동행렬** — ai8x 로그와 대조된다
+2. **원본 단위 혼동행렬** — 같은 `fsid` 의 창들을 다수결로 묶는다. 동점은 정답을
+   **피하는 쪽**으로 깨어 성능을 부풀리지 않는다
+3. **클래스별 재현율 95% 신뢰구간** — **원본을 복원추출**하는 부트스트랩
+
+> ⚠️ 창 단위 숫자만 논문에 쓰지 말 것. 한 원본에서 여러 창이 나오므로 창을
+> 독립 표본으로 세면 신뢰구간이 실제보다 좁아진다 (CLAUDE.md 5장 규칙 1).
+> 실기기의 체감 단위도 창이 아니라 "이 소리를 맞혔나"다 — 이벤트 병합
+> 상태머신이 연속 추론을 하나로 묶기 때문이다 (6장).
+>
+> 결과는 `docs/results/` 에 옮겨 적는다. **두 단위의 macro-F1 과 클래스별
+> 재현율·CI를 함께** 기록할 것 — siren(test 원본 54개)과 glass(147개)가
+> 취약 후보이고, 원본이 적은 만큼 CI 가 넓게 나올 것이다.
 
 ### 셀 9 — 체크포인트 Drive 백업
 
@@ -171,8 +205,12 @@ python ai8xize.py --test-dir out --prefix safesound --checkpoint-file safesound-
 
 ## 3. 확인할 것 / 함정
 
-- **전체 정확도를 성과로 쓰지 말 것.** 배경음이 이벤트 합의 약 3배라 전부
-  배경음으로 찍어도 75% 가 나온다. 혼동행렬 → 클래스별 재현율 → macro-F1 순으로 본다
+- **전체 정확도를 성과로 쓰지 말 것.** 배경음이 이벤트 합의 약 2.8배라 전부
+  배경음으로 찍어도 74% 가 나온다. 혼동행렬 → 클래스별 재현율 → macro-F1 순으로 본다
+- **목표 미달 클래스(siren 528 / glass 477 / scream 491, 목표 train 800)는
+  기준선 결과를 보고 판단한다.** 지금 추가 수집하지 않는다 — 재현율이 이미
+  쓸 만하면 수집은 낭비이고, 낮더라도 원인이 수량인지 라벨 품질인지
+  혼동행렬을 봐야 갈린다
 - **scream ↔ background 혼동**을 먼저 볼 것. 태거 임계값 0.025 로 내리면서 약 45%
   오염을 감수했다 (`docs/results/listening-verification.md` 4.2). 이 혼동이 크면
   임계값을 0.10 으로 되돌리는 판단이 선다

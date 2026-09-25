@@ -200,17 +200,50 @@ def safesound_get_datasets(data, load_train=True, load_test=True):
     return train_ds, test_ds
 
 
-# 배경음 가중치는 실측 비율의 역수다(약 3배 → 0.34). 그대로 두면 손실이 배경음에
-# 끌려간다. ⚠️ 이 값은 **오탐률을 보고 조정할 파라미터**다 — 낮추면 배경음을 덜
-# 배워 오탐이 늘고, 높이면 이벤트 재현율이 떨어진다. G7 측정 후 재설정하고 바꾼
-# 값과 그때의 오탐률을 논문에 함께 적는다 (CLAUDE.md 7장).
-# 비율 자체는 재집계 때마다 확인할 것 (docs/results/label-noise-filter.md B절).
+def class_weights(root=None, d_type="train", counts=None):
+    """역빈도 클래스 가중치 — `nn.CrossEntropyLoss(weight=...)` 로 들어간다.
+
+    `w_c = N / (K · n_c)`. 이 정규화는 **표본당 평균 가중치를 1로** 유지하므로
+    손실 크기가 변하지 않는다(학습률을 다시 잡을 필요가 없다).
+
+    배경음만 낮추는 것으로는 부족하다. v1 실측에서 이벤트 클래스끼리도
+    dog_bark 1,934 vs glass 477 로 **4배** 차이가 난다 — 가중치를 주지 않으면
+    모델이 dog_bark 쪽으로 기울고, 정작 취약한 glass·siren 의 재현율이 낮게
+    수렴한다. 5클래스 전부에 건다.
+
+    `root` 를 주면 인덱스 CSV 에서 실측해 계산한다(재집계 후 값 갱신용).
+    주지 않으면 v1 상수를 쓴다 — ai8x 는 `datasets` 딕셔너리를 import 시점에
+    읽는데 그때 데이터가 없을 수 있어 상수가 필요하다.
+    """
+    if counts is None and root:
+        counts = []
+        for cls in CLASSES:
+            idx = os.path.join(root, d_type, cls, "index.csv")
+            with open(idx, encoding="utf-8") as f:
+                counts.append(sum(1 for _ in csv.DictReader(f)))
+    counts = counts or V1_TRAIN_COUNTS
+    n = sum(counts)
+    k = len(counts)
+    return tuple(round(n / (k * c), 4) if c else 0.0 for c in counts)
+
+
+# v1 실측 train 창 수 (docs/results/label-noise-filter.md B절, 태그 dataset-v1).
+# ⚠️ 재집계하면 `python3 -c "import safesound; print(safesound.class_weights('<root>'))"`
+# 로 다시 뽑아 아래를 갱신할 것 — 수량이 바뀌었는데 가중치가 그대로면 조용히 틀어진다.
+V1_TRAIN_COUNTS = (528, 477, 491, 1934, 9577)   # siren/glass/scream/dog_bark/background
+
+# → siren 4.93 / glass 5.45 / scream 5.30 / dog_bark 1.35 / background 0.27
+# background 0.27 은 오탐률을 보고 조정할 파라미터다 — 낮추면 배경음을 덜 배워
+# 오탐이 늘고, 높이면 이벤트 재현율이 떨어진다. G7 측정 후 재설정하고, 바꾼 값과
+# 그때의 오탐률을 논문에 함께 적는다 (CLAUDE.md 7장).
+# 균형 샘플러(WeightedRandomSampler)도 대안이지만 ai8x 의 train.py 가 DataLoader 를
+# 직접 만들기 때문에 패치가 필요하다. 가중 손실이 같은 목적을 패치 없이 달성한다.
 datasets = [
     {
         "name": "SafeSound",
         "input": (128, 128),
         "output": tuple(CLASSES),
-        "weight": (1, 1, 1, 1, 0.34),
+        "weight": class_weights(),
         "loader": safesound_get_datasets,
     },
 ]
