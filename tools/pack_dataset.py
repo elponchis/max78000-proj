@@ -98,10 +98,15 @@ def main():
     with open(mpath, "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
 
+    # 빌드 진행 상태 파일은 학습에 쓰이지 않는다 (이어하기용 로컬 상태).
+    # 넣으면 Colab 에서 푸는 용량만 늘고 오해를 부른다.
+    SKIP = {"progress.json"}
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
     print(f"묶는 중 → {a.out}")
     with tarfile.open(a.out, "w:gz") as tf:
         for name in sorted(os.listdir(a.root)):
+            if name in SKIP:
+                continue
             tf.add(os.path.join(a.root, name), arcname=name)
 
     h = hashlib.sha256()
