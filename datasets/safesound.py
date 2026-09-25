@@ -97,7 +97,10 @@ class SafeSound(Dataset):
                     self.index.append((target, shard, int(r["row"]),
                                        int(r.get("left_margin", MARGIN)),
                                        int(r.get("right_margin", MARGIN))))
-                    self.meta.append((r["clip_id"], r["fsid"]))
+                    # start_sample 은 평가에서 **클립 내 창 순서**로 쓴다
+                    # (tools/eval_confusion.py 의 N프레임 다수결)
+                    self.meta.append((r["clip_id"], r["fsid"],
+                                      int(r["start_sample"])))
         if not self.index:
             sys.exit(f"[에러] 샤드가 없다: {root}/{d_type}. "
                      "먼저 prepare_safesound.py 를 실행할 것.")
@@ -200,7 +203,7 @@ def safesound_get_datasets(data, load_train=True, load_test=True):
     return train_ds, test_ds
 
 
-def class_weights(root=None, d_type="train", counts=None):
+def class_weights(root=None, d_type="train", counts=None, power=1.0):
     """역빈도 클래스 가중치 — `nn.CrossEntropyLoss(weight=...)` 로 들어간다.
 
     `w_c = N / (K · n_c)`. 이 정규화는 **표본당 평균 가중치를 1로** 유지하므로
@@ -214,6 +217,11 @@ def class_weights(root=None, d_type="train", counts=None):
     `root` 를 주면 인덱스 CSV 에서 실측해 계산한다(재집계 후 값 갱신용).
     주지 않으면 v1 상수를 쓴다 — ai8x 는 `datasets` 딕셔너리를 import 시점에
     읽는데 그때 데이터가 없을 수 있어 상수가 필요하다.
+
+    `power` 는 완화 지수다. **기준선은 1.0(순수 역빈도)** 이고, 오탐률이 나쁘면
+    `0.5`(제곱근 역빈도)로 낮춘다 — 배경음 가중치가 0.27 에서 0.52 로 올라가
+    배경음을 더 배우고 이벤트 재현율을 일부 내준다. 오탐률/재현율 맞교환이므로
+    `tools/eval_confusion.py` 의 시간당 오경보 수치를 보고 정한다.
     """
     if counts is None and root:
         counts = []
@@ -222,9 +230,11 @@ def class_weights(root=None, d_type="train", counts=None):
             with open(idx, encoding="utf-8") as f:
                 counts.append(sum(1 for _ in csv.DictReader(f)))
     counts = counts or V1_TRAIN_COUNTS
-    n = sum(counts)
     k = len(counts)
-    return tuple(round(n / (k * c), 4) if c else 0.0 for c in counts)
+    raw = [(1.0 / c) ** power if c else 0.0 for c in counts]
+    # 표본당 평균 가중치를 1로 맞춘다 — 손실 크기가 변하지 않아 학습률을 그대로 쓴다
+    s = sum(c * w for c, w in zip(counts, raw)) / sum(counts)
+    return tuple(round(w / s, 4) for w in raw)
 
 
 # v1 실측 train 창 수 (docs/results/label-noise-filter.md B절, 태그 dataset-v1).

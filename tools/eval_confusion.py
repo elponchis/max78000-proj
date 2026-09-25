@@ -112,6 +112,83 @@ def bootstrap_recall_ci(fsids, y_true, y_pred, k, n_boot=2000, seed=0):
 
 
 # ──────────────────────────────────────────────────────────── 출력
+def false_alarm_report(clips, starts, y_true, y_pred, names, hop_ms, ns=(1, 2, 3)):
+    """배경음 창의 오탐률과 **시간당 오경보 횟수**.
+
+    상시 동작 시스템에서 사용자가 겪는 것은 정확도가 아니라 **오경보 빈도**다.
+    hop 250ms 면 초당 4회, 시간당 14,400회 추론하므로 창 단위 오탐률 0.1% 라도
+    시간당 14회가 울린다. G7(무인 구동)의 실질 기준이라 따로 낸다.
+
+    N프레임 다수결은 펌웨어의 이벤트 병합 상태머신(CLAUDE.md 6장)을 근사한다.
+    **엄격 다수**(> N/2)를 요구한다 — N=2 는 2창 모두, N=3 은 2창 이상이
+    같은 이벤트여야 울린다.
+
+    ⚠️ **근사의 한계를 같이 출력한다.** 테스트셋의 창은 클립당 최대 3개를
+    점수 순으로 고른 것이라 시간적으로 인접하지 않는다(실제 hop 은 4,000샘플,
+    여기 간격은 그보다 훨씬 크다). 실기기에서 연속 프레임은 0.75초를 겹쳐 서로
+    강하게 상관되므로, 여기서 구한 N프레임 감소폭은 **낙관적으로도 비관적으로도**
+    실기기와 다를 수 있다. 확정 수치는 보드에서 8시간 무인 구동으로 잰다.
+    """
+    bg = len(names) - 1                       # background 는 마지막 클래스
+    sel = y_true == bg
+    n_bg = int(sel.sum())
+    if not n_bg:
+        print("\n[오탐률] 배경음 창이 없다 — 건너뜀")
+        return
+    per_hour = 3600.0 / (hop_ms / 1000.0)     # hop 250ms → 14,400
+    fp = y_pred[sel] != bg
+
+    print(f"\n=== 배경음 오탐률 / 시간당 오경보 (hop {hop_ms}ms → 시간당 "
+          f"{per_hour:,.0f}회 추론) ===")
+    print(f"  배경음 창 {n_bg}개 중 이벤트로 분류 {int(fp.sum())}개 "
+          f"= **{fp.mean():.3%}**  →  시간당 **{fp.mean() * per_hour:,.1f}회**")
+    print(f"\n  {'오경보 클래스':<14}{'창':>7}{'비율':>9}{'시간당':>10}")
+    print("  " + "-" * 40)
+    for c in range(bg):
+        n_c = int((y_pred[sel] == c).sum())
+        if n_c:
+            r = n_c / n_bg
+            print(f"  {names[c]:<14}{n_c:>7}{r:>8.3%}{r * per_hour:>9.1f}회")
+
+    # ── N프레임 다수결
+    order = collections.defaultdict(list)
+    for i in np.where(sel)[0]:
+        order[clips[i]].append((starts[i], int(y_pred[i])))
+    gaps = []
+    for v in order.values():
+        v.sort()
+        gaps += [b[0] - a[0] for a, b in zip(v, v[1:])]
+
+    print(f"\n  {'N':>3}{'판정 지점':>10}{'오경보':>8}{'비율':>10}{'시간당':>10}")
+    print("  " + "-" * 42)
+    for n in ns:
+        alarms = points = 0
+        for v in order.values():
+            seq = [p for _s, p in sorted(v)]
+            for i in range(len(seq) - n + 1):
+                points += 1
+                cnt = collections.Counter(seq[i:i + n])
+                lab, top = cnt.most_common(1)[0]
+                if top > n / 2 and lab != bg:
+                    alarms += 1
+        if points:
+            r = alarms / points
+            print(f"  {n:>3}{points:>10}{alarms:>8}{r:>9.3%}{r * per_hour:>9.1f}회")
+        else:
+            print(f"  {n:>3}{points:>10}{'—':>8}{'—':>10}{'—':>10}  (창 부족)")
+
+    if gaps:
+        g = np.array(gaps)
+        adjacent = float((g == int(16000 * hop_ms / 1000)).mean())
+        print(f"\n  ⚠️ N프레임 수치는 **근사**다. 같은 클립에서 고른 창들의 간격이"
+              f"\n     중앙값 {np.median(g):,.0f}샘플({np.median(g)/16000:.1f}초)이고,"
+              f" 실제 hop {int(16000*hop_ms/1000):,}샘플과"
+              f"\n     붙어 있는 쌍은 {adjacent:.1%} 뿐이다. 실기기의 연속 프레임은"
+              f" 0.75초를 겹쳐"
+              f"\n     서로 강하게 상관되므로 감소폭이 다르게 나온다 — 확정치는"
+              f" 보드 8시간 구동으로 잰다.")
+
+
 def print_matrix(m, names, title):
     print(f"\n{title}")
     w = max(9, max(len(n) for n in names) + 1)
@@ -126,7 +203,8 @@ def print_matrix(m, names, title):
     print(" " * w + "(열 = 예측)")
 
 
-def report(fsids, y_true, y_pred, names, n_boot, seed):
+def report(fsids, y_true, y_pred, names, n_boot, seed,
+           clips=None, starts=None, hop_ms=250):
     k = len(names)
     print_matrix(confusion(y_true, y_pred, k), names, "=== 창 단위 혼동행렬 ===")
     print(f"  macro-F1 {macro_f1(y_true, y_pred, k):.4f}   창 {len(y_true)}개")
@@ -146,6 +224,9 @@ def report(fsids, y_true, y_pred, names, n_boot, seed):
         print(f"{n:<12}{cnt:>7}{rec[c]:>8.1%}   [{lo[c]:>6.1%}, {hi[c]:>6.1%}]")
     print("\n  ⚠️ 구간은 **원본 수**로 계산했다. 창 수로 내면 같은 녹음의 창들을")
     print("     독립 표본으로 세어 실제보다 좁게 나온다 (CLAUDE.md 5장 규칙 1).")
+
+    if clips is not None and starts is not None:
+        false_alarm_report(clips, starts, y_true, y_pred, names, hop_ms)
 
 
 # ──────────────────────────────────────────────────────────── 추론
@@ -179,7 +260,7 @@ def run_inference(args, names):
     ds = S.SafeSound(os.path.join(args.data, "SafeSound"), "test",
                      transform=ai8x.normalize(args=argparse.Namespace(
                          act_mode_8bit=args.simulate)), augment=False)
-    fsids, y_true, y_pred = [], [], []
+    fsids, clips, starts, y_true, y_pred = [], [], [], [], []
     with torch.no_grad():
         for i in range(0, len(ds), args.batch_size):
             xs, ts = [], []
@@ -187,13 +268,17 @@ def run_inference(args, names):
                 x, t = ds[j]
                 xs.append(x)
                 ts.append(t)
-                fsids.append(ds.meta[j][1])
+                clip_id, fsid, start = ds.meta[j]
+                fsids.append(fsid)
+                clips.append(clip_id)
+                starts.append(start)
             out = model(torch.stack(xs))
             y_pred += out.argmax(1).tolist()
             y_true += ts
             if i % (args.batch_size * 20) == 0:
                 print(f"  추론 {i}/{len(ds)}", flush=True)
-    return np.array(fsids), np.array(y_true), np.array(y_pred)
+    return (np.array(fsids), np.array(clips), np.array(starts),
+            np.array(y_true), np.array(y_pred))
 
 
 def self_test(names, seed=0):
@@ -203,17 +288,21 @@ def self_test(names, seed=0):
     재현율이 높아야** 한다는 것을 확인한다. 동점 처리도 함께 본다.
     """
     rng = np.random.default_rng(seed)
-    fsids, y_true, y_pred = [], [], []
+    fsids, clips, starts, y_true, y_pred = [], [], [], [], []
     for c in range(len(names)):
         for o in range(40):
             f = f"c{c}o{o}"
             for w in range(3):
                 fsids.append(f)
+                clips.append(f)
+                starts.append(16000 * (w + 1))       # 창 순서 (간격은 1초)
                 y_true.append(c)
                 # 창 하나는 틀리게 (다수결이면 살아난다)
                 y_pred.append(c if w != 2 else int(rng.integers(len(names))))
     fsids, y_true, y_pred = np.array(fsids), np.array(y_true), np.array(y_pred)
-    report(fsids, y_true, y_pred, names, 500, seed)
+    clips, starts = np.array(clips), np.array(starts)
+    report(fsids, y_true, y_pred, names, 500, seed,
+           clips=clips, starts=starts, hop_ms=250)
 
     k = len(names)
     win = np.mean(recalls(y_true, y_pred, k))
@@ -239,6 +328,8 @@ def main():
     ap.add_argument("--bias", action="store_true")
     ap.add_argument("--simulate", action="store_true",
                     help="act_mode_8bit — 양자화 체크포인트 평가 시")
+    ap.add_argument("--hop-ms", type=int, default=250,
+                    help="상시 추론 주기 — 시간당 오경보 환산에 쓴다 (250ms → 14,400회/h)")
     ap.add_argument("--n-boot", type=int, default=2000)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--self-test", action="store_true",
@@ -253,8 +344,9 @@ def main():
         return
     if not a.checkpoint:
         sys.exit("[에러] --checkpoint 가 필요하다 (또는 --self-test)")
-    fsids, y_true, y_pred = run_inference(a, names)
-    report(fsids, y_true, y_pred, names, a.n_boot, a.seed)
+    fsids, clips, starts, y_true, y_pred = run_inference(a, names)
+    report(fsids, y_true, y_pred, names, a.n_boot, a.seed,
+           clips=clips, starts=starts, hop_ms=a.hop_ms)
 
 
 if __name__ == "__main__":
