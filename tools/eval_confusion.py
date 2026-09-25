@@ -180,13 +180,17 @@ def false_alarm_report(clips, starts, y_true, y_pred, names, hop_ms, ns=(1, 2, 3
     if gaps:
         g = np.array(gaps)
         adjacent = float((g == int(16000 * hop_ms / 1000)).mean())
-        print(f"\n  ⚠️ N프레임 수치는 **근사**다. 같은 클립에서 고른 창들의 간격이"
-              f"\n     중앙값 {np.median(g):,.0f}샘플({np.median(g)/16000:.1f}초)이고,"
-              f" 실제 hop {int(16000*hop_ms/1000):,}샘플과"
-              f"\n     붙어 있는 쌍은 {adjacent:.1%} 뿐이다. 실기기의 연속 프레임은"
-              f" 0.75초를 겹쳐"
-              f"\n     서로 강하게 상관되므로 감소폭이 다르게 나온다 — 확정치는"
-              f" 보드 8시간 구동으로 잰다.")
+        print(f"\n  ⚠️ **이 N프레임 수치는 하한(낙관치)이며 논문에 쓰지 않는다.**"
+              f"\n     같은 클립에서 고른 창들의 간격이 중앙값"
+              f" {np.median(g):,.0f}샘플({np.median(g)/16000:.1f}초)이고, 실제 hop"
+              f" {int(16000*hop_ms/1000):,}샘플과"
+              f"\n     붙어 있는 쌍은 {adjacent:.1%} 뿐이다. 떨어진 창들의 오류는 서로"
+              f" 독립에 가까워"
+              f"\n     다수결이 실제보다 잘 듣는다 — 실기기의 연속 프레임은 0.75초를"
+              f" 겹쳐 오류가 함께"
+              f"\n     가므로 감소폭이 반드시 더 작다. **항상 낙관적으로 틀린다.**"
+              f"\n     논문에 쓸 수치는 `tools/stream_eval.py`(빈틈없는 스트리밍)와"
+              f"\n     보드 8시간 무인 구동에서 얻는다.")
 
 
 def print_matrix(m, names, title):
@@ -230,32 +234,51 @@ def report(fsids, y_true, y_pred, names, n_boot, seed,
 
 
 # ──────────────────────────────────────────────────────────── 추론
+def load_model(checkpoint, n_classes, ai8x_dir, simulate=False, bias=False,
+               random_init=False):
+    """ai8x 모델을 만들고 체크포인트를 얹는다. `tools/stream_eval.py` 도 쓴다.
+
+    QAT 체크포인트는 키가 어긋날 수 있어 `strict=False` 로 얹고 불일치 수를
+    보고한다 — 조용히 무작위 가중치로 평가하는 것을 막기 위해서다.
+    """
+    import importlib.util
+
+    import torch
+    import ai8x
+
+    sys.path.insert(0, ai8x_dir)
+    ai8x.set_device(85, simulate, False)
+
+    spec = importlib.util.spec_from_file_location(
+        "ai85net_safesound", os.path.join(REPO, "models", "ai85net-safesound.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    model = mod.AI85SafeSoundNet(num_classes=n_classes, bias=bias)
+
+    if random_init:
+        print("  [주의] --random-init — 배선 검증용이다. 수치에 의미 없음")
+    else:
+        ck = torch.load(checkpoint, map_location="cpu", weights_only=False)
+        sd = ck.get("state_dict", ck)
+        sd = {k.replace("module.", ""): v for k, v in sd.items()}
+        missing, unexpected = model.load_state_dict(sd, strict=False)
+        if missing or unexpected:
+            print(f"  [주의] state_dict 불일치 — 누락 {len(missing)} / "
+                  f"초과 {len(unexpected)}")
+            print("         QAT 체크포인트면 ai8x train.py --evaluate 로 교차 확인할 것")
+    model.eval()
+    return model
+
+
 def run_inference(args, names):
-    """체크포인트로 테스트셋을 추론해 (fsid, 정답, 예측)."""
+    """체크포인트로 테스트셋을 추론해 (fsid, clip, start, 정답, 예측)."""
+    sys.path.insert(0, args.ai8x)                      # import 전에 넣어야 한다
     import torch
     import ai8x
     import safesound as S
 
-    sys.path.insert(0, args.ai8x)
-    ai8x.set_device(85, args.simulate, False)
-
-    spec = __import__("importlib.util", fromlist=["util"]).util.spec_from_file_location(
-        "ai85net_safesound", os.path.join(REPO, "models", "ai85net-safesound.py"))
-    mod = spec.loader.load_module() if hasattr(spec.loader, "load_module") else None
-    if mod is None:                                    # py3.12+ 경로
-        import importlib.util
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-    model = mod.AI85SafeSoundNet(num_classes=len(names), bias=args.bias)
-
-    ck = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
-    sd = ck.get("state_dict", ck)
-    sd = {k.replace("module.", ""): v for k, v in sd.items()}
-    missing, unexpected = model.load_state_dict(sd, strict=False)
-    if missing or unexpected:
-        print(f"  [주의] state_dict 불일치 — 누락 {len(missing)} / 초과 {len(unexpected)}")
-        print("         QAT 체크포인트면 ai8x 의 train.py --evaluate 로 교차 확인할 것")
-    model.eval()
+    model = load_model(args.checkpoint, len(names), args.ai8x, args.simulate,
+                       args.bias)
 
     ds = S.SafeSound(os.path.join(args.data, "SafeSound"), "test",
                      transform=ai8x.normalize(args=argparse.Namespace(

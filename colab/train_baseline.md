@@ -188,6 +188,28 @@ v1 값은 siren 4.93 / glass 5.45 / scream 5.30 / dog_bark 1.35 / background 0.2
 > 재현율·CI를 함께** 기록할 것 — siren(test 원본 54개)과 glass(147개)가
 > 취약 후보이고, 원본이 적은 만큼 CI 가 넓게 나올 것이다.
 
+### 셀 8b — 스트리밍 오탐 평가 (논문에 쓸 오경보 수치)
+
+```python
+!conda run -n ai8x --no-capture-output python /content/max78000-proj/tools/stream_eval.py \
+  --checkpoint logs/safesound-v1/best.pth.tar --ai8x /content/ai8x-training \
+  --manifest /content/max78000-proj/data/interim/manifest.csv \
+  --fsd-dir /content/max78000-proj/data/raw/FSD50K_clips \
+  --json /content/drive/MyDrive/max78000/stream-eval-pc.json
+```
+
+> ⚠️ **원본 오디오가 있어야 한다.** Colab 에는 샤드만 올라가 있으므로, 이 셀은
+> 원본이 있는 **WSL2 에서 돌리는 쪽이 간단하다**:
+> ```bash
+> # WSL2
+> ~/ai8x-training/venv/bin/python tools/stream_eval.py \
+>   --checkpoint <내려받은 best.pth.tar> --ai8x ~/ai8x-training \
+>   --json docs/results/stream-eval-pc.json
+> ```
+> CPU 로 충분하다. 셀 8의 N프레임 수치는 창이 떨어져 있어 **항상 낙관적**이라
+> 논문에 쓰지 않는다. 논문 수치는 이 스트리밍 평가와 보드 8시간 구동에서 나온다.
+> 두 결과를 같은 JSON 스키마로 내므로 PC vs 실기기 대조가 바로 된다 (G7).
+
 ### 셀 9 — 체크포인트 Drive 백업
 
 ```python
