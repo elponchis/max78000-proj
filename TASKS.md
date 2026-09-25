@@ -110,22 +110,27 @@
         glass 하위유형 게이트(Shatter 필수 / Glass-only 는 onset ≥ 8.0),
         hop 250ms 중첩 후보 + 겹침 없는 최종 선택, PANNs Cnn14(16k) 태거 필터
   - [x] 청취 검증으로 임계값 확정 → `docs/results/listening-verification.md`
-  - [ ] **수량 미달 대응** → 목표(train 800+/test 200+) 판정
-        배경음 확장까지 반영한 실측 (hop 250ms, 태거 glass 해제 / scream 0.025 /
-        siren·dog_bark 0.10, override 48행, 클립 9,782개):
+  - [x] **데이터셋 v1 확정 (`dataset-v1` 태그)** — 목표(train 800+/test 200+) 판정
+        최종 실측 (hop 250ms, int8 0비율 하한 0.95(이벤트만) / rel 0.30,
+        태거 glass 해제·scream 0.025·siren·dog_bark 0.10, override 49행,
+        클립 9,202개, 저장 1.2초 창):
 
-        | 클래스 | train | test | 목표 대비 |
-        |---|---:|---:|---|
-        | siren | 539 | 151 | train·test 모두 미달 |
-        | glass | 633 | 326 | train 미달 |
-        | scream | 490 | 228 | train 미달 |
-        | dog_bark | 1938 | 782 | 충족 |
-        | background | 10134 | 3988 | 이벤트 합의 2.82× / 2.68× |
+        | 클래스 | train 창 | test 창 | train 원본 | test 원본 | 목표 대비 |
+        |---|---:|---:|---:|---:|---|
+        | siren | 528 | 147 | 128 | 54 | train·test 미달 |
+        | glass | 477 | 221 | 336 | 147 | train 미달 |
+        | scream | 491 | 225 | 317 | 142 | train 미달 |
+        | dog_bark | 1,934 | 776 | 727 | 284 | 충족 |
+        | background | 9,577 | 3,838 | 4,509 | 1,604 | 이벤트 합의 2.79× / 2.80× |
+        | **합계** | **13,007** | **5,207** | | | 342MB / tar 140MB |
 
-        · 배경음은 규칙 4(2~3배)를 충족한다. 목표 2.5배보다 train 1,134창 많은데,
-          클립당 윈도우가 예측 1.97 보다 높은 2.15 로 나왔기 때문이다.
-          정확히 2.5배로 맞추려면 `BG_GENERAL_TRAIN` 3100→2570, `_TEST` 900→810
-          으로 줄여 매니페스트를 다시 만든다 (오디오 재다운로드 불필요)
+        · 배경음 비율은 규칙 4(2~3배) 안이다. 첫 집계에서 3.09배로 넘겨
+          `BG_GENERAL_TRAIN` 3100→2630, `_TEST` 900→790 으로 줄였다
+          (하드 네거티브는 유지 — 오탐 억제의 직접 근거다)
+        · **train 800 미달이 siren·glass·scream 3종이다.** 원본 자체가 부족한
+          문제라 증강(규칙 6)으로 대응하고, 학습 후 클래스별 재현율로 재판정한다
+        · 산출물: `data/safesound-v1.tar.gz` (sha256 `57557e07…`),
+          `MANIFEST.json`(설정·커밋 해시 포함), Colab 절차는 `colab/train_baseline.md`
         · siren train 800 은 상한을 4로 올려도 578 이라 도달 불가 —
           원본 자체가 부족하다(고유 원본 train 129). 증강 강화(규칙 6)로 대응
         · siren 상한은 3 유지 확정 (2026-09-22). 상한을 올려도 고유 원본 수가
@@ -262,6 +267,16 @@
 ## Phase 5 — 시스템 구현 및 측정
 
 - [ ] 합성 모델 펌웨어 이식, 마이크 실시간 파이프라인 구성
+- [ ] **I2S → int8 변환에 포화(saturation) 처리 — 필수** ⚠️
+      MSDK `kws20_demo/main.c:1229` 는 `micBuff[i] = sample*SAMPLE_SCALE_FACTOR/256`
+      로 int32 를 int8_t 에 그냥 대입한다. 클램프가 없어 **랩어라운드**다
+      (int16 10,000 → 156 → −100, 부호 반전). `HPF()` 는 int16 범위를 클리핑하지만
+      이 대입은 보호하지 않는다.
+      전처리 `to_int8` 은 `np.clip` 으로 포화시키므로, 펌웨어를 그대로 두면 큰
+      소리에서 학습 분포와 추론 분포가 정반대가 된다.
+      → `__SSAT(v, 8)` 또는 명시적 `if (v > 127) v = 127; else if (v < -128) v = -128;`
+      로 구현하고, **known-answer test 에 풀스케일 초과 입력을 포함**할 것.
+      근거: CLAUDE.md 7장 "실기기 스케일"
 - [ ] `MEASURE_BUILD` / `DEMO_BUILD` 컴파일 플래그 분리
 - [ ] 이벤트 병합 상태머신 구현
 - [ ] SD 이벤트 로깅 + 부팅 시 UART 시각 동기화

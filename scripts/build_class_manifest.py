@@ -83,8 +83,13 @@ SLICES_PER_ORIGINAL = 4
 #   배경음 클립당 윈도우 train 1.97 / test 2.28 → 필요 2,808 / 813 클립
 # 읽기 실패·전 윈도우 탈락을 감안해 약 10% 얹었다. 실제 윈도우 수는 prepare
 # 실행 후 재확인하고, 넘치면 이 값을 줄여 매니페스트를 다시 만든다.
-BG_GENERAL_TRAIN = 3100
-BG_GENERAL_TEST = 900
+# 2026-09-25 조정: 첫 실측에서 배경음이 이벤트 합의 3.09배(train)로 규칙 4의
+# 상한(3배)을 넘겼다. 클립당 윈도우가 train 2.126 / test 2.388 로 나와
+# 2.8배에 맞추려면 train 473클립 / test 110클립을 덜어야 한다.
+# ⚠️ **하드 네거티브는 건드리지 않는다** — 오탐 억제(G7)의 직접 근거이고,
+# 줄여야 할 것은 일반 배경음 쪽이다.
+BG_GENERAL_TRAIN = 2630
+BG_GENERAL_TEST = 790
 
 US8K_MAP = {"siren": "siren", "dog_bark": "dog_bark"}
 ESC50_MAP = {"siren": "siren", "glass_breaking": "glass", "dog": "dog_bark"}
