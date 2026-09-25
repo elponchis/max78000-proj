@@ -129,7 +129,7 @@
           (하드 네거티브는 유지 — 오탐 억제의 직접 근거다)
         · **train 800 미달이 siren·glass·scream 3종이다.** 원본 자체가 부족한
           문제라 증강(규칙 6)으로 대응하고, 학습 후 클래스별 재현율로 재판정한다
-        · 산출물: `data/safesound-v1.tar.gz` (sha256 `57557e07…`),
+        · 산출물: `data/safesound-v1.tar.gz` (sha256 `0f7b8c42…`),
           `MANIFEST.json`(설정·커밋 해시 포함), Colab 절차는 `colab/train_baseline.md`
         · siren train 800 은 상한을 4로 올려도 578 이라 도달 불가 —
           원본 자체가 부족하다(고유 원본 train 129). 증강 강화(규칙 6)로 대응
