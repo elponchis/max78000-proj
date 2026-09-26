@@ -41,6 +41,7 @@ INCLUDE = [
     "models/ai85net-safesound-mel.py",    # 2D CNN
     "tools/kat_safesound_mel.py",         # 멜 경로 KAT
     "tools/mel_range_sweep.py",           # dB 구간 근거 재현용
+    "tools/input_stats.py",               # 입력 int8 통계 (붕괴 원인 판별)
     "colab/qat_policy_safesound.yaml",
     "colab/schedule_safesound.yaml",
     "CLAUDE.md",                          # 규칙 참조용 (셀에서 인용한다)
