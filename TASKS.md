@@ -237,7 +237,34 @@
 - [ ] 합성용 샘플 입력 `sample_*.npy` 저장 (`train.py --save-sample`)
 - [ ] **G9** 비트폭 스윕 8/4/2bit → 파레토 곡선의 **정확도 축 완성**
       (4/2bit는 8bit fine-tuning으로, 처음부터 학습 금지)
-- [ ] **G8 대조군**: MFCC-on-M4 + 2D CNN 모델 별도 학습
+- [x] **G8 구성 ① 구현** (2026-09-26). `docs/results/config1-mel2d-design.md`
+      · `datasets/melfeat.py` — 로그 멜 프론트엔드 (numpy 전용). n_fft 512 /
+        hop 256 / reflect pad 128 / n_mels 64 / 20~8000Hz HTK / 프레임 64
+      · 양자화 구간 `TOP_DB 0 / SPAN_DB 70` 은 **양쪽 끝이 물리적으로 유도**됐다.
+        위 0dB = 풀스케일 사인(실측 −0.75dB), 아래 −70dB = int8 양자화 잡음
+        바닥(저역 −64.7dB)보다 5.3dB 아래 → 자르는 정보가 없다.
+        `docs/results/mel-range-sweep.md`
+      · `datasets/safesound_mel.py` — `SafeSound` 를 **상속**해 증강 코드를
+        공유한다. 같은 샤드·같은 창·같은 클래스 가중치, 입력 표현만 다름
+      · `models/ai85net-safesound-mel.py` — Conv2d 3×3 ×5 + 1×1 + FC.
+        **157,535 params = 442KB 의 34.8%** (④ 165,457 = 36.6%).
+        최대 중간 텐서 32×64×64 = 131KB = 512KB 의 25.0%
+      · `tools/kat_safesound_mel.py` + `kat_vectors/melkat_*` — 20개 검사 통과.
+        펌웨어 허용 오차 ±2 LSB(≈0.55dB)는 **가안**이며 보드에서 확정한다
+      · 평가 도구 4종에 `--config {wave,mel}` — 같은 스크립트로 두 구성을 본다
+- [ ] **G8 구성 ① 학습** (Colab 셀 17~19). ④와 같은 스케줄·QAT·150에폭.
+      ⚠️ `ai8xize.py` 합성 확인은 학습 후 ④와 함께 한다 (합성 yaml 미작성)
+- [ ] **v2 데이터셋 항목 — 배경음 출처 다양성** (2026-09-26 발견, v1 은 바꾸지 않는다)
+      배경음이 train 4,520 / test 1,605 클립 **전량 FSD50K** 다. CLAUDE.md 5장
+      데이터 소스 표의 **LibriSpeech(배경음에 음성 투입)와 MSnoise 가 아직
+      들어가 있지 않다.** 기준선 오경보가 시간당 수천 회인 상태라 배경음 다양성
+      부족이 원인 후보 중 하나다 (FSD50K 의 Speech 계열 라벨로 음성이 일부
+      들어가 있으나 화자·녹음 환경 다양성은 LibriSpeech 쪽이 훨씬 넓다).
+      **v1 은 비교 기준이므로 지금 바꾸지 않는다.** v2 집계 때 함께 넣고,
+      v1 대비 오경보 변화를 별도 실험으로 보고한다 (증강과 마찬가지로 한꺼번에
+      넣으면 무엇이 효과였는지 분리되지 않는다).
+      확인 방법: `tools/eval_threshold.py` 의 출처별 분해 표 — 데이터셋 열이
+      한 줄이면 아직 FSD50K 뿐이다.
 - [ ] **도전 1순위**: 채널 수 0.25×/0.5×/1×/1.5× 스윕 학습 (2×는 442KB 초과)
 - [ ] SNR 20/10/0dB 고정 평가셋 생성 및 정확도 측정
 

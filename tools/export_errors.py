@@ -74,6 +74,8 @@ def main():
                          "창)를 넣는다. `--true background` 일 때 쓴다")
     ap.add_argument("--batch-size", type=int, default=128)
     ap.add_argument("--bias", action="store_true")
+    from eval_confusion import add_config_arg
+    add_config_arg(ap)
     ap.add_argument("--simulate", action="store_true")
     ap.add_argument("--seed", type=int, default=0)
     a = ap.parse_args()

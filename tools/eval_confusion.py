@@ -258,8 +258,33 @@ def report(fsids, y_true, y_pred, names, n_boot, seed,
 
 
 # ──────────────────────────────────────────────────────────── 추론
+# G8 구성별 (모델 파일, 클래스명, 데이터셋 클래스). 평가 스크립트 전부가
+# `--config` 하나로 두 구성을 오간다 — 평가 경로가 갈리면 비교가 오염된다.
+CONFIGS = {
+    "wave": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
+    "mel": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMel"),
+}
+
+
+def add_config_arg(ap):
+    """`--config` 를 붙인다. 모든 평가 도구가 같은 문구를 쓰도록 한 곳에 둔다."""
+    ap.add_argument("--config", choices=sorted(CONFIGS), default="wave",
+                    help="G8 구성. wave=④ raw 파형 1D CNN (기본), "
+                         "mel=① 로그 멜 2D CNN. 모델 구조와 데이터로더가 함께 "
+                         "바뀐다")
+
+
+def dataset_class(config="wave"):
+    """구성에 맞는 Dataset 클래스. 두 모듈 모두 `CLASSES` 를 공유한다."""
+    if config == "mel":
+        import safesound_mel
+        return safesound_mel.SafeSoundMel
+    import safesound
+    return safesound.SafeSound
+
+
 def load_model(checkpoint, n_classes, ai8x_dir, simulate=False, bias=False,
-               random_init=False):
+               random_init=False, config="wave"):
     """ai8x 모델을 만들고 체크포인트를 얹는다. `tools/stream_eval.py` 도 쓴다.
 
     QAT 체크포인트는 키가 어긋날 수 있어 `strict=False` 로 얹고 불일치 수를
@@ -273,11 +298,12 @@ def load_model(checkpoint, n_classes, ai8x_dir, simulate=False, bias=False,
     sys.path.insert(0, ai8x_dir)
     ai8x.set_device(85, simulate, False)
 
+    fname, cname, _ = CONFIGS[config]
     spec = importlib.util.spec_from_file_location(
-        "ai85net_safesound", os.path.join(REPO, "models", "ai85net-safesound.py"))
+        "ai85net_safesound_" + config, os.path.join(REPO, "models", fname))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    model = mod.AI85SafeSoundNet(num_classes=n_classes, bias=bias)
+    model = getattr(mod, cname)(num_classes=n_classes, bias=bias)
 
     if random_init:
         print("  [주의] --random-init — 배선 검증용이다. 수치에 의미 없음")
@@ -334,12 +360,15 @@ def collect_logits(args, names, split="test", indices=None):
     import ai8x
     import safesound as S
 
+    config = getattr(args, "config", "wave")
     model = load_model(args.checkpoint, len(names), args.ai8x, args.simulate,
-                       args.bias)
+                       args.bias, config=config)
 
-    ds = S.SafeSound(os.path.join(args.data, "SafeSound"), split,
-                     transform=ai8x.normalize(args=argparse.Namespace(
-                         act_mode_8bit=args.simulate)), augment=False)
+    # 샤드 경로는 두 구성이 **같다** — 멜 구성도 같은 창을 읽고 표현만 바꾼다
+    ds = dataset_class(config)(
+        os.path.join(args.data, "SafeSound"), split,
+        transform=ai8x.normalize(args=argparse.Namespace(
+            act_mode_8bit=args.simulate)), augment=False)
     # 검증셋 평가처럼 일부만 볼 때 쓴다. 증강은 꺼 둔 채로다 (평가 조건).
     order = list(range(len(ds))) if indices is None else list(indices)
     fsids, clips, starts, y_true, logits = [], [], [], [], []
@@ -420,6 +449,7 @@ def main():
     ap.add_argument("--bias", action="store_true")
     ap.add_argument("--simulate", action="store_true",
                     help="act_mode_8bit — 양자화 체크포인트 평가 시")
+    add_config_arg(ap)
     ap.add_argument("--hop-ms", type=int, default=250,
                     help="상시 추론 주기 — 시간당 오경보 환산에 쓴다 (250ms → 14,400회/h)")
     ap.add_argument("--json", help="요약을 JSON 으로 저장 (체크포인트 간 비교용)")

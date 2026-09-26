@@ -35,6 +35,12 @@ INCLUDE = [
     "tools/stream_eval.py",               # 빈틈없는 스트리밍 오탐 (원본 오디오 필요)
     "tools/kat_safesound.py",             # 학습 전 필수 검증
     "tools/kat_vectors",                  # KAT 기준 벡터 (디렉터리)
+    # ── G8 구성 ① (로그 멜 + 2D CNN). 구성 ④와 같은 샤드를 읽는다
+    "datasets/melfeat.py",                # 로그 멜 프론트엔드 (numpy 전용)
+    "datasets/safesound_mel.py",          # SafeSound 상속 로더
+    "models/ai85net-safesound-mel.py",    # 2D CNN
+    "tools/kat_safesound_mel.py",         # 멜 경로 KAT
+    "tools/mel_range_sweep.py",           # dB 구간 근거 재현용
     "colab/qat_policy_safesound.yaml",
     "colab/schedule_safesound.yaml",
     "CLAUDE.md",                          # 규칙 참조용 (셀에서 인용한다)

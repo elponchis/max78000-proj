@@ -81,6 +81,8 @@ def main():
     ap.add_argument("--batch-size", type=int, default=256)
     ap.add_argument("--limit", type=int, default=0, help="처음 N클립만 (디버깅)")
     ap.add_argument("--bias", action="store_true")
+    from eval_confusion import add_config_arg
+    add_config_arg(ap)
     ap.add_argument("--simulate", action="store_true", help="act_mode_8bit")
     ap.add_argument("--random-init", action="store_true",
                     help="체크포인트 없이 배선만 검증 (수치 무의미)")
@@ -114,7 +116,9 @@ def main():
         sys.exit(f"[에러] {a.split} 배경음 오디오가 없다.")
 
     model = load_model(a.checkpoint, len(names), a.ai8x, a.simulate, a.bias,
-                       a.random_init)
+                       a.random_init, config=a.config)
+    if a.config == "mel":
+        import melfeat as MFEAT                          # noqa: PLC0415
     norm = ai8x.normalize(args=argparse.Namespace(act_mode_8bit=a.simulate))
 
     print(f"배경음 원본 {len(rows)}개를 hop {a.hop_ms}ms 로 빈틈없이 훑는다 "
@@ -134,8 +138,15 @@ def main():
         for b in range(0, len(starts), a.batch_size):
             chunk = starts[b:b + a.batch_size]
             q = np.stack([P.to_int8(x[s:s + P.WIN]) for s in chunk])
-            t = (torch.from_numpy(q.astype(np.int16)) + 128).float() / 256.0
-            t = torch.transpose(t.reshape(len(chunk), -1, 128), 2, 1)
+            if a.config == "mel":
+                # 구성 ① — 파형까지는 동일하고 표현만 바꾼다. 학습 경로와 같은
+                # `melfeat` 를 부르므로 구현이 갈리지 않는다.
+                q = np.stack([MFEAT.log_mel_int8(w) for w in q])
+                t = (torch.from_numpy(q.astype(np.int16)) + 128).float() / 256.0
+                t = t.unsqueeze(1)                       # (B, 1, mels, frames)
+            else:
+                t = (torch.from_numpy(q.astype(np.int16)) + 128).float() / 256.0
+                t = torch.transpose(t.reshape(len(chunk), -1, 128), 2, 1)
             with torch.no_grad():
                 preds += model(norm(t)).argmax(1).tolist()
         per_clip[r["clip_id"]] = preds

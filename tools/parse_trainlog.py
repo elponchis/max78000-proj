@@ -220,23 +220,34 @@ def main():
     if len(show) < len(es):
         print(f"  ({len(es)}에폭 중 {len(show)}개만 표시 — 전량은 `--every 1`)")
 
-    # ── 과소적합/과적합 진단. train Top1 자체가 낮으면 일반화가 아니라 용량·최적화
-    #    문제다 (기준선에서 train 61~64% 가 나온 자리).
+    # ── train/val Top1 요약.
+    #
+    # ⚠️ **이 값으로 과소적합을 판정하지 않는다.** 두 가지 때문에 낮게 나오는 것이
+    #    정상이다.
+    #      · 손실이 **역빈도 가중**이다 (background 0.27). 모델이 배경음을 의도적으로
+    #        희생하도록 학습되는데, Top1 은 **비가중** 정확도라 전체 창의 71%인
+    #        배경음에서 잃은 만큼 그대로 낮아진다. 설정대로 동작해도 낮다
+    #      · train Top1 은 **증강이 걸린 데이터** 기준이다 (shift·게인 ±12dB).
+    #        평가와 같은 조건이 아니다
+    #      · 게다가 **마지막 2배치에서만** 잰 값이다. ai8x 의
+    #        `--show-train-accuracy` 기본값이 `last_batch` 라
+    #        (`parsecmd.py:187`, `train.py:940`), 에폭 평균이 아니라 256샘플
+    #        표본이다. 에폭마다 크게 흔들리는 것이 정상이다
+    #    판정은 `tools/eval_confusion.py --split train`(무증강)의 **클래스별
+    #    재현율**을 test 와 나란히 놓고 한다. train 재현율도 낮으면 용량·최적화
+    #    문제이고, train 만 높으면 일반화 문제다.
     tt = [ep[e]["train_top1"] for e in es if "train_top1" in ep[e]]
     vv = [ep[e]["val_top1"] for e in es if "val_top1" in ep[e]]
     if tt:
-        print(f"\n=== 적합 진단 ===")
+        print("\n=== Top1 요약 (비가중·train 은 증강 포함) ===")
         print(f"  train Top1  최고 {max(tt):.2f}%  마지막 {tt[-1]:.2f}%")
         if vv:
             print(f"  val   Top1  최고 {max(vv):.2f}%  마지막 {vv[-1]:.2f}%")
             print(f"  마지막 에폭의 train−val 차이 {tt[-1] - vv[-1]:+.1f}p")
-        if max(tt) < 75:
-            print(f"  ⚠️ **과소적합이다.** train Top1 이 {max(tt):.1f}% 로, 모델이")
-            print("     학습 데이터조차 못 맞힌다. 정규화·증강을 줄이는 것이 아니라")
-            print("     용량(채널 수)·학습률·에폭 수·라벨 품질을 봐야 한다.")
-            print("     과적합 대책(드롭아웃·증강 강화)은 여기서 역효과다.")
-        elif vv and max(tt) - max(vv) > 15:
-            print("  ⚠️ train 과 val 격차가 크다 — 과적합 쪽이다.")
+        print("  ⚠️ 이 수치로 과소적합을 판정하지 말 것 — 손실이 역빈도 가중이고,")
+        print("     train 은 증강이 걸린 마지막 2배치(256샘플)만 잰 값이다.")
+        print("     판정: `eval_confusion.py --split train` 의 클래스별 재현율을")
+        print("     test 와 비교한다 (노트북 셀 16).")
 
     n_val = sum(1 for e in ep if "val_top1" in ep[e])
     if n_val == 0:

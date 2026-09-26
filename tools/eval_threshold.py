@@ -283,6 +283,8 @@ def main():
     ap.add_argument("--ai8x", default="/content/ai8x-training")
     ap.add_argument("--batch-size", type=int, default=128)
     ap.add_argument("--bias", action="store_true")
+    from eval_confusion import add_config_arg
+    add_config_arg(ap)
     ap.add_argument("--simulate", action="store_true")
     ap.add_argument("--hop-ms", type=int, default=250)
     ap.add_argument("--lo", type=float, default=-2.0)
