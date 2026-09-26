@@ -31,6 +31,13 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "datasets"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# 출처 태그에 붙는 조용한 창 쿼터 표시. 태그 문자열과 판정 코드가 한 상수를 쓴다
+QUIET_MARK = "[조용]"
+
+# 조용한 창 쿼터 비율 (`prepare_safesound.py --bg-quiet-frac` 기본값).
+# 인덱스 CSV 에 적히지 않으므로 같은 해시로 되살릴 때 필요하다.
+BG_QUIET_FRAC = 0.15
+
 
 def sweep(logits, y_true, k, bg, offsets, per_hour):
     """오프셋마다 (시간당 오경보, 클래스별 재현율)."""
@@ -165,6 +172,39 @@ def margin_report(logits, y_true, clips, names, bg, per_hour, sources,
             m = int((sel & (base == c)).sum())
             print(f"  → {n:<12}{m:>7,}창{per_hour * m / n_bg:>9.1f}회/h")
 
+        # ── 조용한 창 쿼터 쏠림.
+        #
+        # 가설(2026-09-26): 랜덤 게인이 −12dB 쪽으로 눌러 만든 **빈 siren 창**이
+        # 조용한 bg 창을 압도해 모델이 "조용함 → siren" 을 배웠을 수 있다.
+        # 가중치가 siren 4.93 vs background 0.27 로 **18배**라 소수의 빈 siren
+        # 창이 다수의 조용한 bg 창을 이긴다. 근거: `docs/results/input-stats-v1.md`
+        # (siren 창 std<1 비율이 증강 10.0% vs 무증강 0.0%).
+        #
+        # 확인 방법: 오경보가 **조용한 창 쿼터에 쏠려 있는가**. 쏠림 배수가
+        # 1 근처면 가설이 틀린 것이고, 크게 넘으면 그 클래스는 조용함 자체에
+        # 반응하는 것이다.
+        quiet = np.array([QUIET_MARK in sources.get(c, "") for c in clips])
+        base_q = float(quiet[sel].mean())
+        print(f"\n=== 조용한 창 쿼터 쏠림 (가설: \"조용함 → 이벤트\" 학습) ===")
+        print(f"  배경음 전체 중 quiet 쿼터: {100*base_q:.1f}% "
+              f"({int(quiet[sel].sum()):,}/{n_bg:,})  ← 기준선")
+        for c, n in enumerate(names):
+            if c == bg:
+                continue
+            m = sel & (base == c)
+            k = int(m.sum())
+            if not k:
+                print(f"  → {n:<10} 오경보 없음")
+                continue
+            q = float(quiet[m].mean())
+            ratio = q / base_q if base_q else float("nan")
+            print(f"  → {n:<10} 오경보 중 quiet {100*q:>5.1f}% "
+                  f"({int(quiet[m].sum()):>4,}/{k:,})   쏠림 {ratio:>4.2f}배")
+        print("  쏠림 1.0 = 조용함과 무관, >1 = 조용한 창에서 더 울린다.")
+        print("  siren 이 두드러지게 크면 게인 증강이 만든 빈 창 문제다 → v2 수정")
+        print("  대상 (TASKS.md). 전 클래스가 비슷하게 크면 배경음 조용한 창 쿼터")
+        print("  비율(15%) 자체를 다시 봐야 한다 (CLAUDE.md 7장).")
+
     return {"n_background": n_bg, "resolution_per_hour": round(res, 3),
             "margin_bg": mb,
             "quantiles": {f"p{q:g}": round(float(np.percentile(mb, q)), 3)
@@ -218,8 +258,8 @@ def load_bg_sources(root, split="test", manifest=None):
                 tag = "일반 배경음"
             else:
                 tag = f"기타({note or '빈칸'})"
-            if rank_id is not None and rank_id(r["clip_id"] + ":quiet") % 1000 < 150:
-                tag += " [조용]"
+            if rank_id is not None and rank_id(r["clip_id"] + ":quiet") % 1000 < BG_QUIET_FRAC * 1000:
+                tag += " " + QUIET_MARK
             if multi:
                 tag += f" <{ds.get(r['clip_id'], '?')}>"
             out[r["clip_id"]] = tag
