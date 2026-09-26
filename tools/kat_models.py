@@ -38,10 +38,13 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# (파일, 클래스, 입력 모양 — 배치 제외)
+# (파일, 클래스, 입력 모양 — 배치 제외, 추가 생성 인자)
 MODELS = [
-    ("ai85net-safesound.py", "AI85SafeSoundNet", (128, 128)),
-    ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", (1, 64, 64)),
+    ("ai85net-safesound.py", "AI85SafeSoundNet", (128, 128), {}),
+    ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", (1, 64, 64), {}),
+    # wave2D 대조 — ①과 같은 구조에 raw 파형. 앞 풀링이 하나 더 붙는다
+    ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", (1, 128, 128),
+     {"pool_first": True, "dimensions": (128, 128)}),
 ]
 
 # 실패했던 마지막 배치 크기. 11707 % 128 = 59 (구성 ① 학습 에폭 0).
@@ -82,9 +85,11 @@ def main():
     ai8x.set_device(85, False, False)
     print(f"torch {torch.__version__}  배치 {ODD_BATCH} (실패했던 마지막 배치)\n")
 
-    for fname, cname, shape in MODELS:
-        print(f"── {cname}  입력 (B, {', '.join(str(s) for s in shape)})")
-        net = load(fname, cname)(num_classes=a.classes, bias=False).eval()
+    for fname, cname, shape, extra in MODELS:
+        tag = cname + (" (wave2D)" if extra else "")
+        print(f"── {tag}  입력 (B, {', '.join(str(s) for s in shape)})")
+        net = load(fname, cname)(num_classes=a.classes, bias=False,
+                                 **extra).eval()
         x = torch.randn(ODD_BATCH, *shape)
 
         with torch.no_grad():
@@ -95,29 +100,30 @@ def main():
             except Exception as e:                       # noqa: BLE001
                 ref, ok = None, False
                 print(f"    {type(e).__name__}: {str(e)[:120]}")
-            check(f"{cname}: 배치 {ODD_BATCH} forward", ok,
+            check(f"{tag}: 배치 {ODD_BATCH} forward", ok,
                   "" if ref is None else str(tuple(ref.shape)))
 
         # ── channels_last — 실제로 죽었던 자리. 4D 입력에만 있는 개념이다
         if len(shape) == 3:
-            netl = load(fname, cname)(num_classes=a.classes, bias=False).eval()
+            netl = load(fname, cname)(num_classes=a.classes, bias=False,
+                                      **extra).eval()
             netl.load_state_dict(net.state_dict())
             netl = netl.to(memory_format=torch.channels_last)
             xl = x.to(memory_format=torch.channels_last)
             with torch.no_grad():
                 try:
                     yl = netl(xl)
-                    check(f"{cname}: channels_last forward",
+                    check(f"{tag}: channels_last forward",
                           tuple(yl.shape) == (ODD_BATCH, a.classes),
                           str(tuple(yl.shape)))
                     # 3. 평탄화가 논리 순서를 보존하는가 = 같은 값이 나오는가
                     same = ref is not None and torch.allclose(yl, ref, atol=1e-4)
-                    check(f"{cname}: channels_last 결과가 contiguous 와 동일 "
+                    check(f"{tag}: channels_last 결과가 contiguous 와 동일 "
                           f"(평탄화 순서 보존 → FC·합성 영향 없음)", same,
                           "" if ref is None else
                           f"최대 차이 {float((yl - ref).abs().max()):.2e}")
                 except Exception as e:                   # noqa: BLE001
-                    check(f"{cname}: channels_last forward", False,
+                    check(f"{tag}: channels_last forward", False,
                           f"{type(e).__name__}: {str(e)[:110]} "
                           f"← `view` 를 `flatten` 으로 바꿀 것")
         else:
@@ -132,7 +138,7 @@ def main():
             with torch.no_grad():
                 comp(torch.randn(128, *shape))           # 정상 배치
                 yc = comp(torch.randn(ODD_BATCH, *shape))  # 마지막 배치 → 재컴파일
-            check(f"{cname}: torch.compile(dynamic=True) 배치 128→{ODD_BATCH}",
+            check(f"{tag}: torch.compile(dynamic=True) 배치 128→{ODD_BATCH}",
                   tuple(yc.shape) == (ODD_BATCH, a.classes), str(tuple(yc.shape)))
         except Exception as e:                           # noqa: BLE001
             # 컴파일러·triton 이 없는 환경은 흔하다. 그건 모델 결함이 아니다.
@@ -142,7 +148,7 @@ def main():
                     "not supported", "c++")):
                 print(f"    (torch.compile 불가한 환경 — 건너뜀: {msg})")
             else:
-                check(f"{cname}: torch.compile(dynamic=True)", False, msg)
+                check(f"{tag}: torch.compile(dynamic=True)", False, msg)
         print()
 
     if fails:

@@ -48,6 +48,7 @@ class AI85SafeSoundMelNet(nn.Module):
             dimensions=(64, 64),  # pylint: disable=unused-argument
             bias=False,
             width_mult=1.0,
+            pool_first=False,
             **kwargs
     ):
         super().__init__()
@@ -59,9 +60,25 @@ class AI85SafeSoundMelNet(nn.Module):
         # 드롭아웃 비율도 ④와 같은 0.2 다
         self.drop = nn.Dropout(p=0.2)
 
-        # 입력 1×64×64 (멜 64 × 프레임 64)
-        self.conv1 = ai8x.FusedConv2dReLU(num_channels, ch(32), 3, stride=1,
-                                          padding=1, bias=bias, **kwargs)
+        # 입력 1×64×64 (멜 64 × 프레임 64).
+        #
+        # `pool_first=True` 면 입력이 **128×128** 인 경우다 (raw 파형 2D, wave2D
+        # 대조 실험). 앞에 2×2 풀링을 하나 더 넣어 이후 전부를 ①과 **동일하게**
+        # 맞춘다 — 파라미터 수도 정확히 같다(157,535). 1층 출력이 32×64×64 =
+        # 131KB 로 데이터 메모리도 ①과 같다.
+        # ⚠️ 풀링을 안 넣으면 1층 출력이 32×128×128 = **524,288B = 512KB 데이터
+        #    메모리를 정확히 100%** 쓴다(실측). 입력 16KB 와 다음 층이 들어갈
+        #    자리가 없으므로 실제로는 들어가지 않는다. 즉 이 풀링은 선택이 아니라
+        #    하드웨어 제약이다.
+        #    (그 자체가 "raw 파형 입력은 공간 축소가 더 필요하다" 는 결과이고,
+        #     비교의 한계로 문서에 적는다 — g8-first-comparison.md 4.1)
+        self.conv1 = (
+            ai8x.FusedMaxPoolConv2dReLU(num_channels, ch(32), 3, pool_size=2,
+                                        pool_stride=2, stride=1, padding=1,
+                                        bias=bias, **kwargs)
+            if pool_first else
+            ai8x.FusedConv2dReLU(num_channels, ch(32), 3, stride=1,
+                                 padding=1, bias=bias, **kwargs))
         # 32×64×64
         self.conv2 = ai8x.FusedMaxPoolConv2dReLU(ch(32), ch(32), 3, pool_size=2,
                                                  pool_stride=2, stride=1,
@@ -126,8 +143,33 @@ def ai85safesoundmelnet_w150(pretrained=False, **kwargs):
     return AI85SafeSoundMelNet(width_mult=1.5, **kwargs)
 
 
+def ai85safesoundwave2dnet(pretrained=False, **kwargs):
+    """**wave2D 대조 실험** — 구성 ①과 완전히 같은 2D 구조에 raw 파형을 넣는다.
+
+    입력은 `(1, 128, 128)`, 즉 구성 ④가 쓰는 것과 **같은 파형·같은 접기**에 채널
+    축만 붙인 것이다 (`datasets/safesound_wave2d.py`).
+
+    이 구성이 있어야 G8 의 주장이 성립한다. ①(멜 2D) vs ④(파형 1D) 는 표현과
+    구조가 동시에 달라 격차의 원인이 분리되지 않는다. 세 점을 놓으면 갈린다.
+
+        ① mel      vs  wave2D     → **표현만** 다르다 (구조 고정)
+        wave2D      vs  ④ wave1D  → **구조만** 다르다 (입력 정보 고정)
+
+    ⚠️ 완벽한 통제는 아니다. (a) 128×128 입력이라 앞에 2×2 풀링이 하나 더 붙는다
+    (데이터 메모리 512KB 제약 — 위 `pool_first` 주석). (b) `(128,128)` 접기는
+    스펙트로그램이 아니다 — 행은 128샘플 간격의 값이라 3×3 conv 가 보는 이웃이
+    물리적 의미를 갖지 않는다. 두 점 모두 논문에 적는다
+    (`docs/results/g8-first-comparison.md` 4.1).
+
+    파라미터 수는 ①과 **정확히 같다** (157,535).
+    """
+    assert not pretrained
+    return AI85SafeSoundMelNet(pool_first=True, dimensions=(128, 128), **kwargs)
+
+
 models = [
     {'name': 'ai85safesoundmelnet', 'min_input': 1, 'dim': 2},
     {'name': 'ai85safesoundmelnet_w050', 'min_input': 1, 'dim': 2},
     {'name': 'ai85safesoundmelnet_w150', 'min_input': 1, 'dim': 2},
+    {'name': 'ai85safesoundwave2dnet', 'min_input': 1, 'dim': 2},
 ]

@@ -263,22 +263,33 @@ def report(fsids, y_true, y_pred, names, n_boot, seed,
 CONFIGS = {
     "wave": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
     "mel": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMel"),
+    # wave2D 대조 — ①과 같은 2D 구조에 ④와 같은 raw 파형. 표현/구조 분리용
+    "wave2d": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet",
+               "SafeSoundWave2D"),
 }
+
+# 구성별 모델 생성 인자 (기본 외). wave2d 는 입력이 128×128 이라 앞에 풀링이 하나
+# 더 붙는다 — 없으면 1층 출력이 512KB 데이터 메모리를 100% 쓴다.
+CONFIG_KWARGS = {"wave2d": {"pool_first": True, "dimensions": (128, 128)}}
 
 
 def add_config_arg(ap):
     """`--config` 를 붙인다. 모든 평가 도구가 같은 문구를 쓰도록 한 곳에 둔다."""
     ap.add_argument("--config", choices=sorted(CONFIGS), default="wave",
                     help="G8 구성. wave=④ raw 파형 1D CNN (기본), "
-                         "mel=① 로그 멜 2D CNN. 모델 구조와 데이터로더가 함께 "
-                         "바뀐다")
+                         "mel=① 로그 멜 2D CNN, "
+                         "wave2d=①과 같은 2D 구조에 raw 파형(표현/구조 분리용). "
+                         "모델 구조와 데이터로더가 함께 바뀐다")
 
 
 def dataset_class(config="wave"):
-    """구성에 맞는 Dataset 클래스. 두 모듈 모두 `CLASSES` 를 공유한다."""
+    """구성에 맞는 Dataset 클래스. 세 모듈 모두 `CLASSES` 를 공유한다."""
     if config == "mel":
         import safesound_mel
         return safesound_mel.SafeSoundMel
+    if config == "wave2d":
+        import safesound_wave2d
+        return safesound_wave2d.SafeSoundWave2D
     import safesound
     return safesound.SafeSound
 
@@ -303,7 +314,8 @@ def load_model(checkpoint, n_classes, ai8x_dir, simulate=False, bias=False,
         "ai85net_safesound_" + config, os.path.join(REPO, "models", fname))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    model = getattr(mod, cname)(num_classes=n_classes, bias=bias)
+    model = getattr(mod, cname)(num_classes=n_classes, bias=bias,
+                                **CONFIG_KWARGS.get(config, {}))
 
     if random_init:
         print("  [주의] --random-init — 배선 검증용이다. 수치에 의미 없음")

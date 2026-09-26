@@ -38,6 +38,7 @@ INCLUDE = [
     # ── G8 구성 ① (로그 멜 + 2D CNN). 구성 ④와 같은 샤드를 읽는다
     "datasets/melfeat.py",                # 로그 멜 프론트엔드 (numpy 전용)
     "datasets/safesound_mel.py",          # SafeSound 상속 로더
+    "datasets/safesound_wave2d.py",       # wave2D 대조 (표현/구조 분리)
     "models/ai85net-safesound-mel.py",    # 2D CNN
     "tools/kat_safesound_mel.py",         # 멜 경로 KAT
     "tools/kat_models.py",                # 모델 forward 회귀 (배치 크기·레이아웃)
