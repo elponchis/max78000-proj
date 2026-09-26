@@ -272,8 +272,7 @@ def load_model(checkpoint, n_classes, ai8x_dir, simulate=False, bias=False,
 
 def run_inference(args, names):
     """체크포인트로 테스트셋을 추론해 (fsid, clip, start, 정답, 예측)."""
-    sys.path.insert(0, args.ai8x)                      # import 전에 넣어야 한다
-    import torch
+    import torch                                       # 경로는 main() 에서 이미 넣었다
     import ai8x
     import safesound as S
 
@@ -359,8 +358,12 @@ def main():
                     help="합성 예측으로 통계 경로만 검증 (체크포인트 불필요)")
     a = ap.parse_args()
 
+    # ⚠️ `safesound` 는 **import 시점에** `ai8x` 를 부른다. 그래서 인자를 파싱하자마자,
+    # safesound 를 부르기 전에 경로를 넣어야 한다 — 늦으면 ModuleNotFoundError: ai8x.
+    if os.path.isdir(a.ai8x):
+        sys.path.insert(0, a.ai8x)
     import safesound as S                              # noqa: PLC0415
-    names = S.CLASSES if not a.self_test else S.CLASSES
+    names = S.CLASSES
 
     if a.self_test:
         self_test(names, a.seed)
