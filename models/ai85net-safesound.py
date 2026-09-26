@@ -54,6 +54,7 @@ class AI85SafeSoundNet(nn.Module):
             dimensions=(128, 1),  # pylint: disable=unused-argument
             bias=False,
             width_mult=1.0,
+            abs_first=False,
             **kwargs
     ):
         super().__init__()
@@ -65,8 +66,22 @@ class AI85SafeSoundNet(nn.Module):
         self.drop = nn.Dropout(p=0.2)
 
         # T: 128  F: 128
-        self.voice_conv1 = ai8x.FusedConv1dReLU(num_channels, ch(100), 1, stride=1,
-                                                padding=0, bias=bias, **kwargs)
+        #
+        # ⚠️ 이 층은 `k=1` 이라 **길이 128 FIR 필터 100개**와 수학적으로 같다
+        # (입력 채널 축 r 이 프레임 내 잔 시간축이기 때문이다 —
+        #  `tools/init_filterbank.py` 참조). 그래서 여기에 멜 대역통과 필터를
+        # 초기값으로 넣으면 G8 구성 ③(학습 프론트엔드)이 된다.
+        #
+        # `abs_first=True` 면 활성화를 **Abs** 로 바꾼다. cos/sin 쌍의 |re|, |im|
+        # 을 바로 얻기 위해서다 — ReLU 면 위상에 따라 두 채널이 동시에 0 이 되어
+        # 밴드가 사라지므로 밴드당 4필터가 필요해지고 밴드 수가 반으로 준다.
+        # MAX78000 은 Abs 를 지원한다 (`ai8x.FusedConv1dAbs`).
+        self.voice_conv1 = (
+            ai8x.FusedConv1dAbs(num_channels, ch(100), 1, stride=1,
+                                padding=0, bias=bias, **kwargs)
+            if abs_first else
+            ai8x.FusedConv1dReLU(num_channels, ch(100), 1, stride=1,
+                                 padding=0, bias=bias, **kwargs))
         # T: 128  F: 100
         self.voice_conv2 = ai8x.FusedConv1dReLU(ch(100), ch(96), 3, stride=1,
                                                 padding=0, bias=bias, **kwargs)
@@ -131,6 +146,45 @@ def ai85safesoundnet_w050(pretrained=False, **kwargs):
     return AI85SafeSoundNet(width_mult=0.5, **kwargs)
 
 
+def ai85safesoundnet_bias(pretrained=False, **kwargs):
+    """`bias=True` 판 — **KWS20 v3 사전학습 초기화 전용**이다 (TASKS.md B).
+
+    ADI 공식 체크포인트 `ai85-kws20_v3-qat8.pth.tar` 에는 conv 8층의 **bias 가
+    들어 있다**(실측). 우리 기준선은 `bias=False` 라 그대로 얹으면 bias 9개
+    텐서가 버려진다 — 사전학습의 일부를 잃는 것이다. 이 진입점은 그것을 받기
+    위해서만 쓴다.
+
+    추가되는 파라미터는 conv bias 632개(100+96+64+48+64+96+100+64)뿐이라
+    442KB 판정에 영향이 없다. 다만 **다른 ④ 실행과 설정이 달라지므로** 비교표에
+    `bias=True` 를 반드시 명기한다.
+    """
+    assert not pretrained
+    kwargs.setdefault("bias", True)
+    return AI85SafeSoundNet(**kwargs)
+
+
+def ai85safesoundnet_fb(pretrained=False, relu_first=False, **kwargs):
+    """**필터뱅크 초기화 판** — G8 구성 ③ (학습 프론트엔드). TASKS.md D-1.
+
+    구조는 ④와 같고 첫 층의 활성화만 `Abs` 다 (`relu_first=True` 면 ReLU 유지).
+    가중치 초기값은 `tools/init_filterbank.py` 가 멜 대역통과 FIR 로 채운다.
+    파라미터 수는 ④와 **완전히 같다** — 활성화는 파라미터가 없다.
+
+    `Abs` 를 쓰는 이유와 밴드 수 계산은 `tools/init_filterbank.py` 의 설명을
+    볼 것. 요지는 cos/sin 쌍에 `Abs` 를 걸면 밴드당 2필터로 |re|, |im| 이 나와
+    100채널에 **50밴드**가 들어가고, ReLU 면 부호 쌍까지 필요해 25밴드로 준다는
+    것이다.
+    """
+    assert not pretrained
+    return AI85SafeSoundNet(abs_first=not relu_first, **kwargs)
+
+
+def ai85safesoundnet_fb_relu(pretrained=False, **kwargs):
+    """필터뱅크 초기화 + **ReLU 유지** (25밴드). 초기화만 바꾸는 순수 대조용."""
+    assert not pretrained
+    return AI85SafeSoundNet(abs_first=False, **kwargs)
+
+
 def ai85safesoundnet_w150(pretrained=False, **kwargs):
     """채널 1.5× — 8bit 가중치 상한(442KB의 80.6%). 스윕의 최대 지점."""
     assert not pretrained
@@ -142,4 +196,7 @@ models = [
     {'name': 'ai85safesoundnet_w025', 'min_input': 1, 'dim': 1},
     {'name': 'ai85safesoundnet_w050', 'min_input': 1, 'dim': 1},
     {'name': 'ai85safesoundnet_w150', 'min_input': 1, 'dim': 1},
+    {'name': 'ai85safesoundnet_bias', 'min_input': 1, 'dim': 1},
+    {'name': 'ai85safesoundnet_fb', 'min_input': 1, 'dim': 1},
+    {'name': 'ai85safesoundnet_fb_relu', 'min_input': 1, 'dim': 1},
 ]

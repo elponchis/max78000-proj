@@ -266,11 +266,22 @@ CONFIGS = {
     # wave2D 대조 — ①과 같은 2D 구조에 ④와 같은 raw 파형. 표현/구조 분리용
     "wave2d": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet",
                "SafeSoundWave2D"),
+    # ④ 살리기 실험들 (TASKS.md B / D-1). 데이터는 ④와 같고 모델만 다르다
+    "wave_bias": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
+    "wave_fb": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
+    "wave_fb_relu": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
 }
 
-# 구성별 모델 생성 인자 (기본 외). wave2d 는 입력이 128×128 이라 앞에 풀링이 하나
-# 더 붙는다 — 없으면 1층 출력이 512KB 데이터 메모리를 100% 쓴다.
-CONFIG_KWARGS = {"wave2d": {"pool_first": True, "dimensions": (128, 128)}}
+# 구성별 모델 생성 인자 (기본 외). `bias` 는 여기서 덮어쓸 수 있다.
+#   wave2d      — 입력이 128×128 이라 앞에 풀링이 하나 더 붙는다 (채널당 8,192픽셀 한계)
+#   wave_bias   — KWS20 체크포인트의 conv bias 를 받으려면 bias=True 여야 한다
+#   wave_fb     — 첫 층 활성화가 Abs 다 (cos/sin 쌍의 |re|,|im| 을 얻기 위해)
+CONFIG_KWARGS = {
+    "wave2d": {"pool_first": True, "dimensions": (128, 128)},
+    "wave_bias": {"bias": True},
+    "wave_fb": {"abs_first": True},
+    "wave_fb_relu": {"abs_first": False},
+}
 
 
 def add_config_arg(ap):
@@ -314,8 +325,10 @@ def load_model(checkpoint, n_classes, ai8x_dir, simulate=False, bias=False,
         "ai85net_safesound_" + config, os.path.join(REPO, "models", fname))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    model = getattr(mod, cname)(num_classes=n_classes, bias=bias,
-                                **CONFIG_KWARGS.get(config, {}))
+    # 구성별 인자가 `bias` 를 덮어쓸 수 있으므로 dict 로 합친다 (중복 키 방지)
+    mkw = {"num_classes": n_classes, "bias": bias}
+    mkw.update(CONFIG_KWARGS.get(config, {}))
+    model = getattr(mod, cname)(**mkw)
 
     if random_init:
         print("  [주의] --random-init — 배선 검증용이다. 수치에 의미 없음")

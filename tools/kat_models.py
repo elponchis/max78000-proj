@@ -45,6 +45,10 @@ MODELS = [
     # wave2D 대조 — ①과 같은 구조에 raw 파형. 앞 풀링이 하나 더 붙는다
     ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", (1, 128, 128),
      {"pool_first": True, "dimensions": (128, 128)}),
+    # ④ 살리기 실험 판들 (TASKS.md B / D-1)
+    ("ai85net-safesound.py", "AI85SafeSoundNet", (128, 128), {"bias": True}),
+    ("ai85net-safesound.py", "AI85SafeSoundNet", (128, 128),
+     {"abs_first": True}),
 ]
 
 # 실패했던 마지막 배치 크기. 11707 % 128 = 59 (구성 ① 학습 에폭 0).
@@ -86,10 +90,13 @@ def main():
     print(f"torch {torch.__version__}  배치 {ODD_BATCH} (실패했던 마지막 배치)\n")
 
     for fname, cname, shape, extra in MODELS:
-        tag = cname + (" (wave2D)" if extra else "")
+        # 이름표는 추가 인자에서 만든다 — 여러 변형이 있으므로 구별돼야 한다
+        tag = cname + (' [' + ', '.join(f'{k}={v}' for k, v in extra.items())
+                       + ']' if extra else '')
         print(f"── {tag}  입력 (B, {', '.join(str(s) for s in shape)})")
-        net = load(fname, cname)(num_classes=a.classes, bias=False,
-                                 **extra).eval()
+        mkw = {'num_classes': a.classes, 'bias': False}
+        mkw.update(extra)
+        net = load(fname, cname)(**mkw).eval()
         x = torch.randn(ODD_BATCH, *shape)
 
         with torch.no_grad():
@@ -105,8 +112,7 @@ def main():
 
         # ── channels_last — 실제로 죽었던 자리. 4D 입력에만 있는 개념이다
         if len(shape) == 3:
-            netl = load(fname, cname)(num_classes=a.classes, bias=False,
-                                      **extra).eval()
+            netl = load(fname, cname)(**mkw).eval()
             netl.load_state_dict(net.state_dict())
             netl = netl.to(memory_format=torch.channels_last)
             xl = x.to(memory_format=torch.channels_last)

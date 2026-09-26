@@ -1,0 +1,28 @@
+---
+# SafeSound **파인튜닝** 학습률 스케줄 (ai8x-training `--compress`)
+#
+# `schedule_safesound.yaml`(처음부터 학습)과 짝이다. 사전학습 가중치나 필터뱅크
+# 초기값에서 출발할 때 쓴다 (TASKS.md B / D-1).
+#
+# 처음부터 학습하는 스케줄과 무엇이 다른가
+#   · **기본 LR 이 0.001 → 0.0003** 이다 (셀 상단 상수). 이미 쓸 만한 지점에서
+#     출발하므로 큰 LR 은 사전학습된 필터를 첫 몇 에폭에 지워 버린다
+#   · **첫 감쇠를 40 으로 당겼다** (원래 75). 출발점이 좋으므로 탐색 구간이
+#     길 이유가 없다. QAT 가 60 에서 시작하니 그 **전에** 한 번 낮춰 두면
+#     전환 충격이 작다
+#   · 이후 70 / 100 / 125 / 140 은 QAT 직후 한 번(70) + 후반 미세조정이다
+#
+# ⚠️ 총 에폭(150)과 QAT 시작(60)은 **그대로 둔다.** 기준선과 비교할 수 있어야
+#    하므로 바꾸는 축을 LR 스케줄 하나로 묶는다.
+lr_schedulers:
+  training_lr:
+    class: MultiStepLR
+    milestones: [40, 70, 100, 125, 140]
+    gamma: 0.5
+
+policies:
+  - lr_scheduler:
+      instance_name: training_lr
+    starting_epoch: 0
+    ending_epoch: 150
+    frequency: 1

@@ -42,6 +42,9 @@ INCLUDE = [
     "models/ai85net-safesound-mel.py",    # 2D CNN
     "tools/kat_safesound_mel.py",         # 멜 경로 KAT
     "tools/kat_models.py",                # 모델 forward 회귀 (배치 크기·레이아웃)
+    "tools/init_from_kws20.py",           # B: KWS20 v3 사전학습 초기화
+    "tools/init_filterbank.py",           # D-1: 멜 필터뱅크 초기화 (구성 ③)
+    "colab/schedule_safesound_ft.yaml",   # 파인튜닝 LR 스케줄
     "tools/mel_range_sweep.py",           # dB 구간 근거 재현용
     "tools/input_stats.py",               # 입력 int8 통계 (붕괴 원인 판별)
     "colab/qat_policy_safesound.yaml",
