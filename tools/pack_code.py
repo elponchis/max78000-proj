@@ -25,6 +25,8 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Colab 학습·평가에 실제로 필요한 것만. 늘릴 때는 "노트북이 이걸 import 하나?"를
 # 먼저 물을 것 — 안 쓰는 파일이 들어가면 버전이 어긋나도 모른다.
 INCLUDE = [
+    "tools/eval_threshold.py",            # 배경음 로짓 오프셋 스윕
+    "tools/parse_trainlog.py",            # 학습 곡선·QAT 전환 요약
     "datasets/safesound.py",              # 데이터로더 (ai8x datasets/ 로 링크)
     "models/ai85net-safesound.py",        # 모델 (ai8x models/ 로 링크)
     "scripts/prepare_safesound.py",       # stream_eval 이 전처리 상수를 가져다 쓴다

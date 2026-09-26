@@ -190,7 +190,9 @@ def false_alarm_report(clips, starts, y_true, y_pred, names, hop_ms, ns=(1, 2, 3
               f" 겹쳐 오류가 함께"
               f"\n     가므로 감소폭이 반드시 더 작다. **항상 낙관적으로 틀린다.**"
               f"\n     논문에 쓸 수치는 `tools/stream_eval.py`(빈틈없는 스트리밍)와"
-              f"\n     보드 8시간 무인 구동에서 얻는다.")
+              f"\n     보드 8시간 무인 구동에서 얻는다."
+              f"\n     N=3 이 N=2 보다 나쁜 식의 **역전이 보이면 그 자체가 증상**이다 —"
+              f"\n     연속 프레임이라면 N 이 커질수록 단조 감소해야 한다.")
 
 
 def print_matrix(m, names, title):
@@ -205,6 +207,28 @@ def print_matrix(m, names, title):
               + f"{tot:>8d}{rec:>8.1%}")
     print(" " * w + "".join(f"{m[:, j].sum():>9d}" for j in range(len(names))))
     print(" " * w + "(열 = 예측)")
+
+
+def summary_json(fsids, y_true, y_pred, names, hop_ms=250):
+    """체크포인트 간 비교용 요약 — float best vs qat_best 를 손으로 대조하지 않게."""
+    k = len(names)
+    bg = k - 1
+    of, ot, op = majority_by_origin(fsids, y_true, y_pred, k)
+    sel = y_true == bg
+    fa = float((y_pred[sel] != bg).mean()) if sel.sum() else float("nan")
+    per_hour = 3600.0 / (hop_ms / 1000.0)
+    return {
+        "window": {"recall": dict(zip(names, [round(float(v), 4)
+                                              for v in recalls(y_true, y_pred, k)])),
+                   "macro_f1": round(macro_f1(y_true, y_pred, k), 4),
+                   "n": int(len(y_true))},
+        "origin": {"recall": dict(zip(names, [round(float(v), 4)
+                                              for v in recalls(ot, op, k)])),
+                   "macro_f1": round(macro_f1(ot, op, k), 4),
+                   "n": int(len(ot))},
+        "false_alarm": {"window_rate": round(fa, 5),
+                        "per_hour": round(fa * per_hour, 1), "hop_ms": hop_ms},
+    }
 
 
 def report(fsids, y_true, y_pred, names, n_boot, seed,
@@ -270,19 +294,25 @@ def load_model(checkpoint, n_classes, ai8x_dir, simulate=False, bias=False,
     return model
 
 
-def run_inference(args, names):
-    """체크포인트로 테스트셋을 추론해 (fsid, clip, start, 정답, 예측)."""
-    import torch                                       # 경로는 main() 에서 이미 넣었다
+def collect_logits(args, names, split="test"):
+    """테스트셋 전체를 추론해 **로짓까지** 돌려준다.
+
+    `tools/eval_threshold.py` 가 임계값을 쓸어 보려면 argmax 가 아니라 로짓이
+    필요하다. 추론은 한 번만 하고 스윕은 로짓 위에서 한다.
+
+    반환: (fsid, clip, start, 정답, 로짓 (N,K))
+    """
+    import torch
     import ai8x
     import safesound as S
 
     model = load_model(args.checkpoint, len(names), args.ai8x, args.simulate,
                        args.bias)
 
-    ds = S.SafeSound(os.path.join(args.data, "SafeSound"), "test",
+    ds = S.SafeSound(os.path.join(args.data, "SafeSound"), split,
                      transform=ai8x.normalize(args=argparse.Namespace(
                          act_mode_8bit=args.simulate)), augment=False)
-    fsids, clips, starts, y_true, y_pred = [], [], [], [], []
+    fsids, clips, starts, y_true, logits = [], [], [], [], []
     with torch.no_grad():
         for i in range(0, len(ds), args.batch_size):
             xs, ts = [], []
@@ -295,12 +325,18 @@ def run_inference(args, names):
                 clips.append(clip_id)
                 starts.append(start)
             out = model(torch.stack(xs))
-            y_pred += out.argmax(1).tolist()
+            logits.append(out.detach().numpy())
             y_true += ts
             if i % (args.batch_size * 20) == 0:
                 print(f"  추론 {i}/{len(ds)}", flush=True)
     return (np.array(fsids), np.array(clips), np.array(starts),
-            np.array(y_true), np.array(y_pred))
+            np.array(y_true), np.concatenate(logits))
+
+
+def run_inference(args, names):
+    """체크포인트로 테스트셋을 추론해 (fsid, clip, start, 정답, 예측)."""
+    fsids, clips, starts, y_true, logits = collect_logits(args, names)
+    return fsids, clips, starts, y_true, logits.argmax(1)
 
 
 def self_test(names, seed=0):
@@ -352,6 +388,7 @@ def main():
                     help="act_mode_8bit — 양자화 체크포인트 평가 시")
     ap.add_argument("--hop-ms", type=int, default=250,
                     help="상시 추론 주기 — 시간당 오경보 환산에 쓴다 (250ms → 14,400회/h)")
+    ap.add_argument("--json", help="요약을 JSON 으로 저장 (체크포인트 간 비교용)")
     ap.add_argument("--n-boot", type=int, default=2000)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--self-test", action="store_true",
@@ -373,6 +410,13 @@ def main():
     fsids, clips, starts, y_true, y_pred = run_inference(a, names)
     report(fsids, y_true, y_pred, names, a.n_boot, a.seed,
            clips=clips, starts=starts, hop_ms=a.hop_ms)
+    if a.json:
+        import json
+        out = summary_json(fsids, y_true, y_pred, names, a.hop_ms)
+        out["checkpoint"] = a.checkpoint
+        with open(a.json, "w", encoding="utf-8") as f:
+            json.dump(out, f, ensure_ascii=False, indent=2)
+        print(f"\n요약 JSON: {a.json}")
 
 
 if __name__ == "__main__":
