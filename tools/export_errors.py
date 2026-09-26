@@ -36,6 +36,19 @@ sys.path.insert(0, os.path.join(REPO, "scripts"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
+SLUG = {"일반 배경음": "general", "하드네거티브": "hardneg", "[조용]": "-quiet",
+        "기타": "other", "(미상)": "unknown"}
+
+
+def slug(tag):
+    """출처 태그를 파일명에 넣을 ASCII 로 바꾼다 (파일명 한글은 OS 간에 깨진다)."""
+    out = tag
+    for k, v in SLUG.items():
+        out = out.replace(k, v)
+    return (out.replace(":", "-").replace(" ", "").replace("<", "-")
+            .replace(">", "").strip("-_") or "unknown")
+
+
 def softmax(x):
     e = np.exp(x - x.max(axis=1, keepdims=True))
     return e / e.sum(axis=1, keepdims=True)
@@ -51,6 +64,14 @@ def main():
     ap.add_argument("--pred", nargs="+", default=["siren", "dog_bark"],
                     help="이 클래스로 잘못 간 창들을 뽑는다")
     ap.add_argument("--n", type=int, default=15, help="예측 클래스별 표본 수")
+    ap.add_argument("--pick", choices=["random", "top"], default="random",
+                    help="random(기본)=무작위 표본 — 오류의 **분포**를 본다. "
+                         "top=예측 확률 상위 — 모델이 **가장 확신한** 오류를 본다. "
+                         "배경음 오경보 청취는 top 을 쓴다 (확신한 것일수록 라벨에 "
+                         "실제 이벤트가 섞여 있을 확률이 높다)")
+    ap.add_argument("--tag-source", action="store_true",
+                    help="파일명에 배경음 출처 태그(일반/하드네거티브 종류/조용한 "
+                         "창)를 넣는다. `--true background` 일 때 쓴다")
     ap.add_argument("--batch-size", type=int, default=128)
     ap.add_argument("--bias", action="store_true")
     ap.add_argument("--simulate", action="store_true")
@@ -77,37 +98,64 @@ def main():
     raw = S.SafeSound(os.path.join(a.data, "SafeSound"), "test",
                       transform=None, augment=False)
 
+    # 배경음 출처 태그 — 파일명에 넣어 듣는 즉시 어느 풀에서 온 소리인지 알게 한다
+    src = None
+    if a.tag_source:
+        from eval_threshold import load_bg_sources
+        src = load_bg_sources(os.path.join(a.data, "SafeSound"), "test") or {}
+
     os.makedirs(a.out, exist_ok=True)
     rng = np.random.default_rng(a.seed)
     rows = []
     for c in p_idx:
         sel = np.where((y_true == t_idx) & (pred == c))[0]
-        take = sel if len(sel) <= a.n else rng.choice(sel, a.n, replace=False)
-        take = sorted(int(i) for i in take)
-        print(f"  {a.true} → {names[c]}: 오분류 {len(sel)}창 중 {len(take)}개 추출")
+        if len(sel) <= a.n:
+            take = sel
+        elif a.pick == "top":
+            take = sel[np.argsort(-prob[sel, c])[:a.n]]     # 확률 상위
+        else:
+            take = rng.choice(sel, a.n, replace=False)
+        take = sorted((int(i) for i in take), key=lambda i: -prob[i, c])
+        how = "확률 상위" if a.pick == "top" else "무작위"
+        print(f"  {a.true} → {names[c]}: 오분류 {len(sel)}창 중 {len(take)}개 "
+              f"({how})")
         for i in take:
             stored = np.asarray(raw._shard(raw.index[i][1])[raw.index[i][2]])  # noqa: SLF001
             w = stored[S.MARGIN:S.MARGIN + S.WIN].astype(np.float32) / 127.0
             p = float(prob[i, c])
-            name = (f"{a.true}_to_{names[c]}_p{round(100*p):02d}_"
+            tag = ""
+            if src is not None:
+                tag = "_" + slug(src.get(clips[i], "unknown"))
+            name = (f"{a.true}_to_{names[c]}_p{round(100*p):02d}{tag}_"
                     f"{clips[i]}_{starts[i]}.wav")
             sf.write(os.path.join(a.out, name), w, 16000)
             rows.append([name, a.true, names[c], f"{p:.4f}",
                          f"{float(prob[i, t_idx]):.4f}", clips[i], fsids[i],
-                         int(starts[i])])
+                         int(starts[i]), src.get(clips[i], "") if src else ""])
 
     with open(os.path.join(a.out, "errors.csv"), "w", newline="",
               encoding="utf-8") as f:
         wr = csv.writer(f)
         wr.writerow(["file", "true", "pred", "p_pred", "p_true", "clip_id",
-                     "fsid", "start_sample"])
+                     "fsid", "start_sample", "bg_source"])
         wr.writerows(sorted(rows))
 
     print(f"\n{len(rows)}개 → {a.out}")
-    print("  파일명: {정답}_to_{예측}_p{확률×100}_{원본}_{시작샘플}.wav")
+    print("  파일명: {정답}_to_{예측}_p{확률×100}"
+          + ("_{출처}" if src is not None else "") + "_{원본}_{시작샘플}.wav")
     print("\n듣고 판정할 것:")
-    print(f"  · 진짜 {a.true} 인데 모델이 못 가른 것  → 임계값이 아니라 모델 문제")
-    print(f"  · {a.true} 가 아닌데 라벨이 잘못 붙은 것 → 태거 임계값 복귀(재학습) 근거")
+    if a.true == "background":
+        print("  · 진짜 사이렌/개 짖음이 배경음 라벨에 섞였다 → **배경음 풀 오염**이다.")
+        print("    판정 순서(4장)가 그 클립을 배경음으로 보낸 이유를 되짚어야 한다.")
+        print("    하드네거티브 태그가 붙어 있으면 의도된 것이고(경보음≠사이렌),")
+        print("    '일반 배경음' 인데 사이렌이면 라벨 판정이 새는 것이다.")
+        print("  · 사이렌도 개도 아닌데 모델이 확신했다 → **모델이 약한 것**이다.")
+        print("    지금 train Top1 61~64% 과소적합과 맞물리는 쪽이다.")
+        print("  · [quiet] 태그가 붙은 조용한 창에서 울린다면 조용한 창 쿼터(15%)가")
+        print("    '무음 탐지기' 를 만드는 대신 오히려 오탐원이 된 것이다 → 비율 재검토.")
+    else:
+        print(f"  · 진짜 {a.true} 인데 모델이 못 가른 것  → 임계값이 아니라 모델 문제")
+        print(f"  · {a.true} 가 아닌데 라벨이 잘못 붙은 것 → 태거 임계값 복귀(재학습) 근거")
     print("  결과는 data_overrides.csv 에 기록하면 다음 집계부터 반영된다.")
 
 

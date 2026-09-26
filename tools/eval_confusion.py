@@ -364,8 +364,9 @@ def collect_logits(args, names, split="test", indices=None):
 
 
 def run_inference(args, names):
-    """체크포인트로 테스트셋을 추론해 (fsid, clip, start, 정답, 예측)."""
-    fsids, clips, starts, y_true, logits = collect_logits(args, names)
+    """체크포인트로 지정 split 을 추론해 (fsid, clip, start, 정답, 예측)."""
+    fsids, clips, starts, y_true, logits = collect_logits(
+        args, names, getattr(args, "split", "test"))
     return fsids, clips, starts, y_true, logits.argmax(1)
 
 
@@ -411,6 +412,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--checkpoint")
     ap.add_argument("--data", default="data", help="`{data}/SafeSound/test/...`")
+    ap.add_argument("--split", default="test", choices=["test", "train"],
+                    help="평가할 split. train 은 **과소적합 진단용**이다 — 학습 데이터도"
+                         " 못 맞히면 클래스별로 어디서 막혔는지 여기서 보인다")
     ap.add_argument("--ai8x", default="/content/ai8x-training")
     ap.add_argument("--batch-size", type=int, default=128)
     ap.add_argument("--bias", action="store_true")

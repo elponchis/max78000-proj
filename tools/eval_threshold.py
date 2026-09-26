@@ -48,6 +48,187 @@ def sweep(logits, y_true, k, bg, offsets, per_hour):
     return rows
 
 
+def margin_of(logits, bg):
+    """창마다 `max(이벤트 로짓)` 과 그때의 이벤트 클래스.
+
+    `margin = max(이벤트 로짓) − 배경음 로짓` 에 문턱값 `thr` 을 걸면 배경음 로짓에
+    `thr` 을 더하는 것과 **판정이 완전히 같다**. 다른 점은 훑는 방식이다 — b 를
+    등간격으로 훑으면 분포가 퍼져 있을 때 목표 오경보 지점을 건너뛰지만, 마진
+    **분위수** 위에서 훑으면 원하는 오경보 횟수를 정확히 집어낼 수 있다. 기준선
+    곡선이 완만해서(b=8 에서도 2,623회/h) 이 방식이 필요해졌다.
+    """
+    ev = np.array([c for c in range(logits.shape[1]) if c != bg])
+    sub = logits[:, ev]
+    return sub.max(axis=1), ev[sub.argmax(axis=1)]
+
+
+def margin_predict(marg_ev, ev_best, bg_logit, bg, thr):
+    """마진 문턱값 `thr` 에서의 예측. thr=0 이면 원래 argmax 와 같다."""
+    return np.where(marg_ev - bg_logit > thr, ev_best, bg)
+
+
+def thr_for_target(marg_bg, n_bg, per_hour, target):
+    """목표 오경보(시간당) 이하가 되는 가장 낮은 문턱값. 측정 불가면 None.
+
+    창 하나가 곧 `per_hour/n_bg` 회다 — 목표가 그보다 작으면 **이 테스트셋으로는
+    측정할 수 없다**(0회로 보여도 "관측 한계 아래"라는 뜻이지 0 이 아니다).
+    """
+    res = per_hour / n_bg
+    if target < res:
+        return None
+    n_allow = int(np.floor(target / res))
+    if n_allow >= n_bg:
+        return float(marg_bg.min() - 1.0)
+    return float(np.sort(marg_bg)[::-1][n_allow])
+
+
+def margin_report(logits, y_true, clips, names, bg, per_hour, sources,
+                  targets=(1000.0, 300.0, 100.0, 10.0, 1.0)):
+    """마진 분포 요약 + 문턱값별 재현율 + 배경음 출처별 오경보 분해."""
+    from eval_confusion import recalls
+
+    marg_ev, ev_best = margin_of(logits, bg)
+    marg = marg_ev - logits[:, bg]
+    sel = y_true == bg
+    n_bg = int(sel.sum())
+    mb = marg[sel]
+    res = per_hour / n_bg
+
+    print("\n" + "=" * 72)
+    print("배경음 마진 분포   margin = max(이벤트 로짓) − 배경음 로짓")
+    print("=" * 72)
+    qs = [1, 5, 25, 50, 75, 90, 95, 99, 99.5, 99.9, 100]
+    print("  " + "".join(f"{f'p{q:g}':>9}" for q in qs))
+    print("  " + "".join(f"{np.percentile(mb, q):>9.2f}" for q in qs))
+    print(f"  평균 {mb.mean():.2f}   표준편차 {mb.std():.2f}   "
+          f"마진>0 (= b=0 에서 오경보인 창) {100*(mb > 0).mean():.1f}%")
+    print(f"\n  ⚠️ 측정 해상도: 배경음 창 {n_bg:,}개 → **창 1개 = 시간당 "
+          f"{res:.2f}회**")
+    print(f"     시간당 {res:.2f}회보다 낮은 목표는 이 테스트셋으로 측정 불가다.")
+    print("     0회로 나와도 '0' 이 아니라 '관측 한계 아래'라는 뜻이다. 그 영역을")
+    print("     재려면 배경음 오디오 시간을 늘려야 한다 → tools/stream_eval.py 와")
+    print("     보드 8시간 무인 구동(G7).")
+
+    rows = []
+    for t in targets:
+        thr = thr_for_target(mb, n_bg, per_hour, t)
+        if thr is None:
+            rows.append({"target": t, "thr": None})
+            continue
+        pred = margin_predict(marg_ev, ev_best, logits[:, bg], bg, thr)
+        got = float((pred[sel] != bg).mean()) * per_hour
+        rows.append({"target": t, "thr": thr, "per_hour": got,
+                     "recall": recalls(y_true, pred, len(names)), "pred": pred})
+
+    print("\n=== 마진 문턱값별 — 목표 오경보와 그때의 클래스별 재현율 ===")
+    print(f"  {'목표/h':>8}{'문턱값':>9}{'실제/h':>9}{'창':>7}   "
+          + "".join(f"{n[:8]:>9}" for n in names))
+    print("  " + "-" * (35 + 9 * len(names)))
+    for r in rows:
+        if r["thr"] is None:
+            print(f"  {r['target']:>8.0f}{'—':>9}{'측정 불가':>11}{'—':>5}   "
+                  f"← 해상도 {res:.2f}회/h 아래")
+            continue
+        print(f"  {r['target']:>8.0f}{r['thr']:>9.2f}{r['per_hour']:>9.1f}"
+              f"{int(round(r['per_hour'] / res)):>7}   "
+              + "".join(f"{100*v:>8.1f}%" for v in r["recall"]))
+    print("  '창' 은 그 지점에서 오경보로 남은 배경음 창 수다.")
+
+    # ── 출처별 분해
+    if sources:
+        tags = np.array([sources.get(c, "(미상)") for c in clips])
+        hits = [r for r in rows if r["thr"] is not None]
+        base = margin_predict(marg_ev, ev_best, logits[:, bg], bg, 0.0)
+        cols = [("b=0", base)] + [(f"{r['target']:.0f}/h", r["pred"]) for r in hits]
+        print("\n=== 배경음 오경보의 출처별 분해 (시간당 기여분) ===")
+        print(f"  {'출처':<26}{'창':>7}" + "".join(f"{c[0]:>12}" for c in cols))
+        print("  " + "-" * (33 + 12 * len(cols)))
+        for tag in sorted(set(tags[sel])):
+            m = sel & (tags == tag)
+            n = int(m.sum())
+            cells = ""
+            for _, pred in cols:
+                f = int((m & (pred != bg)).sum())
+                cells += f"{per_hour * f / n_bg:>7.1f}({f:>3})"
+            print(f"  {tag:<26}{n:>7,}{cells}")
+        cells = "".join(f"{per_hour * int((sel & (p != bg)).sum()) / n_bg:>7.1f}"
+                        f"({int((sel & (p != bg)).sum()):>3})" for _, p in cols)
+        print(f"  {'합계':<26}{n_bg:>7,}{cells}")
+        print("  괄호는 창 수. 시간당 값은 **전체 배경음 기준 기여분**이라 합이 총")
+        print("  오경보와 같다 (출처별 자체 오탐률이 아니다). 자체 오탐률을 보려면")
+        print("  창 수로 나눠 볼 것 — 창 수가 적은 출처는 분산이 크다.")
+
+        print("\n=== 오경보가 울린 클래스 (b=0) ===")
+        for c, n in enumerate(names):
+            if c == bg:
+                continue
+            m = int((sel & (base == c)).sum())
+            print(f"  → {n:<12}{m:>7,}창{per_hour * m / n_bg:>9.1f}회/h")
+
+    return {"n_background": n_bg, "resolution_per_hour": round(res, 3),
+            "margin_bg": mb,
+            "quantiles": {f"p{q:g}": round(float(np.percentile(mb, q)), 3)
+                          for q in qs},
+            "targets": [{"target": r["target"], "thr": r["thr"],
+                         "measurable": r["thr"] is not None,
+                         "per_hour": (round(r["per_hour"], 2)
+                                      if r["thr"] is not None else None),
+                         "recall": ({n: round(float(v), 4)
+                                     for n, v in zip(names, r["recall"])}
+                                    if r["thr"] is not None else None)}
+                        for r in rows]}
+
+
+def load_bg_sources(root, split="test", manifest=None):
+    """배경음 창의 출처 태그. 인덱스 CSV 의 note + (있으면) 매니페스트의 데이터셋.
+
+    태그는 세 갈래로 나눈다 — 일반 배경음 / 하드 네거티브(종류별) / 조용한 창
+    쿼터. 조용한 창 쿼터는 인덱스에 따로 적히지 않으므로 전처리와 **같은 해시**로
+    되살린다 (`prepare_safesound.rank_id(clip_id + ":quiet")`, `--bg-quiet-frac`).
+    """
+    import csv as _csv
+
+    idx = os.path.join(root, split, "background", "index.csv")
+    if not os.path.isfile(idx):
+        print(f"  (출처 분해 생략: {idx} 없음)")
+        return None
+    sys.path.insert(0, os.path.join(REPO, "scripts"))
+    try:
+        from prepare_safesound import rank_id
+    except Exception as e:                       # 전처리 스크립트가 없는 환경
+        print(f"  (조용한 창 쿼터 표시 생략: {e})")
+        rank_id = None
+
+    ds = {}
+    manifest = manifest or os.path.join(REPO, "data", "interim", "manifest.csv")
+    if os.path.isfile(manifest):
+        with open(manifest, encoding="utf-8") as f:
+            for r in _csv.DictReader(f):
+                if r["cls"] == "background":
+                    ds[r["clip_id"]] = r["source"]
+    multi = len(set(ds.values())) > 1
+
+    out = {}
+    with open(idx, encoding="utf-8") as f:
+        for r in _csv.DictReader(f):
+            note = (r.get("note") or "").split(" ")[0]
+            if note.startswith("hard_neg:"):
+                tag = "하드네거티브:" + note.split(":", 1)[1]
+            elif note == "bg:general":
+                tag = "일반 배경음"
+            else:
+                tag = f"기타({note or '빈칸'})"
+            if rank_id is not None and rank_id(r["clip_id"] + ":quiet") % 1000 < 150:
+                tag += " [조용]"
+            if multi:
+                tag += f" <{ds.get(r['clip_id'], '?')}>"
+            out[r["clip_id"]] = tag
+    if ds and not multi:
+        print(f"  (데이터셋별 분해 생략: 배경음이 전량 "
+              f"{next(iter(set(ds.values())))} 이다 — LibriSpeech 미투입)")
+    return out
+
+
 def half_split_by_origin(fsids, y_true, seed=0):
     """테스트셋을 **원본(fsid) 단위**로 반분한다. 클래스별로 번갈아 배정한다.
 
@@ -119,6 +300,11 @@ def main():
     ap.add_argument("--split-seed", type=int, default=0,
                     help="ai8x 가 검증셋을 떼는 시드. distiller 가 get_data_loaders "
                          "안에서 set_deterministic() 을 인자 없이 불러 0 이 된다")
+    ap.add_argument("--no-margin", action="store_true",
+                    help="마진 분위수 모드와 출처별 분해를 생략한다")
+    ap.add_argument("--manifest",
+                    help="배경음 출처(데이터셋) 조인용 매니페스트 CSV "
+                         "(기본 data/interim/manifest.csv, 없으면 생략)")
     ap.add_argument("--png", help="곡선 PNG 저장 경로")
     ap.add_argument("--json", help="스윕 결과 JSON 저장 경로")
     a = ap.parse_args()
@@ -148,10 +334,16 @@ def main():
         y_pick = lg_pick = None
 
     # ── 테스트셋 (항상 본다)
-    fsids, _c, _s, y_true, logits = collect_logits(a, names, "test")
+    fsids, clips, _s, y_true, logits = collect_logits(a, names, "test")
     n_bg = int((y_true == bg).sum())
     print(f"테스트 창 {len(y_true):,} (배경음 {n_bg:,})  hop {a.hop_ms}ms "
           f"→ 시간당 {per_hour:,.0f}회 추론\n")
+
+    # ── 마진 모드 — 분위수 위에서 훑는다 (등간격 b 스윕이 놓치는 지점을 집는다)
+    mrep = None
+    if not a.no_margin:
+        src = load_bg_sources(os.path.join(a.data, "SafeSound"), "test", a.manifest)
+        mrep = margin_report(logits, y_true, clips, names, bg, per_hour, src)
 
     offsets = np.arange(a.lo, a.hi + 1e-9, a.step)
     rows = sweep(logits, y_true, k, bg, offsets, per_hour)   # 곡선은 테스트 전체
@@ -266,7 +458,13 @@ def main():
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
-        fig, ax = plt.subplots(1, 2, figsize=(13, 5))
+        # ⚠️ **그림 안의 글자는 전부 영어다.** matplotlib 기본 폰트(DejaVu Sans)에
+        # 한글 글리프가 없어 네모(tofu)로 깨진다. 논문 그림도 영어 캡션을 쓰므로
+        # 폰트를 따로 설치하는 대신 라벨을 영어로 고정한다.
+        # (한글이 꼭 필요하면 `apt-get install fonts-nanum` 후
+        #  `matplotlib.rcParams["font.family"] = "NanumGothic"` 를 켤 것.)
+        n_panel = 3 if mrep is not None else 2
+        fig, ax = plt.subplots(1, n_panel, figsize=(6.5 * n_panel, 5))
         ph = [r["per_hour"] for r in rows]
         for c, n in enumerate(names):
             if c == bg:
@@ -274,24 +472,47 @@ def main():
             ax[0].plot(ph, [100 * r["recall"][c] for r in rows], marker=".", label=n)
         ax[0].set_xscale("symlog", linthresh=1)
         ax[0].invert_xaxis()
-        ax[0].set_xlabel("시간당 오경보 (창 단위, 로그)")
-        ax[0].set_ylabel("재현율 (%)")
-        ax[0].set_title("오경보 vs 클래스별 재현율")
+        ax[0].set_xlabel("False alarms per hour (window-level, log)")
+        ax[0].set_ylabel("Recall (%)")
+        ax[0].set_title("False alarms vs per-class recall")
         ax[0].grid(alpha=.3)
         ax[0].legend()
         ax[1].plot([r["b"] for r in rows], ph, marker=".")
         ax[1].set_yscale("log")
-        ax[1].set_xlabel("배경음 로짓 오프셋 b")
-        ax[1].set_ylabel("시간당 오경보")
-        ax[1].set_title("오프셋 vs 오경보")
+        ax[1].set_xlabel("Background logit offset b")
+        ax[1].set_ylabel("False alarms per hour")
+        ax[1].set_title("Offset vs false alarms")
         ax[1].grid(alpha=.3)
         for t in (100, 10, 1):
             ax[1].axhline(t, ls="--", lw=.8, color="gray")
-        fig.suptitle(f"배경음 로짓 오프셋 스윕 — {os.path.basename(a.checkpoint)}")
+        if mrep is not None:
+            res = mrep["resolution_per_hour"]
+            ax[1].axhline(res, ls=":", lw=1.2, color="crimson")
+            ax[1].text(a.lo, res, f" measurement floor {res:.2f}/h",
+                       color="crimson", va="bottom", fontsize=8)
+            ax[2].hist(mrep["margin_bg"], bins=80, color="steelblue")
+            ax[2].axvline(0, color="crimson", lw=1,
+                          label="b=0 decision boundary")
+            for t in (1000, 300, 100):
+                thr = next((r["thr"] for r in mrep["targets"]
+                            if r["target"] == t and r["thr"] is not None), None)
+                if thr is not None:
+                    ax[2].axvline(thr, ls="--", lw=.8, color="gray")
+                    ax[2].text(thr, ax[2].get_ylim()[1] * .9, f"{t}/h",
+                               rotation=90, fontsize=7, ha="right")
+            ax[2].set_yscale("log")
+            ax[2].set_xlabel("margin = max(event logit) - background logit")
+            ax[2].set_ylabel("Background windows (log)")
+            ax[2].set_title(f"Background margin distribution "
+                            f"(n={mrep['n_background']:,})")
+            ax[2].legend(fontsize=8)
+            ax[2].grid(alpha=.3)
+        fig.suptitle(f"Background logit offset sweep - "
+                     f"{os.path.basename(a.checkpoint)}")
         fig.tight_layout()
         os.makedirs(os.path.dirname(a.png) or ".", exist_ok=True)
         fig.savefig(a.png, dpi=120)
-        print(f"\n  그림: {a.png}")
+        print(f"\n  그림: {a.png}  (그림 안 글자는 영어 — 한글 글리프 부재)")
 
     if a.json:
         out = {"checkpoint": a.checkpoint, "hop_ms": a.hop_ms,
@@ -300,6 +521,10 @@ def main():
                # val 은 창 단위 분리라 낙관적이다 (같은 원본의 다른 창이 학습에 있다)
                "diagnostic_only": a.pick_on in ("test", "val"),
                "classes": names, "n_windows": int(len(y_true)), "n_background": n_bg,
+               # 마진 분위수 모드. `measurable: false` 는 "0회" 가 아니라
+               # "이 테스트셋의 관측 한계 아래" 라는 뜻이다.
+               "margin": ({k2: v for k2, v in mrep.items() if k2 != "margin_bg"}
+                          if mrep is not None else None),
                "sweep": [{"b": r["b"], "per_hour": round(r["per_hour"], 1),
                           "fa_rate": round(r["fa_rate"], 5),
                           "recall": {n: round(float(v), 4)
