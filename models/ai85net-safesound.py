@@ -38,6 +38,7 @@ KWS20 v3 백본을 그대로 쓰되 출력층만 5클래스로 바꾼 것이다.
 위 수치는 파라미터 수 기준 추정이다. 확정은 `ai8xize.py` 합성 결과로 할 것
 (CLAUDE.md 3장 — 구조 변경 시 442KB/512KB 초과 여부 조기 검증).
 """
+import torch
 from torch import nn
 
 import ai8x
@@ -103,7 +104,11 @@ class AI85SafeSoundNet(nn.Module):
         x = self.drop(x)
         x = self.kws_conv3(x)
         x = self.kws_conv4(x)
-        x = x.view(x.size(0), -1)
+        # `view` 대신 `flatten` 을 쓴다. 1D 경로는 channels_last 가 없어 지금은
+        # 문제가 되지 않지만, 구성 ①에서 바로 이 패턴이 학습을 죽였다
+        # (channels_last 에서 view 불가). 두 모델을 같은 형태로 둔다 —
+        # 평탄화 논리 순서는 동일하므로 FC 가중치 대응과 합성 결과는 그대로다.
+        x = torch.flatten(x, 1)
         x = self.fc(x)
         return x
 

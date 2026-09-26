@@ -393,10 +393,74 @@ def collect_logits(args, names, split="test", indices=None):
 
 
 def run_inference(args, names):
-    """체크포인트로 지정 split 을 추론해 (fsid, clip, start, 정답, 예측)."""
+    """체크포인트로 지정 split 을 추론해 (fsid, clip, start, 정답, 예측, 로짓)."""
     fsids, clips, starts, y_true, logits = collect_logits(
         args, names, getattr(args, "split", "test"))
-    return fsids, clips, starts, y_true, logits.argmax(1)
+    return fsids, clips, starts, y_true, logits.argmax(1), logits
+
+
+def fixed_fa_points(logits, y_true, names, hop_ms=250,
+                    targets=(1000.0, 300.0)):
+    """**고정 오경보 지점에서의 클래스별 재현율.**
+
+    모델 비교를 argmax 재현율로 하면 안 된다 — argmax 는 각 모델이 알아서 정한
+    동작점이고, 배경음을 더 버린 모델이 이벤트 재현율만 높게 보인다. 오경보를
+    같은 값으로 고정하고 그때의 재현율을 비교해야 공정하다.
+
+    문턱값은 `eval_threshold.margin_of` 와 같은 마진 분위수 방식이다 — 등간격
+    오프셋 스윕은 분포가 퍼져 있으면 목표 지점을 건너뛴다.
+
+    ⚠️ 창 단위 수치이고 이 테스트셋의 배경음 구성(절반이 하드 네거티브)에
+    의존한다. 절대값이 아니라 **모델 간 비교**에만 쓴다.
+    """
+    from eval_threshold import margin_of, margin_predict, thr_for_target
+
+    k = len(names)
+    bg = k - 1
+    per_hour = 3600.0 / (hop_ms / 1000.0)
+    marg_ev, ev_best = margin_of(logits, bg)
+    sel = y_true == bg
+    n_bg = int(sel.sum())
+    if not n_bg:
+        return {}
+    mb = (marg_ev - logits[:, bg])[sel]
+    out = {}
+    for t in targets:
+        thr = thr_for_target(mb, n_bg, per_hour, t)
+        if thr is None:
+            out[f"{t:.0f}/h"] = None
+            continue
+        pred = margin_predict(marg_ev, ev_best, logits[:, bg], bg, thr)
+        got = float((pred[sel] != bg).mean()) * per_hour
+        out[f"{t:.0f}/h"] = {
+            "thr": round(float(thr), 4), "per_hour": round(got, 2),
+            "recall": {n: round(float(v), 4)
+                       for n, v in zip(names, recalls(y_true, pred, k))},
+            "macro_f1": round(macro_f1(y_true, pred, k), 4)}
+    return {"targets": out, "n_background": n_bg,
+            "resolution_per_hour": round(per_hour / n_bg, 3)}
+
+
+def print_fixed_fa(fx, names):
+    """고정 오경보 표. `fixed_fa_points` 결과를 그대로 받는다."""
+    if not fx:
+        return
+    print(f"\n=== 고정 오경보 지점의 클래스별 재현율 "
+          f"(배경음 {fx['n_background']:,}창, 해상도 "
+          f"{fx['resolution_per_hour']:.2f}회/h) ===")
+    print(f"  {'지점':>8}{'문턱값':>9}{'실제/h':>9}{'macroF1':>9}   "
+          + "".join(f"{n[:8]:>9}" for n in names))
+    print("  " + "-" * (44 + 9 * len(names)))
+    for lbl, d in fx["targets"].items():
+        if d is None:
+            print(f"  {lbl:>8}{'—':>9}{'측정 불가':>11}")
+            continue
+        print(f"  {lbl:>8}{d['thr']:>9.2f}{d['per_hour']:>9.1f}"
+              f"{d['macro_f1']:>9.4f}   "
+              + "".join(f"{100*d['recall'][n]:>8.1f}%" for n in names))
+    print("  **모델 비교는 argmax 재현율이 아니라 이 표로 한다.** argmax 는 각")
+    print("  모델이 알아서 정한 동작점이라, 배경음을 더 버린 모델이 이벤트")
+    print("  재현율만 높게 보인다.")
 
 
 def self_test(names, seed=0):
@@ -471,12 +535,15 @@ def main():
         return
     if not a.checkpoint:
         sys.exit("[에러] --checkpoint 가 필요하다 (또는 --self-test)")
-    fsids, clips, starts, y_true, y_pred = run_inference(a, names)
+    fsids, clips, starts, y_true, y_pred, logits = run_inference(a, names)
     report(fsids, y_true, y_pred, names, a.n_boot, a.seed,
            clips=clips, starts=starts, hop_ms=a.hop_ms)
+    fx = fixed_fa_points(logits, y_true, names, a.hop_ms)
+    print_fixed_fa(fx, names)
     if a.json:
         import json
         out = summary_json(fsids, y_true, y_pred, names, a.hop_ms)
+        out["fixed_fa"] = fx           # 모델 비교의 기준 (argmax 대신)
         out["checkpoint"] = a.checkpoint
         with open(a.json, "w", encoding="utf-8") as f:
             json.dump(out, f, ensure_ascii=False, indent=2)

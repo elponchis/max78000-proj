@@ -40,6 +40,7 @@ INCLUDE = [
     "datasets/safesound_mel.py",          # SafeSound 상속 로더
     "models/ai85net-safesound-mel.py",    # 2D CNN
     "tools/kat_safesound_mel.py",         # 멜 경로 KAT
+    "tools/kat_models.py",                # 모델 forward 회귀 (배치 크기·레이아웃)
     "tools/mel_range_sweep.py",           # dB 구간 근거 재현용
     "tools/input_stats.py",               # 입력 int8 통계 (붕괴 원인 판별)
     "colab/qat_policy_safesound.yaml",

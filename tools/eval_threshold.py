@@ -147,23 +147,52 @@ def margin_report(logits, y_true, clips, names, bg, per_hour, sources,
         hits = [r for r in rows if r["thr"] is not None]
         base = margin_predict(marg_ev, ev_best, logits[:, bg], bg, 0.0)
         cols = [("b=0", base)] + [(f"{r['target']:.0f}/h", r["pred"]) for r in hits]
-        print("\n=== 배경음 오경보의 출처별 분해 (시간당 기여분) ===")
-        print(f"  {'출처':<26}{'창':>7}" + "".join(f"{c[0]:>12}" for c in cols))
-        print("  " + "-" * (33 + 12 * len(cols)))
+        print("\n=== 배경음 오경보의 출처별 분해 (시간당 기여분 + 자체 오탐률) ===")
+        print(f"  {'출처':<26}{'창':>7}{'자체오탐':>9}"
+              + "".join(f"{c[0]:>12}" for c in cols))
+        print("  " + "-" * (42 + 12 * len(cols)))
         for tag in sorted(set(tags[sel])):
             m = sel & (tags == tag)
             n = int(m.sum())
+            own = int((m & (base != bg)).sum()) / max(n, 1)   # b=0 기준 자체 오탐률
             cells = ""
             for _, pred in cols:
                 f = int((m & (pred != bg)).sum())
                 cells += f"{per_hour * f / n_bg:>7.1f}({f:>3})"
-            print(f"  {tag:<26}{n:>7,}{cells}")
+            print(f"  {tag:<26}{n:>7,}{100*own:>8.1f}%{cells}")
+        own_all = int((sel & (base != bg)).sum()) / max(n_bg, 1)
         cells = "".join(f"{per_hour * int((sel & (p != bg)).sum()) / n_bg:>7.1f}"
                         f"({int((sel & (p != bg)).sum()):>3})" for _, p in cols)
-        print(f"  {'합계':<26}{n_bg:>7,}{cells}")
-        print("  괄호는 창 수. 시간당 값은 **전체 배경음 기준 기여분**이라 합이 총")
-        print("  오경보와 같다 (출처별 자체 오탐률이 아니다). 자체 오탐률을 보려면")
-        print("  창 수로 나눠 볼 것 — 창 수가 적은 출처는 분산이 크다.")
+        print(f"  {'합계':<26}{n_bg:>7,}{100*own_all:>8.1f}%{cells}")
+        print("  '자체오탐' = 그 출처 창 중 오경보가 된 비율 (b=0). 출처를 서로")
+        print("  비교할 때 쓴다. 뒤의 시간당 값은 **전체 배경음 기준 기여분**이라")
+        print("  합이 총 오경보와 같다. 창 수가 적은 출처는 분산이 크다.")
+
+        # ── 일반 배경음만 기준. **이게 실환경에 가까운 수치다.**
+        #
+        # 테스트 배경음의 상당 부분이 하드 네거티브(경보음·식기·군중·아기 울음)다.
+        # 규칙 3-1 대로 **일부러 헷갈리는 소리만 모은 것**이라 실배치 환경의 구성이
+        # 아니다. 전체 기준 오경보는 그만큼 부풀려져 있다. 두 수치를 함께 본다.
+        gen = sel & np.char.startswith(tags.astype(str), "일반 배경음")
+        n_gen = int(gen.sum())
+        if n_gen:
+            print(f"\n=== 일반 배경음만 기준 (하드 네거티브 제외) ===")
+            print(f"  일반 배경음 {n_gen:,}창 / 전체 배경음 {n_bg:,}창 "
+                  f"({100*n_gen/n_bg:.1f}%) — 나머지 {100*(1-n_gen/n_bg):.1f}%는")
+            print(f"  하드 네거티브다 (규칙 3-1: 일부러 헷갈리는 소리만 모은 것).")
+            print(f"  {'지점':>8}{'일반만/h':>11}{'전체/h':>11}{'배수':>7}")
+            print("  " + "-" * 38)
+            for lbl, pred in cols:
+                g = int((gen & (pred != bg)).sum())
+                t = int((sel & (pred != bg)).sum())
+                gh = per_hour * g / n_gen
+                th = per_hour * t / n_bg
+                print(f"  {lbl:>8}{gh:>11.1f}{th:>11.1f}"
+                      f"{(th / gh if gh else float('nan')):>7.2f}")
+            print("  ⚠️ 실배치에 더 가까운 것은 '일반만' 쪽이다. 다만 하드 네거티브에")
+            print("     대한 오탐이 실환경에서 0 이라는 뜻은 아니다 — 그 소리들도")
+            print("     실제로 존재하고, 다만 빈도가 이 테스트셋만큼 높지는 않다.")
+            print("     논문에는 **두 수치를 함께** 적고 구성비를 밝힌다.")
 
         print("\n=== 오경보가 울린 클래스 (b=0) ===")
         for c, n in enumerate(names):

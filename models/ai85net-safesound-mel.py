@@ -32,6 +32,7 @@ BatchNorm 을 **쓰지 않는다.** 구성 ④가 `FusedConv1dReLU`(BN 없음)�
 채널당 4,096바이트로 프로세서당 한도 안이다. **확정은 `ai8xize.py` 합성 결과로
 한다** (CLAUDE.md 3장 — 구조 변경 시 조기 검증).
 """
+import torch
 from torch import nn
 
 import ai8x
@@ -95,7 +96,14 @@ class AI85SafeSoundMelNet(nn.Module):
         x = self.drop(x)
         x = self.conv5(x)
         x = self.conv6(x)
-        x = x.view(x.size(0), -1)
+        # ⚠️ `view` 를 쓰면 안 된다. 입력이 channels_last 이면 (C,H,W) 가 메모리에서
+        # 연속이 아니라 `view` 가 RuntimeError 로 죽는다. Colab 학습이 에폭 0
+        # 마지막 배치(59샘플)에서 torch.compile 재컴파일 후 channels_last 로
+        # 바뀌면서 여기서 터졌다. `flatten` 은 필요하면 복사해서 **논리 순서를
+        # 보존**한다 — 즉 평탄화 결과는 C×H×W 순서 그대로이고 FC 가중치 대응도
+        # 그대로다 (합성 결과에 영향 없음). `tools/kat_models.py` 가 이것을
+        # channels_last 입력으로 회귀 검사한다.
+        x = torch.flatten(x, 1)
         x = self.fc(x)
         return x
 
