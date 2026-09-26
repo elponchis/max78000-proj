@@ -194,6 +194,40 @@
 - [x] 클래스 수에 맞춰 KWS20 v3 백본 수정 (FC 층 **21 → 5**)
       `models/ai85net-safesound.py`. 1× 165,457 params (442KB의 36.6%)
       ⚠️ 채널 스윕은 2×가 아니라 **1.5×가 8bit 상한**이다 (params가 채널에 제곱 비례)
+- [ ] **원본 단위 검증셋으로 교체** ← 다음 학습부터. 구현은 기준선 분석 뒤에 결정
+      **문제**: ai8x 는 train 을 **창 단위**로 쪼갠다
+      (`distiller/apputils/data_loaders.py:get_data_loaders` → `np.random.shuffle(indices)`).
+      우리 데이터는 원본 하나에서 창을 최대 3개 뜨므로, 검증 창의 대부분은
+      **같은 녹음의 다른 창이 학습에 들어가 있다.** 검증 정확도가 낙관적으로 나오고
+      조기 종료·임계값 선택이 그 낙관치를 보고 결정된다. 5장 규칙 1을 train/val
+      경계에서 어긴 셈이다 (train/test 경계는 지켜져 있다).
+
+      **우회 경로 — 패치 불필요.** 같은 함수에 first-class 후크가 있다:
+      ```python
+      if hasattr(train_dataset, 'valid_indices'):
+          valid_indices = train_dataset.valid_indices
+          train_indices = list(set(indices) - set(valid_indices))
+      else:
+          np.random.shuffle(indices)            # ← 지금 여기로 간다
+      ```
+      즉 `datasets/safesound.py` 의 train 데이터셋에 **`valid_indices` 속성만
+      노출하면** distiller 가 shuffle 경로를 건너뛰고 우리 분리를 그대로 쓴다.
+      `--validation-split` 값은 그때부터 **무시된다** (혼동 방지로 로그에 남길 것).
+
+      **구현 방안**
+      1. `SafeSound.__init__(d_type="train")` 에서 인덱스를 읽을 때 `fsid` 를 모은다
+      2. 클래스별로 원본을 `rank_id(fsid)`(md5 해시) 순으로 세워 앞 10%를 검증으로
+         — `build_class_manifest.py` 의 전역 분할과 **같은 결정적 방식**이라
+         시드·난수 상태에 의존하지 않고 재실행·재집계에서 동일하다
+      3. 클래스별로 떼므로 검증셋의 클래스 구성이 train 과 같게 유지된다
+         (siren 은 원본이 128개뿐이라 10% = 12원본. 표본이 작다는 점은 기록할 것)
+      4. 그 원본에 속한 **모든 창**의 인덱스를 `valid_indices` 로 노출
+      5. 분리 결과(원본 목록)를 `MANIFEST.json` 에 넣어 실험 간 동일성을 증명
+
+      **주의**: 이 교체는 검증 지표의 정의를 바꾸므로 기준선과 직접 비교되지 않는다.
+      바꾼 뒤 첫 학습은 "v2 기준선"으로 따로 세우고, 비교표에 분리 방식을 명기한다.
+      임계값 선택은 그 전까지 `eval_threshold.py --pick-on test-half`(원본 단위 반분)로
+      한다.
 - [ ] `.pt` 캐시를 Drive 업로드 → Colab에서 본 학습
       (**대량 학습 전 사용자 확인 필수**)
 - [ ] **Colab 1 epoch 소요 시간 기록** → 실험 일정 산출 기준값
