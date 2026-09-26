@@ -69,6 +69,14 @@ def main():
     ap.add_argument("--lo", type=float, default=-2.0)
     ap.add_argument("--hi", type=float, default=8.0)
     ap.add_argument("--step", type=float, default=0.25)
+    ap.add_argument("--pick-on", choices=["val", "test"], default="val",
+                    help="운용 지점(b)을 고를 데이터. val(기본)=검증셋에서 고르고 "
+                         "테스트셋에는 한 번만 적용한다. test=테스트셋에서 고른다 "
+                         "(진단용, 낙관치)")
+    ap.add_argument("--validation-split", type=float, default=0.1)
+    ap.add_argument("--split-seed", type=int, default=0,
+                    help="ai8x 가 검증셋을 떼는 시드. distiller 가 get_data_loaders "
+                         "안에서 set_deterministic() 을 인자 없이 불러 0 이 된다")
     ap.add_argument("--png", help="곡선 PNG 저장 경로")
     ap.add_argument("--json", help="스윕 결과 JSON 저장 경로")
     a = ap.parse_args()
@@ -77,19 +85,38 @@ def main():
     if os.path.isdir(a.ai8x):
         sys.path.insert(0, a.ai8x)
     import safesound as S
-    from eval_confusion import collect_logits
+    from eval_confusion import ai8x_valid_indices, collect_logits
 
     names = S.CLASSES
     k, bg = len(names), names.index("background")
     per_hour = 3600.0 / (a.hop_ms / 1000.0)
-
     print(f"체크포인트: {a.checkpoint}")
-    _f, _c, _s, y_true, logits = collect_logits(a, names)
+
+    # ── 운용 지점을 고를 데이터
+    if a.pick_on == "val":
+        # ai8x 가 train 에서 떼는 검증셋을 그대로 재현한다 (학습에 쓰이지 않은 창)
+        tr = S.SafeSound(os.path.join(a.data, "SafeSound"), "train",
+                         transform=None, augment=False)
+        vidx = ai8x_valid_indices(len(tr), a.validation_split, a.split_seed)
+        print(f"검증셋 재현: train {len(tr):,} 중 {len(vidx):,}창 "
+              f"(split {a.validation_split}, seed {a.split_seed})")
+        del tr
+        _f, _c, _s, y_pick, lg_pick = collect_logits(a, names, "train", vidx)
+    else:
+        print("⚠️ --pick-on test — 고른 지점과 보고 수치가 같은 데이터다")
+        y_pick = lg_pick = None
+
+    # ── 테스트셋 (항상 본다)
+    _f, _c, _s, y_true, logits = collect_logits(a, names, "test")
     n_bg = int((y_true == bg).sum())
     print(f"테스트 창 {len(y_true):,} (배경음 {n_bg:,})  hop {a.hop_ms}ms "
           f"→ 시간당 {per_hour:,.0f}회 추론\n")
 
+    if y_pick is None:
+        y_pick, lg_pick = y_true, logits
+
     offsets = np.arange(a.lo, a.hi + 1e-9, a.step)
+    pick_rows = sweep(lg_pick, y_pick, k, bg, offsets, per_hour)
     rows = sweep(logits, y_true, k, bg, offsets, per_hour)
 
     print(f"{'b':>6}{'오경보/h':>11}{'오탐률':>9}   " +
@@ -103,18 +130,39 @@ def main():
         rec = "".join(f"{100*v:>8.1f}%" for v in r["recall"])
         print(f"{r['b']:>6.2f}{r['per_hour']:>11,.0f}{r['fa_rate']:>8.1%}   {rec}")
 
-    print(f"\n=== 오경보 목표 지점 (창 단위 상대 비교) ===")
-    hits = at_targets(rows, names)
-    print(f"{'목표/h':>8}{'b':>7}{'실제/h':>10}   " +
+    # ── 운용 지점: 고르는 데이터와 보고하는 데이터를 분리한다
+    where = "검증셋" if a.pick_on == "val" else "테스트셋(진단용)"
+    hits = at_targets(pick_rows, names)
+    by_b = {round(r["b"], 4): r for r in rows}
+
+    print(f"\n=== 운용 지점 — b 는 **{where}**에서 고르고, 아래 수치는 "
+          f"{'테스트셋에 한 번 적용한 결과' if a.pick_on == 'val' else '같은 데이터'} ===")
+    print(f"{'목표/h':>8}{'b':>7}{'고른 곳/h':>11}{'테스트/h':>11}   " +
           "".join(f"{n[:8]:>9}" for n in names))
-    print("-" * (25 + 9 * k))
+    print("-" * (37 + 9 * k))
+    applied = {}
     for t, r in hits.items():
         if r is None:
-            print(f"{t:>8.0f}{'—':>7}{'도달 불가':>10}   "
-                  f"(b={a.hi} 까지 올려도 {rows[-1]['per_hour']:,.0f}회)")
+            print(f"{t:>8.0f}{'—':>7}{'도달 불가':>11}{'—':>11}   "
+                  f"(b={a.hi} 까지 올려도 {pick_rows[-1]['per_hour']:,.0f}회)")
             continue
-        rec = "".join(f"{100*v:>8.1f}%" for v in r["recall"])
-        print(f"{t:>8.0f}{r['b']:>7.2f}{r['per_hour']:>10,.0f}   {rec}")
+        te = by_b.get(round(r["b"], 4))
+        rec = "".join(f"{100*v:>8.1f}%" for v in te["recall"])
+        print(f"{t:>8.0f}{r['b']:>7.2f}{r['per_hour']:>11,.0f}"
+              f"{te['per_hour']:>11,.0f}   {rec}")
+        applied[t] = {"b": r["b"], "pick_per_hour": r["per_hour"],
+                      "test_per_hour": te["per_hour"],
+                      "test_recall": {n: round(float(v), 4)
+                                      for n, v in zip(names, te["recall"])}}
+
+    if a.pick_on == "val":
+        print("\n  b 는 학습에 쓰이지 않은 검증셋에서 골랐고 테스트셋에는 한 번만")
+        print("  적용했다 — 이 수치는 보고에 쓸 수 있다. 다만 창 단위이므로 절대값이")
+        print("  아니라 상대 비교용이고, 논문 오경보는 stream_eval.py 와 보드에서 얻는다.")
+    else:
+        print("\n  ⚠️ **진단용, 낙관치다.** 같은 테스트셋에서 b 를 고르고 그 위에서")
+        print("     보고했으므로 실제 운용 성능보다 좋게 나온다. 보고하려면")
+        print("     `--pick-on val` 로 다시 돌릴 것.")
 
     base = rows[int(round((0.0 - a.lo) / a.step))] if a.lo <= 0 <= a.hi else None
     if base:
@@ -157,6 +205,8 @@ def main():
 
     if a.json:
         out = {"checkpoint": a.checkpoint, "hop_ms": a.hop_ms,
+               "pick_on": a.pick_on, "operating_points": applied,
+               "diagnostic_only": a.pick_on == "test",
                "classes": names, "n_windows": int(len(y_true)), "n_background": n_bg,
                "sweep": [{"b": r["b"], "per_hour": round(r["per_hour"], 1),
                           "fa_rate": round(r["fa_rate"], 5),

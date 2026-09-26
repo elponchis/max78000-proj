@@ -27,6 +27,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INCLUDE = [
     "tools/eval_threshold.py",            # 배경음 로짓 오프셋 스윕
     "tools/parse_trainlog.py",            # 학습 곡선·QAT 전환 요약
+    "tools/export_errors.py",             # 오분류 창 wav 추출 (청취 판정)
     "datasets/safesound.py",              # 데이터로더 (ai8x datasets/ 로 링크)
     "models/ai85net-safesound.py",        # 모델 (ai8x models/ 로 링크)
     "scripts/prepare_safesound.py",       # stream_eval 이 전처리 상수를 가져다 쓴다

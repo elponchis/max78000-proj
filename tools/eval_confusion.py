@@ -294,7 +294,35 @@ def load_model(checkpoint, n_classes, ai8x_dir, simulate=False, bias=False,
     return model
 
 
-def collect_logits(args, names, split="test"):
+def ai8x_valid_indices(n_train, validation_split=0.1, seed=0):
+    """ai8x(distiller) 가 train 에서 떼어내는 **검증셋 인덱스**를 재현한다.
+
+    `distiller/apputils/data_loaders.py:get_data_loaders` 경로:
+        if deterministic: distiller.set_deterministic()   # ← 인자 없음 = seed 0
+        ...
+        np.random.shuffle(indices)
+        valid_indices, train_indices = __split_list(indices, validation_split)
+        # __split_list: l[:floor(ratio*len)], l[floor(ratio*len):]
+
+    ⚠️ **시드는 `--seed 1` 이 아니라 0 이다.** train.py 가 먼저
+    `set_deterministic(args.seed)` 로 1 을 심지만, `get_data_loaders` 안에서
+    `set_deterministic()` 을 **인자 없이** 다시 불러 0 으로 덮어쓴다
+    (`set_deterministic(seed=0)`). 그 재시드와 shuffle 사이에 전역 numpy 난수를
+    쓰는 코드가 없어 이 재현이 성립한다. 학습 명령의 `--seed` 를 바꿔도 분리는
+    그대로다 — 바뀌는 건 가중치 초기화·증강 쪽이다.
+    """
+    idx = list(range(n_train))
+    rng_state = np.random.get_state()
+    try:
+        np.random.seed(seed)
+        np.random.shuffle(idx)
+    finally:
+        np.random.set_state(rng_state)             # 전역 상태를 건드리지 않는다
+    n_val = int(np.floor(validation_split * n_train))
+    return sorted(idx[:n_val])
+
+
+def collect_logits(args, names, split="test", indices=None):
     """테스트셋 전체를 추론해 **로짓까지** 돌려준다.
 
     `tools/eval_threshold.py` 가 임계값을 쓸어 보려면 argmax 가 아니라 로짓이
@@ -312,11 +340,13 @@ def collect_logits(args, names, split="test"):
     ds = S.SafeSound(os.path.join(args.data, "SafeSound"), split,
                      transform=ai8x.normalize(args=argparse.Namespace(
                          act_mode_8bit=args.simulate)), augment=False)
+    # 검증셋 평가처럼 일부만 볼 때 쓴다. 증강은 꺼 둔 채로다 (평가 조건).
+    order = list(range(len(ds))) if indices is None else list(indices)
     fsids, clips, starts, y_true, logits = [], [], [], [], []
     with torch.no_grad():
-        for i in range(0, len(ds), args.batch_size):
+        for i in range(0, len(order), args.batch_size):
             xs, ts = [], []
-            for j in range(i, min(i + args.batch_size, len(ds))):
+            for j in order[i:i + args.batch_size]:
                 x, t = ds[j]
                 xs.append(x)
                 ts.append(t)
@@ -328,7 +358,7 @@ def collect_logits(args, names, split="test"):
             logits.append(out.detach().numpy())
             y_true += ts
             if i % (args.batch_size * 20) == 0:
-                print(f"  추론 {i}/{len(ds)}", flush=True)
+                print(f"  추론 {i}/{len(order)}", flush=True)
     return (np.array(fsids), np.array(clips), np.array(starts),
             np.array(y_true), np.concatenate(logits))
 
