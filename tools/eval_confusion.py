@@ -441,6 +441,61 @@ def fixed_fa_points(logits, y_true, names, hop_ms=250,
             "resolution_per_hour": round(per_hour / n_bg, 3)}
 
 
+def bg_source_breakdown(clips, y_true, y_pred, names, data_root, split="test"):
+    """배경음 **출처별 자체 오탐률 + 어느 이벤트로 울렸는지**.
+
+    구성 ① vs ④ 비교의 핵심 지표다. 2026-09-27 청취에서 배경음 오경보의 두 축이
+    갈렸다 (`docs/results/listening-verification.md` 7.2).
+
+      · **알람 → `siren`** — 둘 다 주기적 경보음이고 다른 점은 음높이 궤적이다
+        (사이렌은 휘고 알람은 고정 음높이 반복). 스펙트로그램에서는 기울어진 선
+        대 수평선이라 3×3 conv 가 잡기 쉬우므로 **①에서 줄어들 것으로 예상**한다.
+        `hardneg:alarm → siren` 비율이 그 판정 지점이다
+      · **말소리 → `dog_bark`** — 배경음에 음성이 거의 없어서다. 이쪽은 입력
+        표현 문제가 아니라 데이터 문제이므로 ①에서도 줄지 않을 것으로 본다
+
+    두 예상이 갈리는지가 곧 "전처리 위치가 어떤 혼동에 듣는가" 이고, G8 의
+    구체 사례가 된다.
+    """
+    from eval_threshold import load_bg_sources
+
+    k = len(names)
+    bg = k - 1
+    src = load_bg_sources(data_root, split)
+    if not src:
+        return None
+    tags = np.array([src.get(c, "(미상)") for c in clips])
+    sel = y_true == bg
+    out = {}
+    for tag in sorted(set(tags[sel])):
+        m = sel & (tags == tag)
+        n = int(m.sum())
+        by = {names[c]: int((m & (y_pred == c)).sum())
+              for c in range(k) if c != bg}
+        out[tag] = {"n": n,
+                    "fa_rate": round(int((m & (y_pred != bg)).sum()) / max(n, 1), 4),
+                    "by_class": by,
+                    "by_class_rate": {c2: round(v / max(n, 1), 4)
+                                      for c2, v in by.items()}}
+    return out
+
+
+def print_bg_sources(bs, names):
+    if not bs:
+        return
+    ev = [n for n in names[:-1]]
+    print("\n=== 배경음 출처별 자체 오탐률 (argmax) ===")
+    print(f"  {'출처':<26}{'창':>7}{'자체오탐':>9}   "
+          + "".join(f"{('→' + n)[:9]:>10}" for n in ev))
+    print("  " + "-" * (42 + 10 * len(ev)))
+    for tag, d in bs.items():
+        print(f"  {tag:<26}{d['n']:>7,}{100*d['fa_rate']:>8.1f}%   "
+              + "".join(f"{100*d['by_class_rate'][n]:>9.1f}%" for n in ev))
+    print("  각 값은 **그 출처 창 중** 그 클래스로 울린 비율이다 (창 수로 정규화).")
+    print("  구성 ①/④ 비교의 핵심은 `hardneg:alarm → siren` 이다 — 음높이 궤적")
+    print("  차이라면 스펙트로그램 입력이 유리하다 (listening-verification.md 7.2).")
+
+
 def print_fixed_fa(fx, names):
     """고정 오경보 표. `fixed_fa_points` 결과를 그대로 받는다."""
     if not fx:
@@ -540,10 +595,15 @@ def main():
            clips=clips, starts=starts, hop_ms=a.hop_ms)
     fx = fixed_fa_points(logits, y_true, names, a.hop_ms)
     print_fixed_fa(fx, names)
+    bs = bg_source_breakdown(clips, y_true, y_pred, names,
+                             os.path.join(a.data, "SafeSound"),
+                             getattr(a, "split", "test"))
+    print_bg_sources(bs, names)
     if a.json:
         import json
         out = summary_json(fsids, y_true, y_pred, names, a.hop_ms)
         out["fixed_fa"] = fx           # 모델 비교의 기준 (argmax 대신)
+        out["bg_sources"] = bs         # ①/④ 의 알람→siren 비교용
         out["checkpoint"] = a.checkpoint
         with open(a.json, "w", encoding="utf-8") as f:
             json.dump(out, f, ensure_ascii=False, indent=2)
