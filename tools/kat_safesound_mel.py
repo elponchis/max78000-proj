@@ -23,6 +23,11 @@ M4 전처리에 같은 입력을 넣고 이 출력과 비교한다** (허용 오
 사용법 (WSL2):
     python3 tools/kat_safesound_mel.py            # 검증 (벡터 없으면 생성)
     python3 tools/kat_safesound_mel.py --save     # 벡터 다시 쓰기
+
+⚠️ 데이터로더 검사에 `--data` 로 샤드 루트를 줘야 한다. 기본값은 WSL 경로다.
+   Colab: `--data /content/ai8x-training/data/SafeSound`
+   샤드를 못 찾으면 **생략이 아니라 실패**다 — 기준 벡터도 실샤드 창에서만
+   만든다 (예전의 합성 톤 대체 경로가 Colab 회귀 검사 실패의 진짜 원인이었다).
 """
 
 import os
@@ -60,6 +65,13 @@ VEC_DIR = os.path.join(REPO, "tools", "kat_vectors")
 # ±2 LSB 는 약 0.55dB 이고, 그 정도면 로그 멜 특징으로서 유의미한 차이가 아니다.
 TOL_LSB = 2
 
+# 회귀 검사(PC↔PC)의 허용 오차. 펌웨어(TOL_LSB)보다 **엄격하다** — 같은 파이썬
+# 구현을 돌리므로 차이가 나올 이유가 numpy/FFT 반올림뿐이고, 그건 int8 경계에
+# 걸친 소수의 원소에서 1 LSB 로만 나타난다. 이보다 크거나 넓게 퍼지면 상수나
+# 구현이 바뀐 것이므로 실패로 본다.
+REG_TOL_LSB = 1          # 최대 절대 차이 상한
+REG_TOL_FRAC = 0.001     # 불일치 원소 비율 상한 (0.1%)
+
 OK, FAIL = "  [통과]", "  [실패]"
 fails = []
 
@@ -93,10 +105,74 @@ def c_array(name, arr, per_line=16):
     return f"static const int8_t {name}[{len(flat)}] = {{\n{body}}};\n"
 
 
-def save_vectors(win, feat, d=VEC_DIR):
+def compare_vectors(ref, got, got_db=None, d=VEC_DIR):
+    """회귀 검사 — 자리별 차이를 수치로 보고하고 허용 오차로 판정한다.
+
+    단순 `array_equal` 로 두면 **원인을 알 수 없다.** 실패가
+      · 상수·구현이 바뀐 것인지 (차이가 크고 넓다)
+      · 플랫폼 간 numpy/FFT 반올림이 int8 경계에서 1 LSB 튄 것인지 (작고 드물다)
+      · 아예 **다른 입력**을 비교한 것인지 (거의 전부 불일치)
+    구별되지 않아서다. 실제로 Colab 에서 세 번째가 일어났고(샤드를 못 찾아
+    합성 톤으로 대체됐다) 두 번째로 오진할 뻔했다.
+
+    `got_db` 를 주면 저장된 float dB 기준과도 비교한다. int8 차이가 1 LSB 인데
+    float 차이가 1 LSB(0.275dB)의 절반에도 못 미치면 **반올림 경계 문제**임이
+    확정된다 — 구현이 같다는 증거다.
+    """
+    if ref.shape != got.shape:
+        check("저장된 기준 벡터와 일치 (회귀 검사)", False,
+              f"모양이 다르다 {ref.shape} vs {got.shape} — 상수가 바뀌었다")
+        return
+    diff = got.astype(np.int32) - ref.astype(np.int32)
+    n_mis = int((diff != 0).sum())
+    frac = n_mis / diff.size
+    mx = int(np.abs(diff).max())
+    print(f"\n  회귀 검사 상세: 불일치 {n_mis:,}/{diff.size:,} "
+          f"({frac:.4%})  최대 절대 차이 {mx} LSB "
+          f"(1 LSB = {MF.SPAN_DB/255:.3f}dB)")
+    if n_mis:
+        vals, cnt = np.unique(diff[diff != 0], return_counts=True)
+        print("  차이 분포: "
+              + ", ".join(f"{int(v):+d}×{int(c)}" for v, c in zip(vals, cnt)))
+
+    # float 단계 비교 — 있으면 반올림 문제인지 확정할 수 있다
+    dbp = os.path.join(d, "melkat_logmel_db.npy")
+    if got_db is not None and os.path.isfile(dbp):
+        rdb = np.load(dbp).astype(np.float64)
+        if rdb.shape == np.asarray(got_db).shape:
+            ddb = np.abs(np.asarray(got_db, dtype=np.float64) - rdb)
+            lsb = MF.SPAN_DB / 255.0
+            print(f"  float dB 단계: 최대 {ddb.max():.6f}dB "
+                  f"(= {ddb.max()/lsb:.3f} LSB), 평균 {ddb.mean():.2e}dB")
+            if ddb.max() < 0.5 * lsb:
+                if n_mis:
+                    print("  → float 차이가 1 LSB 의 절반 미만이다. int8 불일치는")
+                    print("     **반올림 경계 문제**이고 구현은 같다.")
+                else:
+                    print("  → float 단계까지 동일하다 (float32 저장 왕복 오차만).")
+            else:
+                print("  → float 차이가 이미 크다. 반올림이 아니라 계산이 다르다")
+                print("     (numpy/FFT 버전, 필터뱅크 상수, 창 함수를 볼 것).")
+    elif got_db is not None:
+        print("  (float dB 기준이 없다 — `--save` 로 다시 만들면 다음부터 비교된다)")
+
+    ok = mx <= REG_TOL_LSB and frac <= REG_TOL_FRAC
+    detail = (f"허용: 최대 ≤{REG_TOL_LSB} LSB, 불일치 ≤{REG_TOL_FRAC:.1%}")
+    if ok and n_mis:
+        detail += " — 플랫폼 간 반올림 차이로 본다 (경고)"
+    elif not ok:
+        detail += " — 상수·구현이 바뀐 것이다. 의도한 변경이면 --save"
+    check("저장된 기준 벡터와 일치 (회귀 검사)", ok, detail)
+
+
+def save_vectors(win, feat, feat_db=None, d=VEC_DIR):
     os.makedirs(d, exist_ok=True)
     np.save(os.path.join(d, "melkat_window_int8.npy"), win)
     np.save(os.path.join(d, "melkat_logmel_int8.npy"), feat)
+    if feat_db is not None:
+        # float 기준도 남긴다 — int8 불일치가 반올림인지 계산 차이인지 가른다
+        np.save(os.path.join(d, "melkat_logmel_db.npy"),
+                np.asarray(feat_db, dtype=np.float32))
     with open(os.path.join(d, "melkat_vectors.h"), "w", encoding="utf-8") as f:
         f.write(
             "/* SafeSound 구성 (1) 로그 멜 known-answer 벡터.\n"
@@ -130,7 +206,19 @@ def save_vectors(win, feat, d=VEC_DIR):
             "지점의 값이다 |\n"
             f"| `melkat_logmel_int8.npy` | int8 로그 멜 "
             f"({MF.N_MELS}×{MF.N_FRAMES}, mel-major) |\n"
-            "| `melkat_vectors.h` | 위 둘의 C 배열 — 펌웨어용 |\n\n"
+            "| `melkat_logmel_db.npy` | 양자화 **전** float dB (float32) — "
+            "int8 불일치가 반올림인지 계산 차이인지 가른다 |\n"
+            "| `melkat_vectors.h` | int8 둘의 C 배열 — 펌웨어용 |\n\n"
+            "## 회귀 검사 허용 오차 (PC↔PC)\n\n"
+            f"최대 절대 차이 ≤ **{REG_TOL_LSB} LSB** 이고 불일치 원소 비율 ≤ "
+            f"**{REG_TOL_FRAC:.1%}** 면 통과(경고)다. 같은 파이썬 구현이라 차이가\n"
+            "날 이유는 numpy/FFT 반올림뿐이고, 그건 int8 경계에 걸친 소수의\n"
+            "원소에서 1 LSB 로만 나타난다. float dB 차이가 1 LSB 의 절반 미만이면\n"
+            "반올림 문제임이 확정된다.\n\n"
+            "⚠️ 이 벡터는 **실제 샤드의 test 창 0번**에서 만든다. 샤드를 못 찾으면\n"
+            "검사는 생략이 아니라 **실패**다 — Colab 에서 경로가 달라 합성 톤으로\n"
+            "대체됐고, 그 때문에 회귀 검사만 실패해 수치 오차로 오진할 뻔했다.\n"
+            "`--data /content/ai8x-training/data/SafeSound` 로 넘길 것.\n\n"
             "## 상수 (바꾸면 학습·KAT·펌웨어를 함께 재생성할 것)\n\n"
             f"n_fft {MF.N_FFT} / hop {MF.HOP} / reflect pad {MF.PAD} / "
             f"n_mels {MF.N_MELS} / {MF.FMIN:.0f}~{MF.FMAX:.0f}Hz HTK / "
@@ -150,7 +238,17 @@ def save_vectors(win, feat, d=VEC_DIR):
 
 
 def main():
-    save = "--save" in sys.argv
+    import argparse
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--data", default=os.path.join(REPO, "data", "processed",
+                                                   "safesound"),
+                    help="샤드 루트 (`{루트}/test/<클래스>/index.csv`). "
+                         "Colab 은 /content/ai8x-training/data/SafeSound. "
+                         "**없으면 생략이 아니라 실패다**")
+    ap.add_argument("--save", action="store_true", help="기준 벡터를 다시 쓴다")
+    args = ap.parse_args()
+
     print(f"멜 프론트엔드: n_fft {MF.N_FFT} hop {MF.HOP} pad {MF.PAD} "
           f"mels {MF.N_MELS} frames {MF.N_FRAMES}")
     print(f"양자화: TOP_DB {MF.TOP_DB} SPAN_DB {MF.SPAN_DB} "
@@ -204,9 +302,19 @@ def main():
                                           .max())) < 1.5,
           f"{float(MF.log_mel_db(tone(1000.0, 127.0)).max()):.2f}dB")
 
-    # 4~6. 데이터로더 — 실제 샤드가 있을 때만
-    root = os.path.join(REPO, "data", "processed", "safesound")
-    if os.path.isdir(os.path.join(root, "test")):
+    # 4~6. 데이터로더 — 실제 샤드가 **있어야 한다**.
+    #
+    # ⚠️ 예전에는 샤드가 없으면 "생략" 하고 합성 톤으로 기준 벡터를 만들었다.
+    #    그 결과 Colab 에서 경로가 달라 샤드를 못 찾자 로더 검사가 **한 번도
+    #    돌지 않은 채** 통과로 보였고, 저장된(실샤드) 벡터와 그 자리에서 만든
+    #    (합성 톤) 벡터를 비교해 회귀 검사만 실패했다. 원인이 수치 오차처럼
+    #    보이지만 사실은 **입력 자체가 다른 것**이었다. 생략은 없앤다.
+    root = args.data
+    if not os.path.isdir(os.path.join(root, "test")):
+        check(f"샤드를 찾았다 ({root})", False,
+              "데이터로더 검사가 하나도 못 돌았다. --data 로 샤드 루트를 줄 것 "
+              "(Colab: /content/ai8x-training/data/SafeSound)")
+    else:
         import safesound as S
         import safesound_mel as SM
 
@@ -240,21 +348,15 @@ def main():
 
         win = w0[S.MARGIN:S.MARGIN + S.WIN]
         feat = direct
-    else:
-        print("  (샤드가 없어 데이터로더 검사 생략 — prepare_safesound.py 먼저)")
-        win = tone(1000.0, amp=100.0)
-        feat = MF.log_mel_int8(win)
+        feat_db = MF.log_mel_db(win)
 
-    # 기준 벡터
-    wpath = os.path.join(VEC_DIR, "melkat_logmel_int8.npy")
-    if save or not os.path.isfile(wpath):
-        save_vectors(win, feat)
-        print(f"\n  기준 벡터 저장: {VEC_DIR}/melkat_*")
-    else:
-        ref = np.load(wpath)
-        check("저장된 기준 벡터와 일치 (회귀 검사)",
-              ref.shape == feat.shape and bool((ref == feat).all()),
-              "다르면 전처리 상수가 바뀐 것이다 — 의도한 변경이면 --save")
+        # 기준 벡터 — 실샤드 창 하나로 만든다 (합성 톤 대체 경로는 없다)
+        wpath = os.path.join(VEC_DIR, "melkat_logmel_int8.npy")
+        if args.save or not os.path.isfile(wpath):
+            save_vectors(win, feat, feat_db)
+            print(f"\n  기준 벡터 저장: {VEC_DIR}/melkat_*")
+        else:
+            compare_vectors(np.load(wpath), feat, feat_db)
 
     print()
     if fails:

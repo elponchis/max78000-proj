@@ -6,7 +6,20 @@
 |---|---|
 | `melkat_window_int8.npy` | 1초 int8 창 (16384) — ④와 같은 지점의 값이다 |
 | `melkat_logmel_int8.npy` | int8 로그 멜 (64×64, mel-major) |
-| `melkat_vectors.h` | 위 둘의 C 배열 — 펌웨어용 |
+| `melkat_logmel_db.npy` | 양자화 **전** float dB (float32) — int8 불일치가 반올림인지 계산 차이인지 가른다 |
+| `melkat_vectors.h` | int8 둘의 C 배열 — 펌웨어용 |
+
+## 회귀 검사 허용 오차 (PC↔PC)
+
+최대 절대 차이 ≤ **1 LSB** 이고 불일치 원소 비율 ≤ **0.1%** 면 통과(경고)다. 같은 파이썬 구현이라 차이가
+날 이유는 numpy/FFT 반올림뿐이고, 그건 int8 경계에 걸친 소수의
+원소에서 1 LSB 로만 나타난다. float dB 차이가 1 LSB 의 절반 미만이면
+반올림 문제임이 확정된다.
+
+⚠️ 이 벡터는 **실제 샤드의 test 창 0번**에서 만든다. 샤드를 못 찾으면
+검사는 생략이 아니라 **실패**다 — Colab 에서 경로가 달라 합성 톤으로
+대체됐고, 그 때문에 회귀 검사만 실패해 수치 오차로 오진할 뻔했다.
+`--data /content/ai8x-training/data/SafeSound` 로 넘길 것.
 
 ## 상수 (바꾸면 학습·KAT·펌웨어를 함께 재생성할 것)
 

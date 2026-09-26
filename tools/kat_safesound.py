@@ -24,6 +24,10 @@ PC 전처리와 펌웨어 전처리가 어긋나면 정확도 괴리(G4)의 원�
 사용법 (WSL2):
     python3 tools/kat_safesound.py                # 검증 (벡터 없으면 생성)
     python3 tools/kat_safesound.py --save         # 벡터 다시 쓰기
+
+⚠️ 실샤드 검사(7번)에 `--data` 로 샤드 루트를 줘야 한다. 기본값은 WSL 경로다.
+   Colab: `--data /content/ai8x-training/data/SafeSound`
+   샤드를 못 찾으면 **생략이 아니라 실패**다 — 검사가 한 번도 안 돌았다는 뜻이다.
 """
 
 import csv
@@ -136,8 +140,51 @@ def save_vectors(win_int8, tensor_int8, d=VEC_DIR):
     return d
 
 
+def real_shard_checks(root):
+    """**실제 샤드**로 로더를 한 번 돌린다.
+
+    위의 검사 1~5 는 합성 fixture 로 하므로 플랫폼과 무관하게 재현되지만,
+    **진짜 데이터셋이 그 자리에 있는지는 확인하지 않는다.** 멜 쪽 KAT 가
+    Colab 에서 샤드를 못 찾고도 통과로 보였던 것과 같은 구멍이다. 여기서
+    막는다 — 샤드가 없으면 생략이 아니라 실패다.
+    """
+    if not os.path.isdir(os.path.join(root, "test")):
+        check(f"샤드를 찾았다 ({root})", False,
+              "실샤드 검사가 하나도 못 돌았다. --data 로 샤드 루트를 줄 것 "
+              "(Colab: /content/ai8x-training/data/SafeSound)")
+        return
+    ds = S.SafeSound(root, "test", transform=None, augment=False)
+    check(f"실샤드 test 로딩 ({os.path.basename(root)})", len(ds) > 0,
+          f"{len(ds):,}창")
+    x, _t = ds[0]
+    check("실샤드 입력 모양 (128,128)", tuple(x.shape) == (S.ROW, S.ROW),
+          str(tuple(x.shape)))
+    check("실샤드 입력 범위 [0,1)",
+          0.0 <= float(x.min()) and float(x.max()) < 1.0,
+          f"[{float(x.min()):.4f}, {float(x.max()):.4f}]")
+    # 실데이터에서도 reshape 공식이 kws20 과 같은가 (합성 램프와 별개로 확인)
+    row = np.asarray(ds._shard(ds.index[0][1])[ds.index[0][2]])   # noqa: SLF001
+    w = row[S.MARGIN:S.MARGIN + S.WIN]
+    ref = torch.transpose(
+        ((torch.from_numpy(w.astype(np.int16)) + 128).float() / 256.0)
+        .reshape((-1, S.ROW)), 1, 0)
+    check("실샤드에서도 (128,128) 변환이 공식과 일치", torch.equal(x, ref))
+    check("실샤드를 mmap 으로 연다",
+          isinstance(ds._shard(ds.index[0][1]), np.memmap))       # noqa: SLF001
+
+
 def main():
-    save = "--save" in sys.argv
+    import argparse
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--data", default=os.path.join(REPO, "data", "processed",
+                                                   "safesound"),
+                    help="샤드 루트 (`{루트}/test/<클래스>/index.csv`). "
+                         "Colab 은 /content/ai8x-training/data/SafeSound. "
+                         "**없으면 생략이 아니라 실패다**")
+    ap.add_argument("--save", action="store_true", help="기준 벡터를 다시 쓴다")
+    args = ap.parse_args()
+    save = args.save
     tmp = tempfile.mkdtemp(prefix="kat_safesound_")
     root = os.path.join(tmp, "SafeSound")
 
@@ -242,6 +289,9 @@ def main():
         check("저장된 KAT 벡터와 현재 파이프라인이 일치 (회귀 검사)",
               np.array_equal(old_w, ramp) and np.array_equal(old_t, tensor_int8),
               "다르면 전처리·로더가 바뀐 것이다 — 의도한 변경이면 --save")
+
+    # ── 7. 실제 샤드 (합성 fixture 와 별개로 진짜 데이터셋을 한 번 만진다)
+    real_shard_checks(args.data)
 
     print()
     if fails:
