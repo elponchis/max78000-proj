@@ -32,6 +32,8 @@ BatchNorm 을 **쓰지 않는다.** 구성 ④가 `FusedConv1dReLU`(BN 없음)�
 채널당 4,096바이트로 프로세서당 한도 안이다. **확정은 `ai8xize.py` 합성 결과로
 한다** (CLAUDE.md 3장 — 구조 변경 시 조기 검증).
 """
+import os
+
 import torch
 from torch import nn
 
@@ -223,8 +225,113 @@ def ai85safesoundwave2dfoldnet(pretrained=False, **kwargs):
     return AI85SafeSoundMelNet(pool_first=False, dimensions=(64, 64), **kwargs)
 
 
+class AI85SafeSoundMelTeacher(nn.Module):
+    """지식 증류 **교사 어댑터** — 학생(④)의 파형 입력을 받아 멜 CNN 으로 넘긴다.
+
+    ## 왜 어댑터가 필요한가
+
+    distiller 의 `KnowledgeDistillationPolicy.forward(*inputs)` 가
+    `self.teacher(*inputs)` 를 부른다 (`knowledge_distillation.py:118`). 즉
+    **교사가 학생과 똑같은 입력을 받는다.** 교사는 멜 `(1,64,64)` 이 필요한데
+    학생 입력은 파형 `(128,128)` 이므로 그대로는 못 쓴다. 데이터로더가 두 표현을
+    동시에 내게 만드는 방법도 있지만 ai8x 의 로더 규약을 고쳐야 하고, 그러면
+    학생 쪽 학습 경로가 기준선과 달라진다.
+
+    → 이 모듈이 `forward` 안에서 **파형 → 멜** 변환을 한다. 데이터로더는 ④와
+    완전히 같은 것을 쓴다.
+
+    ## 무엇을 하는가 (세 단계)
+
+    1. `ai8x.normalize` 를 **되돌려** int8 파형을 복원한다. 학생 입력은
+       `transpose(reshape(-1,128),1,0)` 을 거친 `(128,128)` 이므로 역순으로 편다
+    2. torch 로 로그 멜을 만든다 — 상수는 전부 `datasets/melfeat.py` 에서
+       가져온다 (창 함수·멜 행렬·dB 기준점·양자화 구간)
+    3. 내부 `AI85SafeSoundMelNet` 에 넣어 로짓을 낸다
+
+    ## 정확도
+
+    교사는 `torch.no_grad()` 로만 돌고 학습되지 않으므로(`--kd-teacher-wt 0`),
+    numpy 구현과 1 LSB 수준으로 달라도 소프트 타깃에 미치는 영향은 작다.
+    그래도 **`tools/kat_teacher.py` 가 torch↔numpy 최대 오차를 재서 기록**한다 —
+    "작다" 를 측정 없이 주장하지 않는다.
+
+    ⚠️ 이 모듈은 **학습 보조 장치이고 합성 대상이 아니다.** 실기기에 올라가는
+    것은 학생(④)뿐이다. `models` 목록에 등록하는 것은 `--kd-teacher` 가 이름으로
+    모델을 찾기 때문이며(`train.py:760`), `ai8xize.py` 로 넘기지 않는다.
+    """
+
+    def __init__(self, num_classes=5, num_channels=128, dimensions=(128, 1),
+                 bias=False, **kwargs):
+        super().__init__()
+        # 학생과 같은 인자로 생성되므로(dimensions=(128,1)) 여기서 무시하고
+        # 내부 멜 모델은 제 규격으로 만든다
+        self.net = AI85SafeSoundMelNet(num_classes=num_classes, num_channels=1,
+                                       dimensions=(64, 64), bias=bias, **kwargs)
+        self._mel_ready = False
+
+    def _build_mel(self, device, dtype):
+        """멜 상수를 텐서로 올린다 (한 번만). 값은 `melfeat` 이 유일한 출처다."""
+        import sys as _sys
+
+        _sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "datasets"))
+        import melfeat as MF
+
+        self.MF = MF
+        self.register_buffer("win", torch.tensor(MF.hann(), dtype=dtype,
+                                                 device=device),
+                             persistent=False)
+        self.register_buffer("fb", torch.tensor(MF.mel_filterbank(), dtype=dtype,
+                                                device=device),
+                             persistent=False)
+        self._ref = (float(MF.hann().sum()) / 2.0) ** 2
+        self._mel_ready = True
+
+    def forward(self, x):  # pylint: disable=arguments-differ
+        """`(B, 128, 128)` 학생 입력 → 멜 → 로짓 `(B, num_classes)`."""
+        if not self._mel_ready:
+            self._build_mel(x.device, torch.float32)
+        MF = self.MF
+
+        # ── 1. normalize 되돌리기 → int8 파형 (B, 16384)
+        # 학생 입력은 `x8/256 - 0.5` 를 normalize 가 `(v-0.5)*256` 로 되돌린
+        # 상태다. act_mode_8bit 이면 이미 [-128,127] 이고, float 모드면 그것을
+        # 128 로 나눈 값이다 (ai8x.py:37). 두 경우를 크기로 가른다.
+        w = x if float(x.abs().max()) > 2.0 else x * 128.0
+        # (128,128) → 원래 순서: x[r][c] = sample[c*128+r]
+        w = torch.transpose(w, 1, 2).reshape(w.size(0), -1)
+
+        # ── 2. 로그 멜 (melfeat 과 같은 순서·상수)
+        xp = nn.functional.pad(w.unsqueeze(1) / 128.0, (MF.PAD, MF.PAD),
+                               mode="reflect").squeeze(1)
+        frames = xp.unfold(1, MF.N_FFT, MF.HOP)[:, :MF.N_FRAMES] * self.win
+        spec = torch.fft.rfft(frames, n=MF.N_FFT, dim=2)
+        power = (spec.real ** 2 + spec.imag ** 2) / self._ref
+        mel = torch.matmul(power, self.fb.t())                 # (B, frames, mels)
+        db = 10.0 * torch.log10(mel + MF.EPS)
+        q = torch.round((db - MF.TOP_DB) * (255.0 / MF.SPAN_DB)) + 127.0
+        q = torch.clamp(q, -128.0, 127.0).transpose(1, 2)      # (B, mels, frames)
+
+        # ── 3. 학생과 같은 스케일 규약으로 멜 모델에 넣는다
+        f = q if float(x.abs().max()) > 2.0 else q / 128.0
+        return self.net(f.unsqueeze(1))
+
+
+def ai85safesoundmelteacher(pretrained=False, **kwargs):
+    """C(지식 증류)의 교사. `--kd-teacher ai85safesoundmelteacher` 로 쓴다.
+
+    가중치는 `--kd-resume <① qat_best>` 로 얹는다. 체크포인트의 키가 `net.` 접두사
+    없이 저장돼 있으므로 `tools/wrap_teacher.py` 로 접두사를 붙여 변환한다.
+    """
+    assert not pretrained
+    return AI85SafeSoundMelTeacher(**kwargs)
+
+
 models = [
     {'name': 'ai85safesoundmelnet', 'min_input': 1, 'dim': 2},
+    # 증류 교사 — 학습 보조 장치이고 **합성 대상이 아니다** (dim 은 학생 기준 1)
+    {'name': 'ai85safesoundmelteacher', 'min_input': 1, 'dim': 1},
     {'name': 'ai85safesoundmelnet_w050', 'min_input': 1, 'dim': 2},
     {'name': 'ai85safesoundmelnet_w150', 'min_input': 1, 'dim': 2},
     {'name': 'ai85safesoundwave2dnet', 'min_input': 1, 'dim': 2},
