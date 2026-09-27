@@ -157,9 +157,20 @@ def ai85safesoundnet_bias(pretrained=False, **kwargs):
     추가되는 파라미터는 conv bias 632개(100+96+64+48+64+96+100+64)뿐이라
     442KB 판정에 영향이 없다. 다만 **다른 ④ 실행과 설정이 달라지므로** 비교표에
     `bias=True` 를 반드시 명기한다.
+
+    ⚠️ **`bias` 를 강제로 True 로 덮어쓴다** (`setdefault` 가 아니다).
+    `train.py:797` 이 `model_args["bias"] = args.use_bias` 로 **항상** bias 를
+    명시해 넘기고 `--use-bias` 기본값이 False 라, `setdefault` 로 두면 이 진입점이
+    조용히 무력화된다. 실제로 그렇게 돌려서 체크포인트의 bias 9개가 버려졌고
+    "contains 9 unexpected state keys" 경고만 남았다. 학습 명령에도
+    `--use-bias` 를 함께 주어 의도가 명령줄에 보이게 한다.
     """
     assert not pretrained
-    kwargs.setdefault("bias", True)
+    if kwargs.get("bias") is False:
+        print("[ai85safesoundnet_bias] bias=False 로 들어왔으나 **True 로 덮어쓴다** "
+              "— 이 진입점의 목적이 KWS20 체크포인트의 conv bias 를 받는 것이다. "
+              "학습 명령에 --use-bias 를 함께 줄 것.")
+    kwargs["bias"] = True
     return AI85SafeSoundNet(**kwargs)
 
 

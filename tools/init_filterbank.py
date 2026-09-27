@@ -191,7 +191,12 @@ def main():
               "옵티마이저는 grad 가 None 인 파라미터를 건너뛴다")
 
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
+    # ⚠️ `epoch` 키가 **반드시 있어야 한다** — `--exp-load-weights-from` 경로의
+    #    train.py:401 이 `checkpoint.get('epoch', None) >= start_epoch` 를
+    #    평가하므로 없으면 TypeError 로 죽는다. 0 이면 float 으로 시작해
+    #    기준선과 같은 에폭(60)에서 QAT 로 들어간다.
     torch.save({"state_dict": model.state_dict(),
+                "epoch": 0,
                 "arch": "ai85safesoundnet_fb",
                 "extras": {"init": "mel_filterbank", "activation": act,
                            "bands": n_bands, "fmin": a.fmin, "fmax": a.fmax,

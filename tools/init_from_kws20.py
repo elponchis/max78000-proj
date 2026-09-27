@@ -142,12 +142,37 @@ def main():
 
     model.load_state_dict(merged, strict=True)
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
+    # ⚠️ `epoch` 키가 **반드시 있어야 한다.** `--exp-load-weights-from` 경로에서
+    #    train.py:401 이 `checkpoint.get('epoch', None) >= qat_policy['start_epoch']`
+    #    를 평가하므로, 없으면 `TypeError: '>=' not supported between NoneType
+    #    and int` 로 죽는다 (실제로 겪었다).
+    #
+    #    값은 **0** 이다. 그 비교의 뜻은 "이 체크포인트가 이미 QAT 구간에서 온
+    #    것인가" 이고, True 면 train.py 가 즉시 BN fold + QAT 초기화를 한다.
+    #    원본 KWS20 체크포인트는 실제로 QAT 학습분(epoch 192)이지만, 여기서는
+    #    **float 파인튜닝으로 시작해 기준선과 같은 지점(에폭 60)에서 QAT 로
+    #    들어가야** 비교가 성립한다. QAT 가중치는 float 초기값으로도 유효하다.
+    #    (즉시 QAT 로 들어가는 변형을 보고 싶으면 이 값을 192 로 두면 된다 —
+    #     그때는 기준선과 QAT 시점이 달라지므로 비교표에 적어야 한다.)
     torch.save({"state_dict": model.state_dict(),
+                "epoch": 0,
                 "arch": "ai85safesoundnet_bias" if a.model_bias
                         else "ai85safesoundnet",
                 "extras": {"init_from": os.path.basename(a.src),
+                           "src_epoch": ck.get("epoch"),
                            "loaded_keys": len(loaded),
                            "new_keys": len(newinit)}}, a.out)
+    # ⚠️ 저장한 키 집합이 **train.py 가 만들 모델**과 맞는지 못 박는다.
+    #    train.py:797 은 `model_args["bias"] = args.use_bias` 로 bias 를 항상
+    #    명시해 넘기고 `--use-bias` 기본값이 False 다. 그래서 학습 명령에
+    #    `--use-bias` 를 주지 않으면 bias 텐서 9개가 버려지고
+    #    "contains 9 unexpected state keys" 경고만 남는다 (실제로 겪었다).
+    nbias = sum(1 for k in model.state_dict() if k.endswith("op.bias"))
+    if a.model_bias:
+        assert nbias == 9, f"bias 텐서가 9개여야 한다 (실제 {nbias})"
+        print(f"\n⚠️ 학습 명령에 **`--use-bias` 를 반드시 포함**할 것. "
+              f"이 체크포인트에는 bias 텐서 {nbias}개가 들어 있고, 빠뜨리면 "
+              f"조용히 버려진다 (\"unexpected state keys\" 경고만 남는다).")
     print(f"\n저장: {a.out}")
     print("학습에서 `--exp-load-weights-from` 으로 쓸 것 "
           "(`--resume-from` 이 아니다 — 에폭·옵티마이저 상태를 물려받으면 "

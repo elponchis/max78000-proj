@@ -352,6 +352,26 @@
             **중단 기준의 비교값은 48.23%** — ④ 기준선(시드 1) 로그의 epoch 30
             val Top1 이다. 셀이 이 값을 직접 찍고, epoch 30 에서 넘지 못하면
             입력 스케일 불일치로 보고 중단한다.
+            **실행 중 잡은 버그 둘 (2026-09-27, 둘 다 조용히 틀리는 종류였다)**
+            1. `--exp-load-weights-from` 경로의 `train.py:401` 이
+               `checkpoint.get('epoch', None) >= qat_policy['start_epoch']` 를
+               평가한다. 우리 초기 체크포인트에 `epoch` 키가 없어
+               `TypeError: '>=' not supported between NoneType and int` 로 죽었다.
+               → 두 초기화 도구 모두 **`epoch: 0`** 을 저장한다. 0 인 이유는
+               "이미 QAT 구간에서 온 체크포인트인가" 를 묻는 비교이므로, float
+               으로 시작해 기준선과 같은 에폭(60)에서 QAT 에 들어가야 비교가
+               성립하기 때문이다 (원본은 QAT 학습분 epoch 192 지만 QAT 가중치는
+               float 초기값으로도 유효하다).
+            2. `train.py:797` 이 `model_args["bias"] = args.use_bias` 로 bias 를
+               **항상 명시해** 넘기고 `--use-bias` 기본값이 False 다. 진입점이
+               `setdefault` 로 되어 있어 **조용히 무력화**됐고, 체크포인트의 bias
+               9개가 버려진 채 `"contains 9 unexpected state keys"` 경고만 남았다.
+               → 진입점이 `bias` 를 **강제로 True 로 덮어쓰고**(덮어쓸 때 안내를
+               찍는다), 셀 명령에도 `--use-bias` 를 넣어 의도가 명령줄에 보이게
+               했다. 초기화 도구는 bias 텐서가 9개인지 assert 하고 경고를 찍는다.
+            로컬 CPU 1에폭으로 **두 경로 모두 경고 없이 로드·학습됨을 확인**했다
+            (B: val Top1 28.4% / D-1: 19.8% — 1에폭 값이라 의미는 없고 배선 확인용).
+
             ⚠️ **B 는 초기화 외에 LR·스케줄·bias 도 기준선과 다르다** (네 가지).
             비교표에서 `B kws20(ft)` 로 표기하고, 셀이 실행 시작과 끝에 "기준선과
             다른 점" 네 항목을 찍는다. "사전학습 초기화의 효과" 라고만 적으면
