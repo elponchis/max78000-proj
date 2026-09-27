@@ -45,6 +45,9 @@ MODELS = [
     # wave2D 대조 — ①과 같은 구조에 raw 파형. 앞 풀링이 하나 더 붙는다
     ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", (1, 128, 128),
      {"pool_first": True, "dimensions": (128, 128)}),
+    # wave2D fold 판 — **기본값**. 입력 4채널 64×64 (정보 손실 없음)
+    ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", (4, 64, 64),
+     {"num_channels": 4, "pool_first": False, "dimensions": (64, 64)}),
     # ④ 살리기 실험 판들 (TASKS.md B / D-1)
     ("ai85net-safesound.py", "AI85SafeSoundNet", (128, 128), {"bias": True}),
     ("ai85net-safesound.py", "AI85SafeSoundNet", (128, 128),

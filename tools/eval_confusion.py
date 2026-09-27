@@ -263,7 +263,10 @@ def report(fsids, y_true, y_pred, names, n_boot, seed,
 CONFIGS = {
     "wave": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
     "mel": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMel"),
-    # wave2D 대조 — ①과 같은 2D 구조에 ④와 같은 raw 파형. 표현/구조 분리용
+    # wave2D 대조 — ①과 같은 2D 구조에 ④와 같은 raw 파형. 표현/구조 분리용.
+    # **fold 판이 기본값**이다 (정보 손실 없음). pool 판은 비교용으로만 남긴다
+    "wave2dfold": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet",
+                   "SafeSoundWave2DFold"),
     "wave2d": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet",
                "SafeSoundWave2D"),
     # ④ 살리기 실험들 (TASKS.md B / D-1). 데이터는 ④와 같고 모델만 다르다
@@ -277,6 +280,9 @@ CONFIGS = {
 #   wave_bias   — KWS20 체크포인트의 conv bias 를 받으려면 bias=True 여야 한다
 #   wave_fb     — 첫 층 활성화가 Abs 다 (cos/sin 쌍의 |re|,|im| 을 얻기 위해)
 CONFIG_KWARGS = {
+    # fold 판: 입력이 4채널 64×64 라 선행 풀링이 필요 없다 (정보 손실 없음)
+    "wave2dfold": {"pool_first": False, "num_channels": 4,
+                   "dimensions": (64, 64)},
     "wave2d": {"pool_first": True, "dimensions": (128, 128)},
     "wave_bias": {"bias": True},
     "wave_fb": {"abs_first": True},
@@ -298,6 +304,9 @@ def dataset_class(config="wave"):
     if config == "mel":
         import safesound_mel
         return safesound_mel.SafeSoundMel
+    if config == "wave2dfold":
+        import safesound_wave2d
+        return safesound_wave2d.SafeSoundWave2DFold
     if config == "wave2d":
         import safesound_wave2d
         return safesound_wave2d.SafeSoundWave2D

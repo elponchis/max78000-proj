@@ -34,7 +34,8 @@ except ImportError:                    # tools/ 가 단독 모듈로 import 할 
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from safesound import CLASSES, SafeSound, V1_TRAIN_COUNTS, class_weights
 
-__all__ = ["CLASSES", "SafeSoundWave2D", "safesound_wave2d_get_datasets",
+__all__ = ["CLASSES", "SafeSoundWave2D", "SafeSoundWave2DFold",
+           "safesound_wave2d_get_datasets", "safesound_wave2dfold_get_datasets",
            "V1_TRAIN_COUNTS"]
 
 
@@ -50,6 +51,28 @@ class SafeSoundWave2D(SafeSound):
         return x.unsqueeze(0), target
 
 
+class SafeSoundWave2DFold(SafeSoundWave2D):
+    """**권장 기본값** — `ai8x.fold(2)` 로 `(1,128,128)` → `(4,64,64)`.
+
+    풀링판은 채널당 8,192픽셀 한계를 2×2 평균으로 피했는데, 그 평균이 접기의
+    행(연속 샘플) 축에서 **2탭 저역통과 + 2배 데시메이션**이라 **4kHz 이상을
+    버렸다** — 유리 파손 같은 광대역 과도음에 직접 불리하다.
+
+    fold 는 **인터레이스 부분표본**이다. 버리는 값이 하나도 없고, 2×2 블록의
+    4개 위상 오프셋이 서로 다른 채널로 분리되어 3×3 conv 가 함께 본다.
+    ADI 가 큰 입력에 권하는 기법이고 (`ai8x.py:42`), 채널당 64×64 = 4,096픽셀로
+    HWC 한계 8,192 안에 들어간다.
+
+    ⚠️ `ai8x.fold` 는 `img[:, i::2, j::2]` 를 `(i,j)` 순서로 이어 붙인다. 즉
+    채널 순서가 `(0,0) (0,1) (1,0) (1,1)` 이다. 펌웨어도 같은 순서로 넣어야
+    하므로 KAT 벡터로 고정한다.
+    """
+
+    def __getitem__(self, i):
+        x, target = super().__getitem__(i)      # (1, 128, 128)
+        return ai8x.fold(fold_ratio=2)(x), target
+
+
 def safesound_wave2d_get_datasets(data, load_train=True, load_test=True):
     """ai8x-training 규약 로더. 파형 구성과 **같은 샤드**를 읽는다."""
     (data_dir, args) = data
@@ -63,13 +86,35 @@ def safesound_wave2d_get_datasets(data, load_train=True, load_test=True):
     return train_ds, test_ds
 
 
+def safesound_wave2dfold_get_datasets(data, load_train=True, load_test=True):
+    """fold 판 로더 — **이쪽이 기본값이다** (정보 손실 없음)."""
+    (data_dir, args) = data
+    root = os.path.join(data_dir, "SafeSound")
+    transform = ai8x.normalize(args=args)
+
+    train_ds = (SafeSoundWave2DFold(root, "train", transform=transform)
+                if load_train else None)
+    test_ds = (SafeSoundWave2DFold(root, "test", transform=transform)
+               if load_test else None)
+    return train_ds, test_ds
+
+
 # 클래스 가중치는 파형·멜 구성과 **완전히 같은 값**을 쓴다 (같은 샤드라 수량도 같다).
 datasets = [
     {
+        # 선행 AvgPool 판 — 남겨 두지만 기본값이 아니다 (4kHz 이상 손실)
         "name": "SafeSoundWave2D",
         "input": (1, 128, 128),
         "output": tuple(CLASSES),
         "weight": class_weights(),
         "loader": safesound_wave2d_get_datasets,
+    },
+    {
+        # **권장 기본값** — 인터레이스 접기, 정보 손실 없음
+        "name": "SafeSoundWave2DFold",
+        "input": (4, 64, 64),
+        "output": tuple(CLASSES),
+        "weight": class_weights(),
+        "loader": safesound_wave2dfold_get_datasets,
     },
 ]

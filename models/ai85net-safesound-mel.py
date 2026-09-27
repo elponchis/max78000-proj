@@ -159,7 +159,13 @@ def ai85safesoundmelnet_w150(pretrained=False, **kwargs):
 
 
 def ai85safesoundwave2dnet(pretrained=False, **kwargs):
-    """**wave2D 대조 실험** — 구성 ①과 완전히 같은 2D 구조에 raw 파형을 넣는다.
+    """wave2D **선행 AvgPool 판** — 남겨 두지만 **기본값이 아니다**.
+
+    ⚠️ 이 판은 2×2 평균이 연속 샘플 축의 4kHz 이상을 버린다. 정보 손실이 없는
+    (fold 판)을 쓸 것. 이 진입점은 두 판을 비교해야
+    할 때만 남겨 둔다.
+
+    구성 ①과 완전히 같은 2D 구조에 raw 파형을 넣는다.
 
     입력은 `(1, 128, 128)`, 즉 구성 ④가 쓰는 것과 **같은 파형·같은 접기**에 채널
     축만 붙인 것이다 (`datasets/safesound_wave2d.py`).
@@ -187,9 +193,40 @@ def ai85safesoundwave2dnet(pretrained=False, **kwargs):
     return AI85SafeSoundMelNet(pool_first=True, dimensions=(128, 128), **kwargs)
 
 
+def ai85safesoundwave2dfoldnet(pretrained=False, **kwargs):
+    """**wave2D (fold) — 권장 기본값.** 입력 `(4, 64, 64)`, 정보 손실 없음.
+
+    `ai85safesoundwave2dnet`(선행 AvgPool 판)의 문제를 없앤 것이다. 풀링판은
+    채널당 8,192픽셀 한계를 2×2 평균으로 피했는데, 그 평균이 (128,128) 접기의
+    행(연속 샘플) 축에서 **2탭 저역통과 + 2배 데시메이션**이라 **4kHz 이상을
+    버렸다**. 유리 파손 같은 광대역 과도음에 직접 불리하다.
+
+    fold 판은 `ai8x.fold(2)` 로 입력을 **인터레이스 접기**만 한다 —
+    `1×128×128` → `4×64×64`. 버리는 값이 하나도 없고, 2×2 블록의 4개 위상
+    오프셋이 서로 다른 **채널**로 분리되어 3×3 conv 가 함께 본다.
+    (ADI 의 Data Folding, `ai8x.py:42`, ai8x-synthesis README.)
+
+    | | 풀링판 | **fold 판** |
+    |---|---|---|
+    | 입력 | 1×128×128 → 2×2 avg | 1×128×128 → 4×64×64 |
+    | 정보 | 4kHz 이상 손실 | **손실 없음** |
+    | 1층 | Conv2d(1→32) 288 | Conv2d(4→32) 1,152 |
+    | 총 파라미터 | 157,535 (①과 동일) | 158,399 (①의 +0.5%) |
+    | 채널당 픽셀 | 4,096 ✅ | 4,096 ✅ |
+
+    ⚠️ 그래도 **"표현만 다르다" 는 아니다.** (a) `(128,128)` 접기 자체가
+    스펙트로그램이 아니고(행은 연속 샘플, 열은 8ms 간격), (b) 1D conv 대 2D conv
+    라는 연산 차이가 남는다. 이름표는 **"구조 변경, 입력 정보 보존"** 이다.
+    """
+    assert not pretrained
+    kwargs.setdefault("num_channels", 4)
+    return AI85SafeSoundMelNet(pool_first=False, dimensions=(64, 64), **kwargs)
+
+
 models = [
     {'name': 'ai85safesoundmelnet', 'min_input': 1, 'dim': 2},
     {'name': 'ai85safesoundmelnet_w050', 'min_input': 1, 'dim': 2},
     {'name': 'ai85safesoundmelnet_w150', 'min_input': 1, 'dim': 2},
     {'name': 'ai85safesoundwave2dnet', 'min_input': 1, 'dim': 2},
+    {'name': 'ai85safesoundwave2dfoldnet', 'min_input': 1, 'dim': 2},
 ]
