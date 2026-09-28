@@ -23,3 +23,11 @@ synthesized/
 .idea/
 *.swp
 .DS_Store
+
+# ai8x train.py 가 CWD 에 남기는 편의 심볼릭 링크
+latest_log_dir
+latest_log_file
+
+# ai8x train.py 가 CWD 에 남기는 편의 심볼릭 링크
+latest_log_dir
+latest_log_file
