@@ -192,7 +192,9 @@ def ai85safesoundwave2dnet(pretrained=False, **kwargs):
     파라미터 수는 ①과 **정확히 같다** (157,535).
     """
     assert not pretrained
-    return AI85SafeSoundMelNet(pool_first=True, dimensions=(128, 128), **kwargs)
+    # fold 판과 같은 이유로 setdefault 만 쓴다 (위 주석 참조).
+    kwargs.setdefault("dimensions", (128, 128))
+    return AI85SafeSoundMelNet(pool_first=True, **kwargs)
 
 
 def ai85safesoundwave2dfoldnet(pretrained=False, **kwargs):
@@ -221,8 +223,14 @@ def ai85safesoundwave2dfoldnet(pretrained=False, **kwargs):
     라는 연산 차이가 남는다. 이름표는 **"구조 변경, 입력 정보 보존"** 이다.
     """
     assert not pretrained
+    # ⚠️ `num_channels`·`dimensions` 는 **setdefault 로만** 둔다. `train.py:794-795`
+    #    가 데이터셋의 `input` 에서 뽑아 **항상 명시해** 넘기기 때문이다
+    #    (`(4,64,64)` → num_channels 4, dimensions (64,64) — 우리가 원하는 값과
+    #    같다). 하드코딩하면 `got multiple values for keyword argument` 로 죽는다.
+    #    기본값은 이 진입점을 직접 부르는 경우(평가·KAT)를 위한 것이다.
     kwargs.setdefault("num_channels", 4)
-    return AI85SafeSoundMelNet(pool_first=False, dimensions=(64, 64), **kwargs)
+    kwargs.setdefault("dimensions", (64, 64))
+    return AI85SafeSoundMelNet(pool_first=False, **kwargs)
 
 
 class AI85SafeSoundMelTeacher(nn.Module):

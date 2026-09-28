@@ -42,6 +42,7 @@ INCLUDE = [
     "models/ai85net-safesound-mel.py",    # 2D CNN
     "tools/kat_safesound_mel.py",         # 멜 경로 KAT
     "tools/kat_models.py",                # 모델 forward 회귀 (배치 크기·레이아웃)
+    "tools/kat_entrypoints.py",           # 진입점이 train.py 인자 규약과 맞는지
     "tools/init_from_kws20.py",           # B: KWS20 v3 사전학습 초기화
     "tools/init_filterbank.py",           # D-1: 멜 필터뱅크 초기화 (구성 ③)
     "tools/wrap_teacher.py",              # C: 교사 체크포인트 감싸기
