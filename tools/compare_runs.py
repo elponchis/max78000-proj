@@ -20,12 +20,44 @@ Colab 셀 25 가 하는 일을 WSL2 에서 한다. 1D 실험이 CPU 에서 더 �
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 POINTS = ("1000/h", "300/h")
+EPOCH_RE = re.compile(r"Epoch:\s*\[(\d+)\]")
+
+
+def run_finished(ckpt_path):
+    """그 체크포인트를 낸 학습이 **끝났는가**. (끝났나, 사유) 를 돌려준다.
+
+    ⚠️ QAT 는 에폭 60부터 시작하므로 `*_qat_best.pth.tar` 는 **학습 도중에도**
+    생긴다. 그것을 확정값처럼 읽어 보고한 사고가 있었다 — D-1+C′ 를 83/150 에폭
+    시점에 재서 0.4426 으로 보고했는데 완료 후 값은 0.4927 이었다.
+
+    판정은 같은 폴더의 학습 로그에 **최종 테스트 단계**가 있는지로 한다.
+    distiller 는 학습이 다 끝난 뒤에만 `--- test (ckpt) ---` / `Test: [` 를 찍는다.
+    """
+    d = os.path.dirname(os.path.abspath(ckpt_path))
+    logs = [f for f in os.listdir(d) if f.endswith(".log")] if os.path.isdir(d) else []
+    if not logs:
+        return False, f"로그가 없어 완료를 확인할 수 없다 ({os.path.basename(d)})"
+    path = os.path.join(d, logs[0])
+    last_epoch, has_test = -1, False
+    with open(path, encoding="utf-8", errors="replace") as f:
+        for ln in f:
+            if "Test: [" in ln or "--- test (" in ln:
+                has_test = True
+            elif "Training epoch:" in ln:
+                pass
+            m = EPOCH_RE.search(ln)
+            if m:
+                last_epoch = max(last_epoch, int(m.group(1)))
+    if has_test:
+        return True, ""
+    return False, f"로그에 최종 테스트 단계가 없다 (마지막 에폭 {last_epoch})"
 
 
 def main():
@@ -43,6 +75,11 @@ def main():
     ap.add_argument("--cache", default=os.path.join(tempfile.gettempdir(),
                                                     "compare_runs"),
                     help="실행별 평가 JSON 캐시 (같은 체크포인트는 재사용)")
+    ap.add_argument("--allow-incomplete", action="store_true",
+                    help="**학습이 끝나지 않은 실행도 포함**한다. 기본은 제외다 — "
+                         "QAT 는 에폭 60부터라 `qat_best` 가 학습 도중에도 생기고, "
+                         "그걸 집어 확정값처럼 보고한 사고가 있었다 (83/150 에폭 "
+                         "시점 0.4426 → 완료 후 0.4927)")
     a = ap.parse_args()
     if not a.run:
         sys.exit("[에러] --run 이 필요하다")
@@ -54,6 +91,14 @@ def main():
         if not os.path.isfile(ck):
             print(f"  [건너뜀] {label}: 체크포인트 없음 {ck}")
             continue
+        done, why = run_finished(ck)
+        if not done and not a.allow_incomplete:
+            print(f"  [건너뜀] {label}: **학습 미완료** — {why}")
+            print("           (QAT 는 에폭 60부터라 qat_best 가 도중에도 생긴다. "
+                  "굳이 보려면 --allow-incomplete)")
+            continue
+        if not done:
+            print(f"  [주의] {label}: 학습 미완료인데 포함한다 — {why}")
         j = os.path.join(a.cache, label.replace(" ", "_").replace("/", "_")
                          + ".json")
         if not os.path.isfile(j) or os.path.getmtime(j) < os.path.getmtime(ck):
