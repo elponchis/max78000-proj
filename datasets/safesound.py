@@ -219,7 +219,7 @@ def class_weights(root=None, d_type="train", counts=None, power=1.0):
     읽는데 그때 데이터가 없을 수 있어 상수가 필요하다.
 
     `power` 는 완화 지수다. **기준선은 1.0(순수 역빈도)** 이고, 오탐률이 나쁘면
-    `0.5`(제곱근 역빈도)로 낮춘다 — 배경음 가중치가 0.27 에서 0.52 로 올라가
+    `0.5`(제곱근 역빈도)로 낮춘다 — 배경음 가중치가 0.272 에서 0.637 로 올라가
     배경음을 더 배우고 이벤트 재현율을 일부 내준다. 오탐률/재현율 맞교환이므로
     `tools/eval_confusion.py` 의 시간당 오경보 수치를 보고 정한다.
     """
@@ -254,6 +254,16 @@ datasets = [
         "input": (128, 128),
         "output": tuple(CLASSES),
         "weight": class_weights(),
+        "loader": safesound_get_datasets,
+    },
+    {
+        # 제곱근 역빈도 가중치 (power=0.5). 데이터·모델·나머지 설정은 전부
+        # 같고 **손실 가중치 하나만** 다르다 — 재현율 ↔ 오탐률 맞교환을 본다.
+        # 실측: background 0.272 → 0.637, siren 4.93 → 2.71 (이벤트 쪽이 절반으로).
+        "name": "SafeSoundW05",
+        "input": (128, 128),
+        "output": tuple(CLASSES),
+        "weight": class_weights(power=0.5),
         "loader": safesound_get_datasets,
     },
 ]

@@ -41,6 +41,8 @@ CASES = [
     ("ai85net-safesound.py", "ai85safesoundnet_bias", (128, 128)),
     ("ai85net-safesound.py", "ai85safesoundnet_fb", (128, 128)),
     ("ai85net-safesound.py", "ai85safesoundnet_fb_relu", (128, 128)),
+    ("ai85net-safesound.py", "ai85safesoundnet_fb_k2", (128, 128)),
+    ("ai85net-safesound.py", "ai85safesoundnet_fb_k4", (128, 128)),
     ("ai85net-safesound.py", "ai85safesoundnet_w025", (128, 128)),
     ("ai85net-safesound.py", "ai85safesoundnet_w050", (128, 128)),
     ("ai85net-safesound.py", "ai85safesoundnet_w150", (128, 128)),
@@ -57,6 +59,11 @@ print("-" * 72)
 bad = []
 for fname, ep, dims in CASES:
     m = load(fname)
+    registered = {d["name"] for d in getattr(m, "models", [])}
+    if ep not in registered:
+        bad.append(f"{ep}: models 리스트 미등록 (train.py --model 선택지에 없다)")
+        print(f"{ep:<30}{str(dims):<16}{'—':>10}  ✘ models 미등록")
+        continue
     fn = getattr(m, ep, None)
     if fn is None:
         bad.append(f"{ep}: 진입점 없음")

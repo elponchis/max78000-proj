@@ -273,7 +273,14 @@ CONFIGS = {
     "wave_bias": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
     "wave_fb": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
     "wave_fb_relu": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
+    # 해상도 곡선 — 첫 층 FIR 길이만 128 → 256 → 512탭. 데이터셋은 그대로다
+    "wave_fb_k2": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
+    "wave_fb_k4": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
 }
+
+# 제곱근 가중치(D-1 root) 는 **여기에 항목이 없다.** 손실 가중치만 다르고
+# 모델·테스트셋이 D-1 과 같으므로 평가는 `wave_fb` 로 한다. 별도 config 를
+# 만들면 없는 차이가 있는 것처럼 보인다.
 
 # 구성별 모델 생성 인자 (기본 외). `bias` 는 여기서 덮어쓸 수 있다.
 #   wave2d      — 입력이 128×128 이라 앞에 풀링이 하나 더 붙는다 (채널당 8,192픽셀 한계)
@@ -287,6 +294,8 @@ CONFIG_KWARGS = {
     "wave_bias": {"bias": True},
     "wave_fb": {"abs_first": True},
     "wave_fb_relu": {"abs_first": False},
+    "wave_fb_k2": {"abs_first": True, "first_kernel": 2},
+    "wave_fb_k4": {"abs_first": True, "first_kernel": 4},
 }
 
 

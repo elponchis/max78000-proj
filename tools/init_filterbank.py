@@ -83,6 +83,23 @@ def mel_centers(n_bands, fmin, fmax):
                                     n_bands))
 
 
+def to_conv_weight(fir, kernel):
+    """길이 `kernel*128` FIR 들을 `(out_ch, 128, kernel)` 가중치로 배치한다.
+
+    ⚠️ **배치 순서가 핵심이다.** 입력이 `x[r][c] = sample[c*128 + r]` 이므로
+
+        out[o][c] = Σ_r Σ_j W[o][r][j] · x[r][c+j]
+                  = Σ_r Σ_j W[o][r][j] · sample[c*128 + j*128 + r]
+
+    즉 탭 인덱스는 **t = j*128 + r** 다. 따라서 길이 `k*128` 의 FIR 을
+    `(k, 128)` 로 끊어(앞 128탭이 j=0) **전치**하면 `(128, k)` 가 된다.
+    뒤집어 넣으면 필터가 시간축으로 뒤섞여 엉뚱한 응답이 나오는데, 학습이
+    돌아가 버려서 눈에 띄지 않는다 — 그래서 톤 검산으로 확인한다.
+    """
+    n = fir.shape[0]
+    return fir.reshape(n, kernel, TAPS).transpose(0, 2, 1)   # (out, 128, k)
+
+
 def filterbank_weights(n_bands, fmin, fmax, relu=False, taps=TAPS,
                        out_ch=OUT_CH, sr=MF.SR):
     """(out_ch, taps) 가중치와 밴드 설명을 만든다.
@@ -122,6 +139,10 @@ def main():
     ap.add_argument("--relu", action="store_true",
                     help="활성화를 ReLU 로 유지한다 (밴드당 4필터 → 25밴드). "
                          "초기화만 바꾸는 순수 대조용")
+    ap.add_argument("--kernel", type=int, default=1, choices=(1, 2, 4),
+                    help="첫 층 커널. **FIR 길이 = kernel × 128탭**이다 "
+                         "(1→128탭 8ms, 2→256탭 16ms, 4→512탭 32ms). "
+                         "4 는 ① 멜의 n_fft 512 와 창 길이가 같다")
     ap.add_argument("--fmin", type=float, default=125.0,
                     help="최저 중심 주파수. 128탭의 분해능이 약 500Hz 라 그 아래는 "
                          "서로 분리되지 않는다 — 너무 낮게 잡아도 밴드만 낭비된다")
@@ -131,18 +152,25 @@ def main():
                          "판을 돌릴 것 (모듈 설명 참조)")
     a = ap.parse_args()
 
+    n_taps = a.kernel * TAPS
+    res_hz = 4.0 * MF.SR / n_taps          # Hann 메인로브 폭 (근사)
     n_bands = OUT_CH // (4 if a.relu else 2)
-    W, desc, centers = filterbank_weights(n_bands, a.fmin, a.fmax, a.relu)
+    W, desc, centers = filterbank_weights(n_bands, a.fmin, a.fmax, a.relu,
+                                          taps=n_taps)
     act = "ReLU" if a.relu else "Abs"
     print(f"활성화 {act} / 밴드 {n_bands}개 / 밴드당 {4 if a.relu else 2}필터 "
           f"/ 채널 {len(W)}/{OUT_CH}")
     print(f"중심 주파수 {centers[0]:.0f} ~ {centers[-1]:.0f}Hz (멜 등간격)")
-    print(f"필터 길이 {TAPS}탭 = {1000*TAPS/MF.SR:.1f}ms, "
-          f"프레임률 {MF.SR/TAPS:.1f}Hz, 분해능 약 500Hz")
-    if centers[0] < 500:
-        low = int((centers < 500).sum())
-        print(f"  ⚠️ 500Hz 아래 밴드 {low}개는 128탭으로 서로 분리되지 않는다 "
-              f"(겹쳐서 초기화된다 — 학습으로 갈라지길 기대한다)")
+    print(f"커널 {a.kernel} → 필터 길이 **{n_taps}탭 = {1000*n_taps/MF.SR:.1f}ms**, "
+          f"홉 {TAPS}샘플({1000*TAPS/MF.SR:.1f}ms), 프레임률 {MF.SR/TAPS:.1f}Hz")
+    print(f"분해능 약 {res_hz:.0f}Hz"
+          + (f" (① 멜 n_fft {MF.N_FFT} 와 창 길이 동일)" if n_taps == MF.N_FFT else ""))
+    low = int((centers < res_hz).sum())
+    if low:
+        print(f"  ⚠️ {res_hz:.0f}Hz 아래 밴드 {low}개는 {n_taps}탭으로 서로 "
+              f"분리되지 않는다 (겹쳐서 초기화된다)")
+    else:
+        print(f"  ✔ 모든 밴드가 분해능({res_hz:.0f}Hz) 위에 있다")
 
     sys.path.insert(0, a.ai8x)
     import torch
@@ -154,34 +182,47 @@ def main():
         "m4", os.path.join(REPO, "models", "ai85net-safesound.py"))
     mm = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mm)
-    model = mm.ai85safesoundnet_fb(num_classes=a.classes, relu_first=a.relu)
+    model = mm.AI85SafeSoundNet(num_classes=a.classes, abs_first=not a.relu,
+                                first_kernel=a.kernel)
 
     sd = model.state_dict()
     key = "voice_conv1.op.weight"
-    want = tuple(sd[key].shape)                 # (100, 128, 1)
+    want = tuple(sd[key].shape)                 # (100, 128, kernel)
     print(f"\n대상 {key} {want}")
-    assert want[:2] == (OUT_CH, TAPS), f"모양이 예상과 다르다: {want}"
-    sd[key] = torch.from_numpy(W[:, :, None].copy())
+    assert want == (OUT_CH, TAPS, a.kernel), f"모양이 예상과 다르다: {want}"
+    Wc = to_conv_weight(W, a.kernel)            # (out, 128, kernel)
+    assert Wc.shape == want, f"배치 후 모양 불일치: {Wc.shape}"
+    sd[key] = torch.from_numpy(Wc.copy())
     model.load_state_dict(sd, strict=True)
+    print(f"  FIR {n_taps}탭을 커널 위치 {a.kernel}개로 나눠 배치했다 "
+          f"(탭 t = j*{TAPS} + r)")
 
     # ── 검산: 톤을 넣으면 그 주파수 밴드가 최대여야 한다
-    print("\n검산 — 단일 톤이 기대 밴드를 켜는가")
+    print("\n검산 — 단일 톤이 기대 밴드를 켜는가 (저역이 갈라지는지가 관건)")
+    print(f"  {'톤':>8}{'최대 채널':>10}{'중심':>9}{'기대':>9}{'인접비(dB)':>11}  판정")
+    print("  " + "-" * 56)
     ok = True
-    for f_hz in (400.0, 1000.0, 3000.0, 6000.0):
+    for f_hz in (125.0, 200.0, 300.0, 400.0, 1000.0, 3000.0, 6000.0):
         tt = np.arange(16384) / MF.SR
         x = np.clip(np.round(100 * np.sin(2 * np.pi * f_hz * tt)), -128, 127)
         xt = torch.from_numpy(x.astype(np.float32) / 128.0)
         xt = torch.transpose(xt.reshape(-1, 128), 1, 0).unsqueeze(0)
         with torch.no_grad():
             y = model.voice_conv1(xt)[0]        # (100, 128)
-        band = int(np.argmax(y.mean(dim=1).numpy()))
+        resp = y.mean(dim=1).numpy()
+        band = int(np.argmax(resp))
         got = desc[band][0]
         near = min(range(len(centers)), key=lambda i: abs(centers[i] - f_hz))
         hit = abs(got - centers[near]) < 1e-6
         ok &= hit
-        print(f"  {f_hz:>6.0f}Hz → 최대 채널 {band:>3} "
-              f"(중심 {got:>6.0f}Hz, {desc[band][1]})  "
-              f"기대 {centers[near]:>6.0f}Hz  {'OK' if hit else '불일치'}")
+        # 인접 밴드 분리도 — 최대 밴드와 **다른 중심 주파수** 중 최대의 비.
+        # 같은 밴드의 cos/sin 짝은 제외한다 (한 밴드이지 이웃이 아니다).
+        other = [resp[i] for i in range(len(resp))
+                 if abs(desc[i][0] - got) > 1e-6]
+        sep = (20 * np.log10(max(resp[band], 1e-12) / max(max(other), 1e-12))
+               if other else float("inf"))
+        print(f"  {f_hz:>6.0f}Hz{band:>10}{got:>8.0f}Hz{centers[near]:>8.0f}Hz"
+              f"{sep:>11.1f}  {'OK' if hit else '불일치'}")
     if not ok:
         print("  ⚠️ 불일치가 있다. 접기 방향이나 샘플레이트를 다시 볼 것")
 
@@ -197,11 +238,18 @@ def main():
     #    기준선과 같은 에폭(60)에서 QAT 로 들어간다.
     torch.save({"state_dict": model.state_dict(),
                 "epoch": 0,
-                "arch": "ai85safesoundnet_fb",
+                # 진입점 이름과 맞춘다 — 체크포인트의 arch 가 실제 모델과
+                # 다르면 로더가 경고 없이 넘어가는 경로가 생긴다.
+                "arch": "ai85safesoundnet_fb"
+                        + ("" if a.kernel == 1 else f"_k{a.kernel}")
+                        + ("_relu" if a.relu else ""),
                 "extras": {"init": "mel_filterbank", "activation": act,
+                           "kernel": a.kernel, "taps": n_taps,
+                           "resolution_hz": round(res_hz, 1),
                            "bands": n_bands, "fmin": a.fmin, "fmax": a.fmax,
                            "freeze_conv1": a.freeze_conv1}}, a.out)
     print(f"\n저장: {a.out}")
+    print(f"  분리도(인접비)는 클수록 좋다 — 0dB 근처면 이웃 밴드와 구분이 없다")
     print("학습: --model ai85safesoundnet_fb"
           + (" --relu 판이면 relu_first=True 진입점" if a.relu else "")
           + f" --exp-load-weights-from {a.out}")

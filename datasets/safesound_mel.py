@@ -145,4 +145,12 @@ datasets = [
         "weight": class_weights(),
         "loader": safesound_mel_get_datasets,
     },
+    {
+        # 제곱근 역빈도 — 파형 쪽 SafeSoundW05 와 **같은 값**을 쓴다.
+        "name": "SafeSoundMelW05",
+        "input": (1, MF.N_MELS, MF.N_FRAMES),
+        "output": tuple(CLASSES),
+        "weight": class_weights(power=0.5),
+        "loader": safesound_mel_get_datasets,
+    },
 ]

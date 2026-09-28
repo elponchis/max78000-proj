@@ -1,0 +1,85 @@
+---
+# 구성 ④ (raw 파형 1D CNN) — MAX78000 합성 설정
+#
+# ai8x-synthesis/networks/kws20-v3-hwc.yaml 에서 파생했다. 우리 백본이
+# KWS20 v3 와 **층 구성·채널 수가 동일**하고 출력 클래스 수만 21 → 5 라서
+# 층 서술과 프로세서 마스크가 그대로 성립한다 (클래스 수는 yaml 에 없다).
+#
+# 입력: (128, 128) int8. 행 축 r = 프레임 내 잔 시간, 열 축 c = 8ms 프레임.
+#       x[r][c] = sample[c*128 + r]  (CLAUDE.md 4장)
+arch: ai85safesoundnet
+dataset: SafeSound
+
+layers:
+  # ── voice_conv1 : Conv1d k=1, 128 → 100
+  - pad: 0
+    activate: ReLU
+    out_offset: 0x2000
+    processors: 0xffffffffffffffff
+    data_format: HWC
+    operation: Conv1d
+    kernel_size: 1
+  # ── voice_conv2 : Conv1d k=3, 100 → 96
+  - pad: 0
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0x000fffffffffffff
+    operation: Conv1d
+    kernel_size: 3
+  # ── voice_conv3 : MaxPool2 + Conv1d k=3, 96 → 64
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x2000
+    processors: 0x0000ffffffffffff
+    operation: Conv1d
+    kernel_size: 3
+  # ── voice_conv4 : Conv1d k=3, 64 → 48
+  - pad: 0
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0xffffffffffffffff
+    operation: Conv1d
+    kernel_size: 3
+  # ── kws_conv1 : MaxPool2 + Conv1d k=3, 48 → 64
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x2000
+    processors: 0x0000ffffffffffff
+    operation: Conv1d
+    kernel_size: 3
+  # ── kws_conv2 : Conv1d k=3, 64 → 96
+  - pad: 0
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0xffffffffffffffff
+    operation: Conv1d
+    kernel_size: 3
+  # ── kws_conv3 : AvgPool2 + Conv1d k=3, 96 → 100
+  - avg_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x2000
+    processors: 0x0000ffffffffffff
+    operation: Conv1d
+    kernel_size: 3
+  # ── kws_conv4 : MaxPool2 + Conv1d k=6, 100 → 64
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0x000fffffffffffff
+    operation: Conv1d
+    kernel_size: 6
+  # ── fc : 4×64 = 256 → 5 (wide, 32bit 출력. Softmax 는 CPU)
+  - flatten: true
+    out_offset: 0x2000
+    processors: 0xffffffffffffffff
+    operation: MLP
+    output_width: 32
+    activate: None

@@ -55,6 +55,7 @@ class AI85SafeSoundNet(nn.Module):
             bias=False,
             width_mult=1.0,
             abs_first=False,
+            first_kernel=1,
             **kwargs
     ):
         super().__init__()
@@ -76,12 +77,23 @@ class AI85SafeSoundNet(nn.Module):
         # 을 바로 얻기 위해서다 — ReLU 면 위상에 따라 두 채널이 동시에 0 이 되어
         # 밴드가 사라지므로 밴드당 4필터가 필요해지고 밴드 수가 반으로 준다.
         # MAX78000 은 Abs 를 지원한다 (`ai8x.FusedConv1dAbs`).
+        # `first_kernel` 로 **FIR 길이**를 정한다. 입력 채널 축이 프레임 내 잔
+        # 시간축이므로, 커널 j 는 **프레임 하나(=128샘플)만큼 떨어진 구간**을 본다:
+        #   out[o][c] = Σ_r Σ_j W[o][r][j] · x[r][c+j],  x[r][c] = sample[c*128+r]
+        #             = Σ_t W'[o][t] · sample[c*128 + t],  t = j*128 + r
+        # 즉 **탭 수 = first_kernel × 128**, 홉은 128 그대로다(겹침이 생긴다).
+        #   k=1 → 128탭 8ms,  k=2 → 256탭 16ms,  k=4 → 512탭 32ms(① 멜 n_fft 와 동일)
+        #
+        # 패딩은 `(k-1)//2` 다. 이러면 출력 길이가 k=1 에서 128, k=2·4 에서 127 이 되고
+        # **뒤쪽 층의 차원과 FC 입력(4×64)이 셋 다 같아진다** — 비교에서 바뀌는 것이
+        # conv1 하나뿐이도록 하기 위한 선택이다 (아래 flatten 자동 계산이 검증한다).
+        fk, fp = first_kernel, (first_kernel - 1) // 2
         self.voice_conv1 = (
-            ai8x.FusedConv1dAbs(num_channels, ch(100), 1, stride=1,
-                                padding=0, bias=bias, **kwargs)
+            ai8x.FusedConv1dAbs(num_channels, ch(100), fk, stride=1,
+                                padding=fp, bias=bias, **kwargs)
             if abs_first else
-            ai8x.FusedConv1dReLU(num_channels, ch(100), 1, stride=1,
-                                 padding=0, bias=bias, **kwargs))
+            ai8x.FusedConv1dReLU(num_channels, ch(100), fk, stride=1,
+                                 padding=fp, bias=bias, **kwargs))
         # T: 128  F: 100
         self.voice_conv2 = ai8x.FusedConv1dReLU(ch(100), ch(96), 3, stride=1,
                                                 padding=0, bias=bias, **kwargs)
@@ -104,7 +116,25 @@ class AI85SafeSoundNet(nn.Module):
         self.kws_conv4 = ai8x.FusedMaxPoolConv1dReLU(ch(100), ch(64), 6, stride=1,
                                                      padding=1, bias=bias, **kwargs)
         # T: 4  F: 64  → flatten 시 4 * ch(64)
-        self.fc = ai8x.Linear(4 * ch(64), num_classes, bias=bias, wide=True, **kwargs)
+        #
+        # ⚠️ flatten 길이를 **실제로 통과시켜 구한다.** `first_kernel` 을 바꾸면
+        #    앞단 길이가 달라져 뒤쪽 풀링·컨볼루션의 내림 연산을 타고 FC 입력이
+        #    조용히 바뀔 수 있다. 하드코딩(4×64)해 두면 그때 shape 오류로 죽거나,
+        #    더 나쁘게는 죽지 않고 다른 모델이 된다.
+        #    k=1/2/4 는 이 계산으로 셋 다 4×ch(64) 임을 확인했다.
+        flat = self._flatten_len(num_channels, dimensions)
+        self.fc = ai8x.Linear(flat, num_classes, bias=bias, wide=True, **kwargs)
+
+    def _flatten_len(self, num_channels, dimensions):
+        """conv 스택에 0 을 한 번 흘려 FC 입력 길이를 구한다 (파라미터 없음)."""
+        length = dimensions[0] if isinstance(dimensions, (tuple, list)) else 128
+        with torch.no_grad():
+            x = torch.zeros(1, num_channels, length)
+            for m in (self.voice_conv1, self.voice_conv2, self.voice_conv3,
+                      self.voice_conv4, self.kws_conv1, self.kws_conv2,
+                      self.kws_conv3, self.kws_conv4):
+                x = m(x)
+        return int(x.numel())
 
     def forward(self, x):  # pylint: disable=arguments-differ
         """Forward prop"""
@@ -174,6 +204,28 @@ def ai85safesoundnet_bias(pretrained=False, **kwargs):
     return AI85SafeSoundNet(**kwargs)
 
 
+def ai85safesoundnet_fb_k2(pretrained=False, **kwargs):
+    """D-1 **256탭** 판 — 첫 층 커널 2 (FIR 256탭 = 16ms, 홉 128 로 50% 겹침).
+
+    분해능이 약 500Hz → **250Hz** 로 좋아진다. 128탭에서 서로 분리되지 않던
+    500Hz 아래 밴드들이 갈라지는지 보는 실험이다.
+    conv1 params 12,800 → 25,600, 총 178,257 (442KB 의 39.4%).
+    """
+    assert not pretrained
+    return AI85SafeSoundNet(abs_first=True, first_kernel=2, **kwargs)
+
+
+def ai85safesoundnet_fb_k4(pretrained=False, **kwargs):
+    """D-1 **512탭** 판 — 첫 층 커널 4 (FIR 512탭 = 32ms, 홉 128).
+
+    **① 멜의  와 창 길이가 같다.** 그래서 "④와 ①의 격차가 주파수
+    해상도 때문인가" 에 직접 답한다 — k=1·2·4 세 점이 해상도-성능 곡선이 된다.
+    conv1 params 12,800 → 51,200, 총 203,857 (442KB 의 45.0%).
+    """
+    assert not pretrained
+    return AI85SafeSoundNet(abs_first=True, first_kernel=4, **kwargs)
+
+
 def ai85safesoundnet_fb(pretrained=False, relu_first=False, **kwargs):
     """**필터뱅크 초기화 판** — G8 구성 ③ (학습 프론트엔드). TASKS.md D-1.
 
@@ -210,4 +262,6 @@ models = [
     {'name': 'ai85safesoundnet_bias', 'min_input': 1, 'dim': 1},
     {'name': 'ai85safesoundnet_fb', 'min_input': 1, 'dim': 1},
     {'name': 'ai85safesoundnet_fb_relu', 'min_input': 1, 'dim': 1},
+    {'name': 'ai85safesoundnet_fb_k2', 'min_input': 1, 'dim': 1},
+    {'name': 'ai85safesoundnet_fb_k4', 'min_input': 1, 'dim': 1},
 ]
