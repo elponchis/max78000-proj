@@ -46,6 +46,7 @@ INCLUDE = [
     "tools/init_filterbank.py",           # D-1: 멜 필터뱅크 초기화 (구성 ③)
     "tools/wrap_teacher.py",              # C: 교사 체크포인트 감싸기
     "tools/kat_teacher.py",               # C: 교사 어댑터 KAT
+    "tools/calib_teacher.py",             # C: 교사 로짓 전역 스케일 보정
     "tools/compare_runs.py",             # 실행 간 고정 오경보 비교 (로컬)
     "colab/schedule_safesound_ft.yaml",   # 파인튜닝 LR 스케줄
     "tools/mel_range_sweep.py",           # dB 구간 근거 재현용

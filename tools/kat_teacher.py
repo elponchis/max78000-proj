@@ -49,7 +49,11 @@ TOL_LSB = 1
 #    증류가 실제로 소비하는 것은 `softmax(logit/T)` 이므로 그것을 잰다.
 TOL_PROB = 1e-3         # 온도 소프트맥스 확률의 최대 절대 차이
 TOL_REL = 1e-3          # 로짓 상대 차이 (|Δ| / |로짓| 평균)
-KD_TEMPS = (1.0, 4.0)   # 학습에 쓸 온도 (셀 24 기본값 4.0 포함)
+KD_TEMPS = (1.0, 4.0)   # 교사↔① 일치 검사를 볼 온도들
+# ⚠️ **첨예도는 학습에 실제로 쓰는 온도에서만 판정한다.** T=1 은 참고로 찍을 뿐
+#    판정 대상이 아니다 — 증류를 T=1 로 하지 않으므로 거기서 뾰족한 것은 흠이
+#    아니다. (처음에 KD_TEMPS 전부에 걸어 T=1 이 실패로 떴다.)
+KD_TRAIN_TEMP = 4.0
 
 # ★ **소프트 타깃 첨예도 하한** (2026-09-28 추가 — C 실패로 배운 검사).
 #
@@ -82,6 +86,11 @@ def main():
     ap.add_argument("--data", default=os.path.join(REPO, "data", "processed",
                                                    "safesound"))
     ap.add_argument("--checkpoint", help="① qat_best — 주면 로짓까지 비교한다")
+    ap.add_argument("--teacher", default=os.path.join(REPO, "data",
+                                                      "teacher-mel.pth.tar"),
+                    help="`wrap_teacher.py` 가 만든 교사 체크포인트. **학습이 실제로 "
+                         "쓰는 산출물**이므로 이것을 검사한다 — `logit_scale` 이 "
+                         "여기 들어 있다. 없으면 스케일 1.0 으로 본다")
     ap.add_argument("--n", type=int, default=16, help="비교할 창 수")
     a = ap.parse_args()
 
@@ -105,6 +114,24 @@ def main():
     print(f"테스트 창 {len(ds):,} 중 {a.n}개로 비교\n")
 
     teacher = mm.ai85safesoundmelteacher(num_classes=len(S.CLASSES)).eval()
+    # ⚠️ **감싼 교사 체크포인트를 읽는다.** 처음에는 ① 가중치만 `teacher.net` 에
+    #    얹고 검사해서 `logit_scale` 이 1.0 인 채로 돌았다 — 학습이 쓰는 것과
+    #    다른 물건을 검사한 셈이다. KAT 는 산출물 그대로를 봐야 한다.
+    if os.path.isfile(a.teacher):
+        tck = torch.load(a.teacher, map_location="cpu", weights_only=False)
+        miss, unexp = teacher.load_state_dict(tck.get("state_dict", tck),
+                                              strict=False)
+        print(f"교사 체크포인트: {os.path.basename(a.teacher)} "
+              f"(누락 {len(miss)} / 초과 {len(unexp)})")
+        if isinstance(tck.get("extras"), dict) and "logit_scale" in tck["extras"]:
+            e = tck["extras"]
+            print(f"  logit_scale {e['logit_scale']}  "
+                  f"(학습셋 {e.get('calib_n', '?')}창의 로짓 std "
+                  f"{e.get('logit_std', '?')} 기준, T={e.get('kd_temp', '?')})")
+    else:
+        print(f"⚠️ 교사 체크포인트가 없다 ({a.teacher}) — 스케일 1.0 으로 검사한다")
+    scale = float(teacher.logit_scale)
+    print(f"  적용 중인 logit_scale = {scale:.4f}\n")
     norm8 = ai8x.normalize(args=argparse.Namespace(act_mode_8bit=True))
     normf = ai8x.normalize(args=argparse.Namespace(act_mode_8bit=False))
 
@@ -167,18 +194,21 @@ def main():
             lt = teacher(x8)
             mel_in = torch.from_numpy(q_n.astype(np.float32)).unsqueeze(1)
             lr = ref(mel_in)
-        scale = float(lr.abs().mean())
-        d = float((lt - lr).abs().max())
-        print(f"\n  로짓 크기: |①| 평균 {scale:.1f}, 최대 {float(lr.abs().max()):.1f}")
-        print(f"  교사 로짓 vs ① 로짓  최대 차이 {d:.4f} "
-              f"(상대 {d/max(scale, 1e-9):.2e})")
+        # ⚠️ 교사는 `logit_scale` 로 나눠 내보내므로, ①과 비교할 때는 되곱한다.
+        #    (스케일은 의도된 차이이고, 검사할 것은 그 외의 불일치다.)
+        lt_raw = lt * scale
+        mag = float(lr.abs().mean())
+        d = float((lt_raw - lr).abs().max())
+        print(f"  로짓 크기: |①| 평균 {mag:.1f}, 최대 {float(lr.abs().max()):.1f}")
+        print(f"  교사 로짓×scale vs ① 로짓  최대 차이 {d:.4f} "
+              f"(상대 {d/max(mag, 1e-9):.2e})")
         check(f"로짓 상대 차이가 {TOL_REL:.0e} 안",
-              d / max(scale, 1e-9) <= TOL_REL, f"{d/max(scale,1e-9):.2e}")
+              d / max(mag, 1e-9) <= TOL_REL, f"{d/max(mag,1e-9):.2e}")
 
         # ★ 최종 판정 — 증류가 실제로 소비하는 것은 온도 소프트맥스다
         for T in KD_TEMPS:
             p_r = torch.softmax(lr / T, 1)
-            p_t = torch.softmax(lt / T, 1)
+            p_t = torch.softmax(lt_raw / T, 1)
             dp = float((p_t - p_r).abs().max())
             kl = float((p_r * (p_r.clamp_min(1e-12).log()
                                - p_t.clamp_min(1e-12).log())).sum(1).max())
@@ -194,17 +224,24 @@ def main():
         print(f"\n  소프트 타깃 첨예도 (유효 클래스 수 = exp(엔트로피), "
               f"1.0=one-hot / {k}.0=균등)")
         print(f"  {'T':>8}{'최대확률':>12}{'엔트로피':>12}{'유효 클래스':>13}")
-        for T in KD_TEMPS:
+        for T in sorted(set(KD_TEMPS) | {KD_TRAIN_TEMP}):
             p = torch.softmax(lt / T, 1)
             ent = -(p * p.clamp_min(1e-12).log()).sum(1)
             eff = float(ent.exp().mean())
+            tag = "  ← 학습 온도" if T == KD_TRAIN_TEMP else "  (참고)"
             print(f"  {T:>8.1f}{float(p.max(1).values.mean()):>12.4f}"
-                  f"{float(ent.mean()):>12.4f}{eff:>13.2f}")
-            check(f"T={T} 에서 소프트 타깃이 유효 클래스 {MIN_EFF_CLASSES} 이상",
-                  eff >= MIN_EFF_CLASSES,
-                  f"{eff:.2f} — 로짓 |값| 평균 {scale:.0f} 규모라 온도가 부족하다. "
-                  f"로짓을 정규화하거나 교사를 act_mode_8bit 로 추론할 것 "
-                  f"(--kd-distill-wt 를 낮추는 것은 해결이 아니다)")
+                  f"{float(ent.mean()):>12.4f}{eff:>13.2f}{tag}")
+            if T != KD_TRAIN_TEMP:
+                continue
+            ok = eff >= MIN_EFF_CLASSES
+            check(f"학습 온도 T={T} 에서 유효 클래스 {MIN_EFF_CLASSES} 이상",
+                  ok, f"{eff:.2f}")
+            if not ok:
+                print(f"    → 교사 로짓 |값| 평균이 {float(lt.abs().mean()):.1f} "
+                      f"규모라 T={T} 로는 부족하다. `tools/calib_teacher.py` 로 "
+                      f"전역 스케일을 다시 잡을 것.")
+                print("      ⚠️ --kd-distill-wt 를 낮추는 것은 해결이 아니다 — "
+                      "one-hot 인 채로 비중만 줄이면 증류가 아니다.")
     else:
         print("\n  (--checkpoint 를 주면 교사 로짓과 ① 로짓을 직접 비교한다 — "
               "이것이 최종 판정 기준이다)")

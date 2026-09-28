@@ -268,6 +268,21 @@ class AI85SafeSoundMelTeacher(nn.Module):
         self.net = AI85SafeSoundMelNet(num_classes=num_classes, num_channels=1,
                                        dimensions=(64, 64), bias=bias, **kwargs)
         self._mel_ready = False
+        # ★ **전역 로짓 스케일** (2026-09-28, C 실패로 추가).
+        #
+        # ① 은 QAT 체크포인트라 `act_mode_8bit` 없이 추론하면 `output_shift`
+        # 스케일링이 빠져 로짓이 |값| 평균 1435 규모가 된다. 그 상태로 T=4 를
+        # 쓰면 최대확률이 0.998 — 소프트 타깃이 사실상 one-hot 이라 증류가
+        # "교사의 하드 라벨" 이 되고, 교사가 틀린 창에서 확신에 찬 오답을
+        # 강요한다 (`docs/results/g8-c-distillation.md`).
+        #
+        # ⚠️ **샘플별 정규화가 아니라 전역 상수 하나로 나눈다.** 샘플 간 확신도
+        #    차이(쉬운 창은 뾰족하고 어려운 창은 평평하다)가 증류가 전달하려는
+        #    정보의 핵심이다. 샘플마다 정규화하면 그것을 지워 버린다.
+        #
+        # 값은 `tools/calib_teacher.py` 가 **학습셋에서** 구해 체크포인트에
+        # 저장한다. 1.0 이면 스케일링 없음(옛 동작).
+        self.register_buffer("logit_scale", torch.tensor(1.0))
 
     def _build_mel(self, device, dtype):
         """멜 상수를 텐서로 올린다 (한 번만). 값은 `melfeat` 이 유일한 출처다."""
@@ -315,7 +330,8 @@ class AI85SafeSoundMelTeacher(nn.Module):
 
         # ── 3. 학생과 같은 스케일 규약으로 멜 모델에 넣는다
         f = q if float(x.abs().max()) > 2.0 else q / 128.0
-        return self.net(f.unsqueeze(1))
+        # ── 4. 전역 상수로 나눠 소프트 타깃이 실제로 소프트해지게 한다 (위 설명)
+        return self.net(f.unsqueeze(1)) / self.logit_scale
 
 
 def ai85safesoundmelteacher(pretrained=False, **kwargs):
