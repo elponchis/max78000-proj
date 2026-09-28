@@ -42,7 +42,29 @@ import melfeat as MF  # noqa: E402
 # 모델이 받는 값이 사실상 같다. **측정 전 가안이 아니라 판정 기준이다** —
 # 넘으면 구현이 갈린 것이므로 고쳐야 한다.
 TOL_LSB = 1
-TOL_LOGIT = 0.05        # 교사 로짓과 ① 로짓의 최대 절대 차이 상한
+
+# ⚠️ 교사↔① 비교는 **소프트 타깃**으로 한다. 로짓 절대차로 판정하면 안 된다 —
+#    이 모델의 로짓은 |값| 평균 1300, 최대 4900 규모라 절대 0.05 같은 문턱은
+#    아무 의미가 없다 (처음에 그렇게 잡아서 멀쩡한 구현을 실패로 판정했다).
+#    증류가 실제로 소비하는 것은 `softmax(logit/T)` 이므로 그것을 잰다.
+TOL_PROB = 1e-3         # 온도 소프트맥스 확률의 최대 절대 차이
+TOL_REL = 1e-3          # 로짓 상대 차이 (|Δ| / |로짓| 평균)
+KD_TEMPS = (1.0, 4.0)   # 학습에 쓸 온도 (셀 24 기본값 4.0 포함)
+
+# ★ **소프트 타깃 첨예도 하한** (2026-09-28 추가 — C 실패로 배운 검사).
+#
+# C 가 ④-ft 대비 −0.085 로 나빠진 원인이 이것이었다. ① 의 로짓이 |값| 평균 1435
+# 규모라(QAT 체크포인트를 act_mode_8bit 없이 추론하면 output_shift 스케일링이
+# 적용되지 않는다) T=4 에서 최대확률이 **0.998** 이었다. 소프트 타깃이 사실상
+# one-hot 이어서 증류가 "교사의 하드 라벨" 을 준 것이고, 교사가 틀린 약 11% 의
+# 창에서 확신에 찬 오답을 강요했다.
+#
+# 판정은 **유효 클래스 수 = exp(엔트로피)** 로 한다. 1.0 은 one-hot, 클래스 수(5)는
+# 균등분포다. 1.5 미만이면 증류에 쓸 수 없다.
+# ⚠️ 이 검사를 통과하지 못하면 `--kd-distill-wt` 를 낮추는 것으로 고치지 말 것 —
+#    one-hot 인 채로 비중만 줄이면 원리적으로 증류가 아니다. 로짓을 정규화하거나
+#    교사를 act_mode_8bit 로 추론해 스케일을 바로잡는 것이 맞다.
+MIN_EFF_CLASSES = 1.5
 
 OK, FAIL = "  [통과]", "  [실패]"
 fails = []
@@ -145,9 +167,44 @@ def main():
             lt = teacher(x8)
             mel_in = torch.from_numpy(q_n.astype(np.float32)).unsqueeze(1)
             lr = ref(mel_in)
+        scale = float(lr.abs().mean())
         d = float((lt - lr).abs().max())
-        print(f"  교사 로짓 vs ① 로짓  최대 차이 {d:.6f}")
-        check(f"교사 로짓이 ① 로짓과 {TOL_LOGIT} 안", d <= TOL_LOGIT, f"{d:.6f}")
+        print(f"\n  로짓 크기: |①| 평균 {scale:.1f}, 최대 {float(lr.abs().max()):.1f}")
+        print(f"  교사 로짓 vs ① 로짓  최대 차이 {d:.4f} "
+              f"(상대 {d/max(scale, 1e-9):.2e})")
+        check(f"로짓 상대 차이가 {TOL_REL:.0e} 안",
+              d / max(scale, 1e-9) <= TOL_REL, f"{d/max(scale,1e-9):.2e}")
+
+        # ★ 최종 판정 — 증류가 실제로 소비하는 것은 온도 소프트맥스다
+        for T in KD_TEMPS:
+            p_r = torch.softmax(lr / T, 1)
+            p_t = torch.softmax(lt / T, 1)
+            dp = float((p_t - p_r).abs().max())
+            kl = float((p_r * (p_r.clamp_min(1e-12).log()
+                               - p_t.clamp_min(1e-12).log())).sum(1).max())
+            print(f"  T={T:<4} 소프트 타깃 최대 확률차 {dp:.2e}  KL 최대 {kl:.2e}")
+            check(f"T={T} 소프트 타깃이 {TOL_PROB:.0e} 안", dp <= TOL_PROB,
+                  f"{dp:.2e}")
+        agree = int((lt.argmax(1) == lr.argmax(1)).sum())
+        check("예측 클래스 일치", agree == len(lt), f"{agree}/{len(lt)}")
+
+        # ★ 첨예도 — "교사가 증류에 쓸 만한 소프트 타깃을 내놓는가"
+        #   교사↔① 일치만 보고 이것을 빠뜨려 C 를 한 번 버렸다 (모듈 설명 참조).
+        k = lt.shape[1]
+        print(f"\n  소프트 타깃 첨예도 (유효 클래스 수 = exp(엔트로피), "
+              f"1.0=one-hot / {k}.0=균등)")
+        print(f"  {'T':>8}{'최대확률':>12}{'엔트로피':>12}{'유효 클래스':>13}")
+        for T in KD_TEMPS:
+            p = torch.softmax(lt / T, 1)
+            ent = -(p * p.clamp_min(1e-12).log()).sum(1)
+            eff = float(ent.exp().mean())
+            print(f"  {T:>8.1f}{float(p.max(1).values.mean()):>12.4f}"
+                  f"{float(ent.mean()):>12.4f}{eff:>13.2f}")
+            check(f"T={T} 에서 소프트 타깃이 유효 클래스 {MIN_EFF_CLASSES} 이상",
+                  eff >= MIN_EFF_CLASSES,
+                  f"{eff:.2f} — 로짓 |값| 평균 {scale:.0f} 규모라 온도가 부족하다. "
+                  f"로짓을 정규화하거나 교사를 act_mode_8bit 로 추론할 것 "
+                  f"(--kd-distill-wt 를 낮추는 것은 해결이 아니다)")
     else:
         print("\n  (--checkpoint 를 주면 교사 로짓과 ① 로짓을 직접 비교한다 — "
               "이것이 최종 판정 기준이다)")
