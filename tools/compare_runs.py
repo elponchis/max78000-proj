@@ -75,11 +75,16 @@ def main():
     ap.add_argument("--cache", default=os.path.join(tempfile.gettempdir(),
                                                     "compare_runs"),
                     help="실행별 평가 JSON 캐시 (같은 체크포인트는 재사용)")
+    ap.add_argument("--seed-group", action="append", default=[],
+                    metavar="이름:run1,run2,...",
+                    help="같은 설정의 시드 반복 실행 묶음. **그 계열의 시드 "
+                         "폭(max-min)** 을 계산해 잡음 눈금으로 쓴다. 계열마다 "
+                         "안정성이 다르다 — ④는 0.052, ①은 0.001 수준이다")
     ap.add_argument("--allow-incomplete", action="store_true",
-                    help="**학습이 끝나지 않은 실행도 포함**한다. 기본은 제외다 — "
-                         "QAT 는 에폭 60부터라 `qat_best` 가 학습 도중에도 생기고, "
-                         "그걸 집어 확정값처럼 보고한 사고가 있었다 (83/150 에폭 "
-                         "시점 0.4426 → 완료 후 0.4927)")
+                    help="**전역** 허용. 쓰지 말 것 — 학습 중인 실행까지 통째로 "
+                         "들어온다. 실제로 이 플래그 때문에 82/150 에폭짜리를 "
+                         "확정값으로 집었다. 대신 `--run` 이름 끝에 `!` 를 붙여 "
+                         "**그 실행 하나만** 신뢰한다고 표시할 것")
     a = ap.parse_args()
     if not a.run:
         sys.exit("[에러] --run 이 필요하다")
@@ -88,10 +93,19 @@ def main():
     out = {}
     for spec in a.run:
         label, cfg, ck = spec.split(":", 2)
+        # 이름 끝의 `!` = "완주를 사람이 확인했다". 옆에 로그가 없는 경우
+        # (Colab 에서 받은 단독 체크포인트) 를 위한 것이고, **그 실행 하나에만**
+        # 적용된다. 전역 --allow-incomplete 와 달리 다른 실행은 계속 걸러진다.
+        trusted = label.endswith("!")
+        if trusted:
+            label = label[:-1].rstrip()
         if not os.path.isfile(ck):
             print(f"  [건너뜀] {label}: 체크포인트 없음 {ck}")
             continue
         done, why = run_finished(ck)
+        if not done and trusted:
+            print(f"  [신뢰] {label}: 로그가 없지만 완주 확인됨으로 표시됐다")
+            done = True
         if not done and not a.allow_incomplete:
             print(f"  [건너뜀] {label}: **학습 미완료** — {why}")
             print("           (QAT 는 에폭 60부터라 qat_best 가 도중에도 생긴다. "
@@ -134,20 +148,65 @@ def main():
             print(f"  {lb:<16}{t['macro_f1']:>9.4f}   "
                   + "".join(f"{100*t['recall'][n]:>8.1f}%" for n in names))
 
+    # ── 계열별 시드 폭 ────────────────────────────────────────────
+    noise = {}
+    if a.seed_group:
+        print()
+        print("=== 계열별 시드 잡음 (300/h macro-F1 의 max-min) ===")
+        for g in a.seed_group:
+            name, _, members = g.partition(":")
+            vals, got = [], []
+            for m in [x.strip() for x in members.split(",") if x.strip()]:
+                t = (out.get(m, {}).get("fixed_fa") or {}).get("targets", {}
+                                                              ).get("300/h")
+                if t:
+                    vals.append(t["macro_f1"])
+                    got.append(m)
+            if len(vals) < 2:
+                print(f"  {name:<12} 시드가 {len(vals)}개뿐 — 폭을 낼 수 없다")
+                continue
+            w = max(vals) - min(vals)
+            noise[name] = w
+            mean = sum(vals) / len(vals)
+            print(f"  {name:<12} n={len(vals)}  평균 {mean:.4f}  "
+                  f"폭 {w:.4f}   " + " ".join(f"{v:.4f}" for v in vals))
+        print("  ⚠️ 폭은 **관측된 max-min** 이지 신뢰구간이 아니다. n 이 작으면")
+        print("     실제 변동을 과소평가한다 — 보수적으로 쓸 것.")
+
     if a.delta:
         print("\n=== 차이 (macro-F1) ===")
-        print(f"  {'설명':<22}" + "".join(f"{p:>12}" for p in POINTS))
-        print("  " + "-" * (22 + 12 * len(POINTS)))
+        print(f"  {'설명':<22}" + "".join(f"{p:>12}" for p in POINTS)
+              + "   판정")
+        print("  " + "-" * (22 + 12 * len(POINTS) + 8))
         for spec in a.delta:
-            why, x, y = spec.split(":", 2)
-            cells = ""
+            parts = spec.split(":")
+            # "설명:x:y" 또는 "설명:x:y:계열이름"
+            if len(parts) >= 4:
+                why, x, y, fam = parts[0], parts[1], parts[2], parts[3]
+            else:
+                why, x, y, fam = parts[0], parts[1], parts[2], None
+            cells, verdict = "", ""
+            d300 = None
             for pt in POINTS:
                 tx = (out.get(x, {}).get("fixed_fa") or {}).get("targets", {}).get(pt)
                 ty = (out.get(y, {}).get("fixed_fa") or {}).get("targets", {}).get(pt)
-                cells += (f"{tx['macro_f1'] - ty['macro_f1']:>+12.4f}"
-                          if tx and ty else f"{'—':>12}")
-            print(f"  {why:<22}{cells}")
-        print("  ⚠️ 개선폭은 **장치 차이·시드 차이보다 클 때만** 의미가 있다.")
+                if tx and ty:
+                    d = tx["macro_f1"] - ty["macro_f1"]
+                    cells += f"{d:>+12.4f}"
+                    if pt == "300/h":
+                        d300 = d
+                else:
+                    cells += f"{'—':>12}"
+            if fam and d300 is not None and fam in noise:
+                n = noise[fam]
+                verdict = ("잡음 안" if abs(d300) <= n
+                           else f"잡음 밖 ({abs(d300)/max(n,1e-9):.1f}배)")
+                verdict += f" [{fam} {n:.4f}]"
+            elif fam:
+                verdict = f"[{fam} 기준 없음]"
+            print(f"  {why:<22}{cells}   {verdict}")
+        print("  ⚠️ 판정은 **그 계열의 시드 폭**을 자로 쓴다 — 계열마다 다르다.")
+        print("     계열을 지정하지 않은 행은 판정이 비어 있다.")
 
     print("\n  참고: argmax 오경보/h — "
           + ", ".join(f"{lb} {d['false_alarm']['per_hour']:,.0f}"
