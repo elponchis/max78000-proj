@@ -111,6 +111,8 @@ def main():
     ap.add_argument("--us8k-dir", default="data/raw/US8K_audio")
     ap.add_argument("--esc50-dir", default="data/raw/ESC50_audio")
     ap.add_argument("--fsd-meta", default="data/raw/FSD50K_meta")
+    ap.add_argument("--exclude-fsid", default=None,
+                    help="제외할 fsid 목록 파일 (청취 (b) 판정분)")
     ap.add_argument("--scenario", default="quiet=0.80,general=0.18,hardneg=0.02",
                     help="배포 시나리오 시간 비중 (가정값)")
     a = ap.parse_args()
@@ -121,6 +123,11 @@ def main():
     m, k = (int(x) for x in a.mk.split("/"))
 
     per = EE.load_cache(a.tag, a.split, a.hop_ms)
+    ex = EE.load_exclude(a.exclude_fsid)
+    if ex:
+        n0 = len(per)
+        per = [r for r in per if r[1] not in ex]
+        print(f"  원본 {n0} -> {len(per)} (fsid 단위 제외)")
     thr = EE.thr_for_fa(per, a.target, m, k, a.cooldown, hop_s)
     print(f"[{a.tag}] 목표 {a.target:g}회/h → 문턱값 {thr:+.3f} "
           f"(m/k {m}/{k}, cd {a.cooldown:g}s)")

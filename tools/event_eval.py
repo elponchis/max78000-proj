@@ -139,6 +139,20 @@ def load_cache(tag, split, hop_ms):
     return per
 
 
+
+def load_exclude(path):
+    """제외할 fsid 목록 (한 줄에 하나, # 주석 허용). 없으면 빈 집합."""
+    if not path:
+        return set()
+    out = set()
+    with open(path, encoding="utf-8") as f:
+        for ln in f:
+            ln = ln.split("#")[0].strip()
+            if ln:
+                out.add(ln)
+    print(f"  제외 fsid {len(out)}개 ({path})")
+    return out
+
 def detect(lg, thr):
     """프레임별 검출 클래스 (미검출 -1). 창 단위와 **같은 마진 규칙**이다."""
     ev = lg[:, :BG]
@@ -257,6 +271,9 @@ def main():
                     help="클래스별 (m/k). 지정하지 않은 클래스는 --mk 를 쓴다")
     ap.add_argument("--targets", default="1,0.0417",
                     help="목표 오경보 회/h (0.0417 = 1회/일)")
+    ap.add_argument("--exclude-fsid", default=None,
+                    help="제외할 fsid 목록 파일. 청취에서 (b)"
+                         "=라벨 누락 실제 이벤트로 판정된 배경 원본")
     ap.add_argument("--json", default=None)
     a = ap.parse_args()
 
@@ -265,6 +282,13 @@ def main():
         return
 
     per = load_cache(a.tag, a.split, a.hop_ms)
+    ex = load_exclude(a.exclude_fsid)
+    if ex:
+        n0 = len(per)
+        # fsid 단위로 뺀다 — '이 원본은 배경음이 아니다' 라는
+        # 판정과 일관되려면 같은 원본의 다른 구간도 빠져야 한다.
+        per = [r for r in per if r[1] not in ex]
+        print(f"  원본 {n0} -> {len(per)}")
     hop_s = a.hop_ms / 1000.0
     bg_h = sum(d for _c, _f, cl, d, _l in per if cl == "background") / 3600.0
     print(f"[{a.tag} / {a.split}] 원본 {len(per)}개, 배경음 {bg_h:.2f}시간")
