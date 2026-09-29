@@ -55,6 +55,26 @@ ROW = 128            # (128,128) reshape
 FLOOR_ZERO = 0.95
 GAIN_DB = 12.0       # 랜덤 게인 범위 ±dB
 SHIFT_MS = 100       # 시간축 shift 범위 ±ms
+# ── 음량 정규화 (라운드 6 (b) 1단계, 2026-09-30) ─────────────────────────
+# CLAUDE.md 7장 개정 규칙: **학습과 펌웨어에 비트 단위로 같은 구현**일 때만
+# 허용하고 **적용 위치**를 명시한다. 여기는 **int8 변환 _후_** 다.
+#
+# ⚠️ **정밀도 이득은 없다.** x 가 이미 int8 이라 게인은 양자화 계단을 함께
+# 키울 뿐이고, int8 로 깎이며 잃은 정보는 돌아오지 않는다. 이 단계가 검증하는
+# 것은 **음량 불변성 가설뿐**이다. 결과를 "정규화의 효과" 라고 쓰지 말 것 —
+# 개선이 나오면 그건 하한이다 (docs/results/g8-round6-design.md b.2.5).
+#
+# **2의 거듭제곱만 쓴다.** int8 값에 2^n 을 곱하는 것은 정확한 시프트라
+# 반올림 오차가 없다. 임의 게인은 int8 위에서 한 번 더 깎이므로 int16 샤드가
+# 생기는 2단계로 미룬다.
+#
+# 펌웨어 대응 (MicReadChunk 뒤, NPU 입력 직전):
+#     peak = max |x[n]|
+#     sh   = 0..NORM_GMAX_SH 중 (peak << (sh+1)) <= NORM_TARGET 인 최대
+#     y[n] = __SSAT(x[n] << sh, 8)
+NORM_TARGET = 96        # 풀스케일 127 대비 -2.4dB. 포화 여유
+NORM_GMAX_SH = 2        # 최대 시프트 2 = x4 = +12dB. 조용한 창의 잡음 증폭 상한
+
 GAIN_TRIES = 8       # 재추출 횟수 상한
 
 
@@ -71,7 +91,7 @@ class SafeSound(Dataset):
 
     def __init__(self, root, d_type, transform=None, augment=None,
                  floor_zero=FLOOR_ZERO, gain_db=GAIN_DB, shift_ms=SHIFT_MS,
-                 noise_dir=None, seed=0):
+                 noise_dir=None, seed=0, norm_pow2=False):
         if d_type not in ("train", "test"):
             raise ValueError(f"d_type 은 train/test 여야 한다: {d_type}")
         self.root = root
@@ -79,6 +99,11 @@ class SafeSound(Dataset):
         self.transform = transform
         self.augment = (d_type == "train") if augment is None else augment
         self.floor_zero = floor_zero
+        # 음량 정규화 (기본 꺼짐). 켜면 int8 변환 **후**에 적용된다.
+        self.norm_pow2 = bool(norm_pow2)
+        self.norm_target = NORM_TARGET
+        self.norm_gmax_sh = NORM_GMAX_SH
+        self.norm_sh_hist = [0] * (NORM_GMAX_SH + 1)   # 게인 분포 보고용
         self.gain_db = gain_db
         self.shift = max(1, int(16000 * shift_ms / 1000))
         self.noise_dir = noise_dir
@@ -137,6 +162,27 @@ class SafeSound(Dataset):
         off = int(rng.integers(lo, hi + 1)) if hi > lo else MARGIN
         return row[off:off + WIN]
 
+    def _norm_pow2(self, w):
+        """2의 거듭제곱 음량 정규화. int8 -> int8, **시프트뿐이라 오차 없음**.
+
+        (시프트량, 결과) 를 돌려준다. 시프트량은 게인 분포 보고용이다
+        (`tools/norm_gain_stats.py`).
+
+        감쇠는 하지 않는다 (sh >= 0). 큰 소리를 줄여도 이미 포화된 정보가
+        돌아오지 않고, 줄여야 할 만큼 크면 그건 클리핑 문제이지 정규화
+        문제가 아니다.
+        """
+        peak = int(np.abs(w.astype(np.int16)).max())
+        sh = 0
+        while sh < self.norm_gmax_sh and (peak << (sh + 1)) <= self.norm_target:
+            sh += 1
+        if sh == 0:
+            return 0, w
+        # 포화까지 펌웨어의 __SSAT(v, 8) 과 같게 둔다. TARGET 96 이라 위
+        # 조건상 넘지 않지만, 경계와 펌웨어 일치를 위해 남긴다.
+        y = np.clip(w.astype(np.int16) << sh, -128, 127)
+        return sh, y.astype(np.int8)
+
     def _rand_gain(self, w, rng):
         """랜덤 게인 ±gain_db. 클리핑을 만들지 않고, int8 에서 비면 다시 뽑는다.
 
@@ -175,6 +221,15 @@ class SafeSound(Dataset):
             w = self._rand_gain(w, rng)
             w = self._mix_noise(w, rng)
 
+        # 음량 정규화는 **증강 뒤**다. 랜덤 게인은 실기기의 레벨 변동을 흉내
+        # 내는 것이고, 실기기에서도 정규화는 그 변동을 받은 뒤에 일어난다.
+        # 앞에 두면 정규화가 게인을 되돌려 증강이 무의미해진다.
+        # ⚠️ **테스트셋에도 적용된다** — 증강이 아니라 전처리이고, 펌웨어가
+        #    하는 일이므로 평가 경로에도 있어야 한다.
+        if self.norm_pow2:
+            sh, w = self._norm_pow2(w)
+            self.norm_sh_hist[sh] += 1
+
         # int8 [-128,127] → [0,1) → ai8x.normalize 가 다시 [-128,127] 로 되돌린다.
         # kws20.py 와 같은 관례다: 거기서는 uint8 로 저장해 `inp /= 256`
         # (datasets/kws20.py:592) 한 뒤 `ai8x.normalize` (ai8x.py:29, 즉
@@ -192,15 +247,27 @@ class SafeSound(Dataset):
         return x, target
 
 
-def safesound_get_datasets(data, load_train=True, load_test=True):
-    """ai8x-training 규약 로더. `data` 는 (data_dir, args)."""
+def safesound_get_datasets(data, load_train=True, load_test=True,
+                           norm_pow2=False):
+    """ai8x-training 규약 로더. `data` 는 (data_dir, args).
+
+    `norm_pow2` 는 라운드 6 (b) 1단계의 음량 정규화다. **테스트셋에도 켠다** —
+    증강이 아니라 전처리이고 펌웨어가 하는 일이기 때문이다.
+    """
     (data_dir, args) = data
     root = os.path.join(data_dir, "SafeSound")
     transform = ai8x.normalize(args=args)
 
-    train_ds = SafeSound(root, "train", transform=transform) if load_train else None
-    test_ds = SafeSound(root, "test", transform=transform) if load_test else None
+    train_ds = (SafeSound(root, "train", transform=transform,
+                          norm_pow2=norm_pow2) if load_train else None)
+    test_ds = (SafeSound(root, "test", transform=transform,
+                         norm_pow2=norm_pow2) if load_test else None)
     return train_ds, test_ds
+
+
+def safesound_norm2_get_datasets(data, load_train=True, load_test=True):
+    """SafeSoundNorm2 로더 (람다를 쓰지 않는다 — ai8x 가 이름을 로그에 찍는다)."""
+    return safesound_get_datasets(data, load_train, load_test, norm_pow2=True)
 
 
 def class_weights(root=None, d_type="train", counts=None, power=1.0):
@@ -255,6 +322,16 @@ datasets = [
         "output": tuple(CLASSES),
         "weight": class_weights(),
         "loader": safesound_get_datasets,
+    },
+    {
+        # 라운드 6 (b) 1단계 — int8 위 2의 거듭제곱 음량 정규화.
+        # D-1 과 **정규화 하나만** 다르다. 정밀도 이득은 없고 음량 불변성만
+        # 본다 (docs/results/g8-round6-design.md b.2.5).
+        "name": "SafeSoundNorm2",
+        "input": (128, 128),
+        "output": tuple(CLASSES),
+        "weight": class_weights(),
+        "loader": safesound_norm2_get_datasets,
     },
     {
         # 제곱근 역빈도 가중치 (power=0.5). 데이터·모델·나머지 설정은 전부

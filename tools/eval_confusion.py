@@ -276,6 +276,11 @@ CONFIGS = {
     # 해상도 곡선 — 첫 층 FIR 길이만 128 → 256 → 512탭. 데이터셋은 그대로다
     "wave_fb_k2": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
     "wave_fb_k4": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
+    # 라운드 6 (b) 1단계 — 정규화는 전처리라 **테스트셋에도** 걸린다.
+    # 데이터셋이 달라지므로 config 를 따로 둔다 (기존 체크포인트와 섞이면
+    # 서로 다른 입력으로 평가하게 된다).
+    "wave_fb_norm2": ("ai85net-safesound.py", "AI85SafeSoundNet",
+                      "SafeSoundNorm2"),
 }
 
 # 제곱근 가중치(D-1 root) 는 **여기에 항목이 없다.** 손실 가중치만 다르고
@@ -296,6 +301,7 @@ CONFIG_KWARGS = {
     "wave_fb_relu": {"abs_first": False},
     "wave_fb_k2": {"abs_first": True, "first_kernel": 2},
     "wave_fb_k4": {"abs_first": True, "first_kernel": 4},
+    "wave_fb_norm2": {"abs_first": True},
 }
 
 
