@@ -734,6 +734,39 @@ cd ~/ai8x-training && git diff > ~/max78000-proj/patches/<이름>.patch
 - WSL 가상 디스크는 파일 삭제 후에도 축소되지 않음 → `diskpart`의 `compact vdisk` 필요
   (37.4GB → 28.5GB, C드라이브 27GB → 58GB 확보)
 
+### OpenBLAS 소행렬 오버헤드 — 멜 전처리가 67배 느려졌다 (2026-09-29)
+
+**증상.** 구성 ① 계열(2D 멜)을 WSL2 CPU 에서 학습하면 배치당 5.6초가 걸렸다
+(1D 계열은 0.11초). 150에폭 예상 21시간. 처음엔 2D 모델이 무거운 줄 알았다.
+
+**실제 원인은 모델이 아니라 전처리의 행렬곱 하나였다.**
+
+| 항목 | 기본 | `OPENBLAS_NUM_THREADS=1` |
+|---|---:|---:|
+| 멜 필터뱅크 행렬곱 `(64,257)@(257,64)` | **23.8ms** | **0.148ms** |
+| `melfeat.mel_int8()` 전체 | 41.5ms | **0.616ms** |
+| 2D 모델 배치128 (torch) | 0.272s | 0.249s |
+| 학습 배치128 | 5.6s | **0.34s** |
+
+2 MFLOP 짜리 **작은** 행렬곱에 OpenBLAS 의 스레드 동기화 오버헤드가 통째로
+붙는다. 창마다 한 번씩 부르므로 그대로 곱해진다. 이 venv 의 numpy 1.26.4 는
+`openblas64 / DYNAMIC_ARCH / MAX_THREADS=2` 빌드다.
+
+**결과는 비트 단위로 동일하다** — 스레드 수만 줄었고 축약 순서가 같다.
+`pw @ _FB.T` 의 float64 출력이 정확히 일치하고, int8 출력도 같다. 따라서
+**기존 ① 실행과의 비교가 깨지지 않는다.**
+
+`datasets/melfeat.py` 의 "창당 약 1ms" 주석은 **틀리지 않았다** — 환경이
+문제였다. 0.616ms 로 그 값에 맞는다.
+
+→ 멜 계열을 CPU 에서 돌릴 때는 **반드시** `export OPENBLAS_NUM_THREADS=1`.
+   `data/logs-local/run_chain6.sh` 에 들어 있다. Colab 셀에도 넣을 것.
+   ⚠️ torch 는 영향받지 않는다(오히려 조금 빨라졌다). torch 의 스레드는
+   `torch.set_num_threads` / `OMP_NUM_THREADS` 가 따로 관장한다.
+
+⚠️ 같은 함정이 있을 만한 곳: `tools/mel_range_sweep.py`, `lin_mel_range.py`,
+`kat_safesound_mel.py`, 테스트 캐시 생성(`build_cache`). 전부 같은 행렬곱을 탄다.
+
 ### 데이터 다운로드 (2026-09-10)
 - **Zenodo(`zenodo.org`) 접속 불가.** TLS 핸드셰이크까지는 성공하나 HTTP 응답이
   오지 않고 타임아웃(25초 이상, `curl` 반환 코드 000). 같은 시점에 github.com /
