@@ -132,3 +132,73 @@ def db_to_int8(lm_db, top_db=TOP_DB, span_db=SPAN_DB):
 def log_mel_int8(w_int8, top_db=TOP_DB, span_db=SPAN_DB):
     """int8 파형 (16384,) → int8 로그 멜 (N_MELS, N_FRAMES). 모델 입력이다."""
     return db_to_int8(log_mel_db(w_int8), top_db, span_db)
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# 압축 법칙 (G8 "로그 압축 가설", 2026-09-29)
+#
+# k=1/2/4 해상도 곡선이 전부 잡음 안이었으므로(docs/results/g8-d1-filterbank.md
+# 부록 A), (1)-(4) 격차의 다음 후보는 **로그 압축**이다. 로그는 두 가지 일을
+# 동시에 한다.
+#
+#   (a) 압축: 70dB 를 255단계에 담는다. 선형으로는 담기는 범위가 정해져 있다 —
+#       1 LSB = 1/255 이므로 파워 선형 24.1dB / 진폭 선형 48.1dB /
+#       세제곱근 72.2dB. **파워 선형은 이벤트 멜 빈의 94.2%를 -128 로 만든다.**
+#   (b) 음량 불변: 게인 g 는 로그에서 **평행이동**이다. 실측 dq 중앙값 +-44,
+#       IQR 1~3 (거의 완전한 평행이동). 거듭제곱 법칙은 빈마다 다르게 움직여
+#       IQR 이 중앙값의 2배까지 간다.
+#
+# 근거 수치: docs/results/lin-mel-range.md (tools/lin_mel_range.py 실측).
+#
+# MAX78000 은 로그도 거듭제곱도 지원하지 않는다 — 둘 다 M4 가 한다. 구성 (1)
+# 안에서는 선택이 자유롭고, 이 실험의 목적은 **(4)(압축 없음)가 왜 불리한지**를
+# 가리는 것이다.
+
+# 거듭제곱 판의 포화점. 이벤트 4클래스 멜 파워 p99.9 = -6.8dB 실측을 -7.0 으로
+# 반올림했다 (클래스당 100창 표본이라 소수 첫째 자리는 표본 잡음 안이다).
+# 위쪽을 풀스케일(0dB)이 아니라 여기에 두는 이유는, 담기는 범위가 로그보다
+# 좁은 법칙일수록 **위쪽 7dB 를 버려서 아래쪽 7dB 를 얻는 쪽**이 이득이기
+# 때문이다. 포화하는 이벤트 빈은 0.1% 다.
+COMP_TOP_DB = -7.0
+
+# alpha=None 은 로그다. 숫자면 p**alpha 거듭제곱 압축이다.
+#   span(dB) = (10/alpha) * log10(255)
+COMP_SCHEMES = {
+    "log":  (None, TOP_DB, SPAN_DB),        # 현행 (1). 기준선
+    "log72": (None, COMP_TOP_DB, 72.2),     # 로그, 담는 범위를 cbrt 와 맞춘 대조
+    "lin":  (0.5, COMP_TOP_DB, None),       # 진폭 선형 (48.1dB)
+    "linp": (1.0, COMP_TOP_DB, None),       # 파워 선형 (24.1dB) — 참고용
+    "cbrt": (1.0 / 3.0, COMP_TOP_DB, None),  # 세제곱근 (72.2dB)
+}
+
+
+def comp_span_db(alpha):
+    """거듭제곱 압축이 255단계에 담는 dB 범위."""
+    return 10.0 / alpha * np.log10(255.0)
+
+
+def power_to_int8(mel_p, alpha, top_db=COMP_TOP_DB):
+    """정규화 멜 파워 -> int8, 거듭제곱 압축. 고정 아핀이며 데이터 무관이다.
+
+    q = clip(round((p/top)**alpha * 255)) - 128.
+    `top_db` 이상은 +127 로 포화하고, 1 LSB 아래는 -128 이다. 포화시키는 것이
+    중요하다 — 랩어라운드를 전처리에서 반복하지 않는다 (CLAUDE.md 7장).
+    """
+    top = 10.0 ** (top_db / 10.0)
+    c = np.power(np.maximum(np.asarray(mel_p, dtype=np.float64), 0.0) / top,
+                 alpha)
+    return np.clip(np.round(c * 255.0) - 128.0, -128.0, 127.0).astype(np.int8)
+
+
+def mel_int8(w_int8, scheme="log"):
+    """int8 파형 (16384,) -> int8 멜 (N_MELS, N_FRAMES). 모델 입력이다.
+
+    `scheme` 은 COMP_SCHEMES 의 키다. "log" 는 `log_mel_int8` 과 **같은 값**을
+    낸다 (같은 경로를 탄다 — 두 구현이 갈리면 비교가 오염된다).
+    """
+    alpha, top_db, span_db = COMP_SCHEMES[scheme]
+    if alpha is None:
+        return db_to_int8(log_mel_db(w_int8), top_db, span_db)
+    x = np.asarray(w_int8, dtype=np.float64) / 128.0
+    mel_p = (stft_power(x) @ _FB.T).T                 # (mels, frames)
+    return power_to_int8(mel_p, alpha, top_db)

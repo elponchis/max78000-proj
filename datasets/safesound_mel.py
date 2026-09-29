@@ -60,8 +60,13 @@ class SafeSoundMel(SafeSound):
               증강이 걸린 학습셋에는 **쓰면 안 된다** (매 에폭 값이 달라야 한다)
     """
 
-    def __init__(self, *args, cache=None, **kwargs):
+    def __init__(self, *args, cache=None, scheme="log", **kwargs):
         super().__init__(*args, **kwargs)
+        # 압축 법칙. "log" 가 현행 (1) 이고 나머지는 G8 로그 압축 가설용이다
+        # (melfeat.COMP_SCHEMES). 표현 외에는 아무것도 달라지지 않는다.
+        if scheme not in MF.COMP_SCHEMES:
+            raise ValueError(f"모르는 압축 법칙: {scheme}")
+        self.scheme = scheme
         if cache and self.augment:
             raise ValueError("증강이 켜진 split 에 캐시를 쓰면 안 된다 — "
                              "매 에폭 달라야 할 값이 고정된다")
@@ -102,7 +107,7 @@ class SafeSoundMel(SafeSound):
         if self.augment:
             w = self._rand_gain(w, rng)
             w = self._mix_noise(w, rng)
-        return MF.log_mel_int8(w)
+        return MF.mel_int8(w, self.scheme)
 
     def __getitem__(self, i):
         target = self.index[i][0]
@@ -119,20 +124,35 @@ class SafeSoundMel(SafeSound):
         return x, target
 
 
-def safesound_mel_get_datasets(data, load_train=True, load_test=True):
-    """ai8x-training 규약 로더. `data` 는 (data_dir, args)."""
-    (data_dir, args) = data
-    root = os.path.join(data_dir, "SafeSound")     # 파형과 **같은 샤드**를 읽는다
-    transform = ai8x.normalize(args=args)
+def _mel_loader(scheme):
+    """압축 법칙 하나에 대한 ai8x-training 규약 로더를 만든다.
 
-    train_ds = (SafeSoundMel(root, "train", transform=transform)
-                if load_train else None)
-    # 테스트셋은 무증강이므로 캐시해 둔다. 없으면 즉석 계산으로 돌아간다.
-    cache = os.path.join(root, "test", f"melcache_{MF.N_MELS}x{MF.N_FRAMES}.npy")
-    test_ds = (SafeSoundMel(root, "test", transform=transform,
-                            cache=cache if os.path.isfile(cache) else None)
-               if load_test else None)
-    return train_ds, test_ds
+    ⚠️ **캐시 파일 이름에 법칙을 넣는다.** 넣지 않으면 (1) 의 로그 캐시를
+    선형 판이 그대로 읽어, 표현을 바꾼 줄 알았는데 안 바뀐 실행이 된다.
+    """
+    def get_datasets(data, load_train=True, load_test=True):
+        (data_dir, args) = data
+        root = os.path.join(data_dir, "SafeSound")   # 파형과 **같은 샤드**다
+        transform = ai8x.normalize(args=args)
+
+        train_ds = (SafeSoundMel(root, "train", transform=transform,
+                                 scheme=scheme)
+                    if load_train else None)
+        # 테스트셋은 무증강이므로 캐시해 둔다. 없으면 즉석 계산으로 돌아간다.
+        tag = "" if scheme == "log" else f"_{scheme}"
+        cache = os.path.join(root, "test",
+                             f"melcache{tag}_{MF.N_MELS}x{MF.N_FRAMES}.npy")
+        test_ds = (SafeSoundMel(root, "test", transform=transform,
+                                scheme=scheme,
+                                cache=cache if os.path.isfile(cache) else None)
+                   if load_test else None)
+        return train_ds, test_ds
+    get_datasets.__name__ = f"safesound_mel_{scheme}_get_datasets"
+    return get_datasets
+
+
+# 기존 이름을 유지한다 — 노트북·도구가 이 심볼을 쓴다
+safesound_mel_get_datasets = _mel_loader("log")
 
 
 # 클래스 가중치는 **파형 구성과 완전히 같은 값**을 쓴다. 여기서 따로 계산하면
@@ -154,3 +174,28 @@ datasets = [
         "loader": safesound_mel_get_datasets,
     },
 ]
+
+# ── G8 로그 압축 가설 (2026-09-29) ────────────────────────────────────────
+# 해상도 곡선(k=1/2/4)이 전부 잡음 안이었으므로 다음 후보는 압축이다.
+# 모델·스케줄·가중치·창 집합이 전부 (1) 과 같고 **압축 법칙 하나만** 다르다.
+#
+#   MelLin   진폭 선형  (48.1dB) — "로그를 뺀" 판. 이벤트 빈 40.3% 가 바닥
+#   MelCbrt  세제곱근   (72.2dB) — 압축은 있으나 로그가 아닌 판
+#   MelLog72 로그, top/span 을 cbrt 와 맞춘 판 — **Cbrt 의 대조군**
+#   MelLinP  파워 선형  (24.1dB) — 참고용. 이벤트 빈 87.3% 가 바닥이라
+#            학습해도 "int8 에 안 담긴다" 는 것만 확인된다
+#
+# ⚠️ MelCbrt 를 (1) 과 바로 비교하면 **압축 법칙과 담는 범위가 함께** 달라진다.
+#    MelLog72 가 그 교란을 없앤다 (같은 범위, 법칙만 다름).
+# 근거 수치: docs/results/lin-mel-range.md
+for _name, _scheme in (("SafeSoundMelLin", "lin"),
+                       ("SafeSoundMelCbrt", "cbrt"),
+                       ("SafeSoundMelLog72", "log72"),
+                       ("SafeSoundMelLinP", "linp")):
+    datasets.append({
+        "name": _name,
+        "input": (1, MF.N_MELS, MF.N_FRAMES),
+        "output": tuple(CLASSES),
+        "weight": class_weights(),
+        "loader": _mel_loader(_scheme),
+    })
