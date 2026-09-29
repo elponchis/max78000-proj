@@ -147,7 +147,7 @@ def detect(lg, thr):
     return np.where(marg > thr, best, -1)
 
 
-def fire_events(det, m, k, cooldown_s, hop_s):
+def fire_events(det, m, k, cooldown_s, hop_s, per_class=None):
     """(m/k) 다수결 + 병합 + 쿨다운 → [(프레임 인덱스, 클래스), ...].
 
     규칙
@@ -156,13 +156,17 @@ def fire_events(det, m, k, cooldown_s, hop_s):
       · 이벤트가 끝난 뒤 `cooldown_s` 동안 **같은 클래스**는 다시 못 켠다
     """
     n = len(det)
+    # per_class: {클래스 인덱스: (m, k)}. 없으면 전 클래스 공통.
+    # glass 처럼 0.3초 과도음인 클래스는 3/4 를 원리적으로 못 채운다
+    # (원본의 28%가 프레임 2개 이하) — 그래서 클래스별 규칙이 필요하다.
+    mk = per_class or {}
     out, active, last_end = [], {}, {}
     for i in range(n):
-        lo = max(0, i - k + 1)
-        win = det[lo:i + 1]
         on = -1
         for c in range(BG):
-            if int((win == c).sum()) >= m:
+            mc, kc = mk.get(c, (m, k))
+            win = det[max(0, i - kc + 1):i + 1]
+            if int((win == c).sum()) >= mc:
                 on = c                      # 동시 충족은 낮은 인덱스 우선
                 break
         for c in list(active):
@@ -179,7 +183,7 @@ def fire_events(det, m, k, cooldown_s, hop_s):
     return out
 
 
-def evaluate(per, thr, m, k, cooldown_s, hop_s):
+def evaluate(per, thr, m, k, cooldown_s, hop_s, per_class=None):
     """이벤트 recall / 오경보 / 오분류 발화."""
     hit = {c: set() for c in range(BG)}      # 클래스별 정답 발화된 fsid
     orig = {c: set() for c in range(BG)}     # 클래스별 전체 이벤트 fsid
@@ -188,7 +192,8 @@ def evaluate(per, thr, m, k, cooldown_s, hop_s):
     bg_sec = 0.0
     for _clip, fsid, cls, dur, lg in per:
         ci = CLASSES.index(cls)
-        evs = fire_events(detect(lg, thr), m, k, cooldown_s, hop_s)
+        evs = fire_events(detect(lg, thr), m, k, cooldown_s, hop_s,
+                          per_class)
         if ci == BG:
             bg_sec += dur
             fa += len(evs)
@@ -210,11 +215,12 @@ def evaluate(per, thr, m, k, cooldown_s, hop_s):
             "n_origin": {CLASSES[c]: len(orig[c]) for c in range(BG)}}
 
 
-def thr_for_fa(per, target_per_hour, m, k, cd, hop_s, lo=-40.0, hi=60.0):
+def thr_for_fa(per, target_per_hour, m, k, cd, hop_s, lo=-40.0,
+               hi=60.0, per_class=None):
     """목표 오경보(회/h) 이하가 되는 **가장 낮은** 문턱값 (이분 탐색)."""
     for _ in range(40):
         mid = (lo + hi) / 2
-        r = evaluate(per, mid, m, k, cd, hop_s)
+        r = evaluate(per, mid, m, k, cd, hop_s, per_class)
         if r["fa_per_hour"] > target_per_hour:
             lo = mid
         else:
@@ -246,6 +252,9 @@ def main():
     ap.add_argument("--mk", default=None, help="'m/k' 하나만 평가")
     ap.add_argument("--cooldown", type=float, default=None)
     ap.add_argument("--grid", action="store_true", help="격자 전체")
+    ap.add_argument("--mk-per-class", default=None,
+                    metavar="siren=3/4,glass=1/1,...",
+                    help="클래스별 (m/k). 지정하지 않은 클래스는 --mk 를 쓴다")
     ap.add_argument("--targets", default="1,0.0417",
                     help="목표 오경보 회/h (0.0417 = 1회/일)")
     ap.add_argument("--json", default=None)
@@ -264,6 +273,15 @@ def main():
     print("     이 테스트셋으로 **분해할 수 없다**.")
     print()
 
+    pc = None
+    if a.mk_per_class:
+        pc = {}
+        for part in a.mk_per_class.split(","):
+            cname, _, v = part.partition("=")
+            mm, kk2 = (int(x) for x in v.split("/"))
+            pc[CLASSES.index(cname.strip())] = (mm, kk2)
+        print("  클래스별 규칙: " + "  ".join(
+            f"{CLASSES[c]} {v[0]}/{v[1]}" for c, v in sorted(pc.items())))
     grids = ([(1, 1), (2, 3), (3, 4), (3, 5)] if a.grid
              else [tuple(int(x) for x in a.mk.split("/"))])
     cds = [0.0, 2.0, 5.0] if a.grid else [a.cooldown or 0.0]
@@ -273,8 +291,8 @@ def main():
     for (m, k) in grids:
         for cd in cds:
             for tg in targets:
-                thr = thr_for_fa(per, tg, m, k, cd, hop_s)
-                r = evaluate(per, thr, m, k, cd, hop_s)
+                thr = thr_for_fa(per, tg, m, k, cd, hop_s, per_class=pc)
+                r = evaluate(per, thr, m, k, cd, hop_s, pc)
                 r.update({"m": m, "k": k, "cooldown": cd, "target": tg,
                           "thr": thr})
                 res.append(r)
