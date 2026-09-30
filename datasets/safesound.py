@@ -91,7 +91,8 @@ class SafeSound(Dataset):
 
     def __init__(self, root, d_type, transform=None, augment=None,
                  floor_zero=FLOOR_ZERO, gain_db=GAIN_DB, shift_ms=SHIFT_MS,
-                 noise_dir=None, seed=0, norm_pow2=False):
+                 noise_dir=None, seed=0, norm_pow2=False,
+                 subset_frac=None):
         if d_type not in ("train", "test"):
             raise ValueError(f"d_type 은 train/test 여야 한다: {d_type}")
         self.root = root
@@ -109,6 +110,17 @@ class SafeSound(Dataset):
         self.noise_dir = noise_dir
         self.seed = seed
 
+        # ── 클래스별 원본 부분집합 (학습 곡선용, V-4) ────────────────
+        # `subset_frac={"siren": 0.5}` 처럼 준다. **원본 ID(fsid) 단위**로
+        # 자른다 — 창 단위로 줄이면 같은 원본이 흩어져 누수와 같은 효과가
+        # 난다 (CLAUDE.md 5장 규칙 1).
+        #
+        # ⚠️ **포함 관계를 지킨다**: 25% ⊂ 50% ⊂ 75% ⊂ 100%. fsid 를
+        # 결정적 해시로 [0,1) 에 사상하고 그 값이 frac 미만인 것만 남긴다 —
+        # frac 을 키우면 이전 집합이 그대로 포함된다. 무작위 표본추출이면
+        # 점마다 다른 원본이 뽑혀 곡선이 표본 차이와 섞인다.
+        self.subset_frac = dict(subset_frac or {})
+        self.subset_kept = {}
         self.index = []          # (target, 샤드 경로, 행, 왼쪽 여유, 오른쪽 여유)
         self.meta = []           # (clip_id, fsid) — 분석·디버깅용
         for target, cls in enumerate(CLASSES):
@@ -116,8 +128,15 @@ class SafeSound(Dataset):
             idx_path = os.path.join(d, "index.csv")
             if not os.path.isfile(idx_path):
                 continue
+            frac = self.subset_frac.get(cls)
+            kept, seen = set(), set()
             with open(idx_path, encoding="utf-8") as f:
                 for r in csv.DictReader(f):
+                    if frac is not None:
+                        seen.add(r["fsid"])
+                        if _fsid_unit(r["fsid"]) >= frac:
+                            continue
+                        kept.add(r["fsid"])
                     shard = os.path.join(d, f"shard_{int(r['shard']):04d}.npy")
                     self.index.append((target, shard, int(r["row"]),
                                        int(r.get("left_margin", MARGIN)),
@@ -126,6 +145,10 @@ class SafeSound(Dataset):
                     # (tools/eval_confusion.py 의 N프레임 다수결)
                     self.meta.append((r["clip_id"], r["fsid"],
                                       int(r["start_sample"])))
+            if frac is not None:
+                self.subset_kept[cls] = (len(kept), len(seen))
+                print(f"  [부분집합] {cls} 원본 {len(kept)}/{len(seen)} "
+                      f"({frac:.0%} 목표)")
         if not self.index:
             sys.exit(f"[에러] 샤드가 없다: {root}/{d_type}. "
                      "먼저 prepare_safesound.py 를 실행할 것.")
@@ -268,6 +291,17 @@ def safesound_get_datasets(data, load_train=True, load_test=True,
 def safesound_norm2_get_datasets(data, load_train=True, load_test=True):
     """SafeSoundNorm2 로더 (람다를 쓰지 않는다 — ai8x 가 이름을 로그에 찍는다)."""
     return safesound_get_datasets(data, load_train, load_test, norm_pow2=True)
+
+
+def _fsid_unit(fsid):
+    """fsid → [0,1) 결정적 사상. 부분집합의 **포함 관계**를 만드는 핵심이다.
+
+    `build_class_manifest.py` 가 train/test 를 가를 때 쓴 것과 같은 방식
+    (blake2b 앞 8바이트). 시드가 없다 — 같은 fsid 는 언제나 같은 값이다.
+    """
+    import hashlib
+    h = hashlib.blake2b(str(fsid).encode(), digest_size=8).digest()
+    return int.from_bytes(h, "big") / float(1 << 64)
 
 
 def class_weights(root=None, d_type="train", counts=None, power=1.0):

@@ -124,7 +124,7 @@ class SafeSoundMel(SafeSound):
         return x, target
 
 
-def _mel_loader(scheme):
+def _mel_loader(scheme, subset_frac=None):
     """압축 법칙 하나에 대한 ai8x-training 규약 로더를 만든다.
 
     ⚠️ **캐시 파일 이름에 법칙을 넣는다.** 넣지 않으면 (1) 의 로그 캐시를
@@ -135,8 +135,10 @@ def _mel_loader(scheme):
         root = os.path.join(data_dir, "SafeSound")   # 파형과 **같은 샤드**다
         transform = ai8x.normalize(args=args)
 
+        # ⚠️ 부분집합은 **train 에만** 건다. test 를 줄이면 네 점이
+        # 서로 다른 테스트셋을 보게 되어 곡선이 성립하지 않는다.
         train_ds = (SafeSoundMel(root, "train", transform=transform,
-                                 scheme=scheme)
+                                 scheme=scheme, subset_frac=subset_frac)
                     if load_train else None)
         # 테스트셋은 무증강이므로 캐시해 둔다. 없으면 즉석 계산으로 돌아간다.
         tag = "" if scheme == "log" else f"_{scheme}"
@@ -188,6 +190,19 @@ datasets = [
 # ⚠️ MelCbrt 를 (1) 과 바로 비교하면 **압축 법칙과 담는 범위가 함께** 달라진다.
 #    MelLog72 가 그 교란을 없앤다 (같은 범위, 법칙만 다름).
 # 근거 수치: docs/results/lin-mel-range.md
+# ── siren 학습 곡선 (V-4) ────────────────────────────────────────────────
+# ⚠️ 클래스 가중치는 **v1 상수 그대로** 쓴다. class_weights() 가 실측 수량
+# 에서 나오므로 siren 을 줄이면 가중치가 자동으로 올라가 **두 가지가 동시에**
+# 바뀐다 — 그러면 "원본 수" 만의 효과가 아니게 된다.
+for _f in (25, 50, 75):
+    datasets.append({
+        "name": f"SafeSoundMelSiren{_f}",
+        "input": (1, MF.N_MELS, MF.N_FRAMES),
+        "output": tuple(CLASSES),
+        "weight": class_weights(),          # v1 상수 고정
+        "loader": _mel_loader("log", {"siren": _f / 100.0}),
+    })
+
 for _name, _scheme in (("SafeSoundMelLin", "lin"),
                        ("SafeSoundMelCbrt", "cbrt"),
                        ("SafeSoundMelLog72", "log72"),
