@@ -187,7 +187,7 @@ fold 판으로 돌렸다 (`safesound-w2d-v1`, 시드 1, Colab GPU, 150에폭,
 
 시드 1 한 번씩이다. test 고유 **원본** 수가 `siren` 75 / `glass` 155 /
 `scream` 191 / `dog_bark` 447 이고(5장 규칙 1 — 신뢰구간은 원본 수로 계산한다),
-`siren` 은 원본 75개에서 재현율 35% 근처이므로 95% 구간이 대략 ±11%p 다.
+`siren` 은 원본 **54개**(창 단위 평가 기준 — `siren-data-sufficiency.md` 부록)에서 재현율 35% 근처이므로 95% 구간이 대략 ±13%p 다.
 
 → **`siren` +2.1p 로 "siren 은 개선되지 않았다" 고 말할 수 없다.** 반대로
 `glass`·`scream`·`dog_bark` 의 +35~43p 는 이 폭으로 설명되지 않는다.
