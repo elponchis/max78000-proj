@@ -92,7 +92,7 @@ class SafeSound(Dataset):
     def __init__(self, root, d_type, transform=None, augment=None,
                  floor_zero=FLOOR_ZERO, gain_db=GAIN_DB, shift_ms=SHIFT_MS,
                  noise_dir=None, seed=0, norm_pow2=False,
-                 subset_frac=None):
+                 subset_frac=None, clip_prob=0.0):
         if d_type not in ("train", "test"):
             raise ValueError(f"d_type 은 train/test 여야 한다: {d_type}")
         self.root = root
@@ -101,6 +101,9 @@ class SafeSound(Dataset):
         self.augment = (d_type == "train") if augment is None else augment
         self.floor_zero = floor_zero
         # 음량 정규화 (기본 꺼짐). 켜면 int8 변환 **후**에 적용된다.
+        # 게인 증강에서 피크 초과 시 **포화**로 처리할 확률.
+        # 0.0 = 항상 되돌리기(기존), 1.0 = 항상 포화, 0.5 = 혼합
+        self.clip_prob = float(clip_prob)
         self.norm_pow2 = bool(norm_pow2)
         self.norm_target = NORM_TARGET
         self.norm_gmax_sh = NORM_GMAX_SH
@@ -217,9 +220,16 @@ class SafeSound(Dataset):
             g = 10.0 ** (float(rng.uniform(-self.gain_db, self.gain_db)) / 20.0)
             y = f * g
             peak = float(np.abs(y).max())
-            if peak > 127.0:                  # 인위적 클리핑 금지 — 넘는 만큼만 되돌린다
+            # 피크가 넘을 때 두 가지 처리가 있고, 실기기와 학습이 다르다.
+            #   되돌리기 — 창 전체를 줄인다. 파형 모양 보존, 레벨만 하락
+            #   포화     — 피크만 자른다. 레벨 유지, 모양 왜곡 ← **실기기**
+            # 기본은 되돌리기였고(기존 실행과의 비교를 위해 유지), `clip_prob`
+            # 로 포화를 섞는다. 실측: 포화 판 +12dB 에서 macro-F1 이 되돌리기
+            # 판보다 ① -0.044 / (a) -0.035 / D-1 -0.011 낮다 — 학습이 포화를
+            # 못 본 탓으로 보인다 (docs/results/g8-round6-design.md 부록).
+            if peak > 127.0 and rng.random() >= self.clip_prob:
                 y *= 127.0 / peak
-            q = np.clip(np.round(y), -128, 127)
+            q = np.clip(np.round(y), -128, 127)   # 포화 (wraparound 아님)
             if float((q == 0).mean()) <= self.floor_zero:
                 return q.astype(np.int8)
         return w
@@ -271,7 +281,7 @@ class SafeSound(Dataset):
 
 
 def safesound_get_datasets(data, load_train=True, load_test=True,
-                           norm_pow2=False):
+                           norm_pow2=False, clip_prob=0.0):
     """ai8x-training 규약 로더. `data` 는 (data_dir, args).
 
     `norm_pow2` 는 라운드 6 (b) 1단계의 음량 정규화다. **테스트셋에도 켠다** —
@@ -281,11 +291,19 @@ def safesound_get_datasets(data, load_train=True, load_test=True,
     root = os.path.join(data_dir, "SafeSound")
     transform = ai8x.normalize(args=args)
 
+    # ⚠️ clip_prob 는 **증강**이라 train 에만 건다. 평가·펌웨어 경로는
+    #    포화(np.clip) 하나로 고정이다 (2026-09-30 원칙).
     train_ds = (SafeSound(root, "train", transform=transform,
-                          norm_pow2=norm_pow2) if load_train else None)
+                          norm_pow2=norm_pow2, clip_prob=clip_prob)
+                if load_train else None)
     test_ds = (SafeSound(root, "test", transform=transform,
                          norm_pow2=norm_pow2) if load_test else None)
     return train_ds, test_ds
+
+
+def safesound_mix50_get_datasets(data, load_train=True, load_test=True):
+    """게인 증강에서 되돌리기/포화를 **50:50** 으로 섞는다 (학습 전용)."""
+    return safesound_get_datasets(data, load_train, load_test, clip_prob=0.5)
 
 
 def safesound_norm2_get_datasets(data, load_train=True, load_test=True):
@@ -356,6 +374,15 @@ datasets = [
         "output": tuple(CLASSES),
         "weight": class_weights(),
         "loader": safesound_get_datasets,
+    },
+    {
+        # 혼합 증강 — 게인 초과 시 되돌리기/포화 50:50 (학습 전용).
+        # 실기기는 항상 포화인데 학습은 되돌리기만 봤다는 불일치를 줄인다.
+        "name": "SafeSoundMix50",
+        "input": (128, 128),
+        "output": tuple(CLASSES),
+        "weight": class_weights(),
+        "loader": safesound_mix50_get_datasets,
     },
     {
         # 라운드 6 (b) 1단계 — int8 위 2의 거듭제곱 음량 정규화.

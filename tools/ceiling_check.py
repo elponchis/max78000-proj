@@ -180,11 +180,21 @@ def probe(a, y_te, clips_te, fs_te, st_te, E_te):
             np.savez_compressed(tr_npz, y=y_tr, E=E_tr)
             print(f"저장: {tr_npz}")
 
-    # ①과 **같은 클래스 가중치**
+    # 클래스 가중치. 기본은 ①과 동일(역빈도)이고, `--probe-weight` 로 바꾼다.
+    #
+    # ⚠️ 왜 바꿔 보는가: 역빈도는 background 를 0.27 로 낮춘다. 그러면 probe 가
+    # **배경 꼬리에서 과검출**하게 되고, 고정 오경보 지점(@300/h)이 배경음
+    # 상위 꼬리에서 잡히므로 그 지점 성능만 선택적으로 나빠질 수 있다.
+    # 가중치 없이/제곱근으로 다시 학습해 그 설명을 가른다.
     sys.path.insert(0, os.path.join(REPO, "datasets"))
     import safesound as S
-    w = torch.tensor(S.class_weights(), dtype=torch.float32)
-    print(f"클래스 가중치 (①과 동일): "
+    if a.probe_weight == "inv":
+        w = torch.tensor(S.class_weights(), dtype=torch.float32)
+    elif a.probe_weight == "sqrt":
+        w = torch.tensor(S.class_weights(power=0.5), dtype=torch.float32)
+    else:
+        w = torch.ones(len(CLASSES))
+    print(f"클래스 가중치 [{a.probe_weight}]: "
           + " ".join(f"{c}={v:.3f}" for c, v in zip(CLASSES, w.tolist())))
 
     Xtr = torch.from_numpy(E_tr.astype(np.float32))
@@ -259,6 +269,9 @@ def main():
                     help="chain9 와 CPU 를 나눠 쓰므로 기본을 낮게 둔다")
     ap.add_argument("--limit", type=int, default=None, help="속도 재기용")
     ap.add_argument("--seeds", default="1,2,3", help="probe 모드")
+    ap.add_argument("--probe-weight", default="inv",
+                    choices=("inv", "sqrt", "none"),
+                    help="probe 의 클래스 가중치. inv=①과 동일(역빈도)")
     ap.add_argument("--npz", default=None, help="점수·임베딩 캐시 경로")
     ap.add_argument("--json", default=None)
     a = ap.parse_args()

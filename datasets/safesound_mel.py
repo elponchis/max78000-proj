@@ -124,7 +124,7 @@ class SafeSoundMel(SafeSound):
         return x, target
 
 
-def _mel_loader(scheme, subset_frac=None):
+def _mel_loader(scheme, subset_frac=None, clip_prob=0.0):
     """압축 법칙 하나에 대한 ai8x-training 규약 로더를 만든다.
 
     ⚠️ **캐시 파일 이름에 법칙을 넣는다.** 넣지 않으면 (1) 의 로그 캐시를
@@ -138,7 +138,8 @@ def _mel_loader(scheme, subset_frac=None):
         # ⚠️ 부분집합은 **train 에만** 건다. test 를 줄이면 네 점이
         # 서로 다른 테스트셋을 보게 되어 곡선이 성립하지 않는다.
         train_ds = (SafeSoundMel(root, "train", transform=transform,
-                                 scheme=scheme, subset_frac=subset_frac)
+                                 scheme=scheme, subset_frac=subset_frac,
+                                 clip_prob=clip_prob)
                     if load_train else None)
         # 테스트셋은 무증강이므로 캐시해 둔다. 없으면 즉석 계산으로 돌아간다.
         tag = "" if scheme == "log" else f"_{scheme}"
@@ -202,6 +203,15 @@ for _f in (25, 50, 75):
         "weight": class_weights(),          # v1 상수 고정
         "loader": _mel_loader("log", {"siren": _f / 100.0}),
     })
+
+# 혼합 증강 (되돌리기/포화 50:50, 학습 전용)
+datasets.append({
+    "name": "SafeSoundMelMix50",
+    "input": (1, MF.N_MELS, MF.N_FRAMES),
+    "output": tuple(CLASSES),
+    "weight": class_weights(),
+    "loader": _mel_loader("log", clip_prob=0.5),
+})
 
 for _name, _scheme in (("SafeSoundMelLin", "lin"),
                        ("SafeSoundMelCbrt", "cbrt"),
