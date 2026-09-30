@@ -365,6 +365,13 @@ def load_model(checkpoint, n_classes, ai8x_dir, simulate=False, bias=False,
             print(f"  [주의] state_dict 불일치 — 누락 {len(missing)} / "
                   f"초과 {len(unexpected)}")
             print("         QAT 체크포인트면 ai8x train.py --evaluate 로 교차 확인할 것")
+        # ⚠️ **필수.** train.py:415 가 체크포인트 로드 후 이것을 부른다.
+        # 빼면 각 층의 양자화 함수가 로드된 weight_bits/output_shift 에 맞춰
+        # 다시 설정되지 않아, `simulate=True` 경로가 통째로 망가진다
+        # (1층 출력이 60~75% 포화하고 macro-F1 이 0.18 로 무너졌다, 2026-09-30).
+        # `simulate=False` 경로는 영향이 없다 — 지금까지 보고한 수치는 전부
+        # 그쪽이라 무효가 되지 않는다.
+        ai8x.update_model(model)
     model.eval()
     return model
 
