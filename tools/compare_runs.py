@@ -201,7 +201,7 @@ def main():
             noise[name] = w
             vals[name] = list(vals_)
             mean = sum(vals_) / len(vals_)
-            print(f"  {name:<12} n={len(vals)}  평균 {mean:.4f}  "
+            print(f"  {name:<12} n={len(vals_)}  평균 {mean:.4f}  "
                   f"폭 {w:.4f}   " + " ".join(f"{v:.4f}" for v in vals_))
         print("  ⚠️ 폭은 **관측된 max-min** 이지 신뢰구간이 아니다. n 이 작으면")
         print("     실제 변동을 과소평가한다 — 보수적으로 쓸 것.")
