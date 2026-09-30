@@ -197,12 +197,19 @@ def main():
                         d300 = d
                 else:
                     cells += f"{'—':>12}"
-            if fam and d300 is not None and fam in noise:
-                n = noise[fam]
+            # 계열을 `+` 로 여러 개 주면 **큰 자**를 쓴다. 비교 쌍의 두
+            # 구성이 서로 다른 계열이면 안정성이 낮은 쪽이 판정을 지배해야
+            # 한다 — 작은 자를 대면 잡음을 실재로 오인한다 (2026-09-30 규칙).
+            fams = [f.strip() for f in fam.split("+")] if fam else []
+            have = [f for f in fams if f in noise]
+            if d300 is not None and have:
+                n = max(noise[f] for f in have)
+                fam = "+".join(have) + ("" if len(have) == 1 else
+                                        f" 중 큰 자 {max(have, key=lambda f: noise[f])}")
                 verdict = ("잡음 안" if abs(d300) <= n
                            else f"잡음 밖 ({abs(d300)/max(n,1e-9):.1f}배)")
                 verdict += f" [{fam} {n:.4f}]"
-            elif fam:
+            elif fams:
                 verdict = f"[{fam} 기준 없음]"
             print(f"  {why:<22}{cells}   {verdict}")
         print("  ⚠️ 판정은 **그 계열의 시드 폭**을 자로 쓴다 — 계열마다 다르다.")

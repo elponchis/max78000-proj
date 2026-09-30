@@ -281,6 +281,9 @@ CONFIGS = {
     # 서로 다른 입력으로 평가하게 된다).
     "wave_fb_norm2": ("ai85net-safesound.py", "AI85SafeSoundNet",
                       "SafeSoundNorm2"),
+    # (a) NPU 안 로그 근사 — 별도 모델 파일
+    "wave_logstage": ("ai85net-safesound-logstage.py", "AI85SafeSoundLogStage",
+                      "SafeSound"),
 }
 
 # 제곱근 가중치(D-1 root) 는 **여기에 항목이 없다.** 손실 가중치만 다르고
@@ -302,6 +305,9 @@ CONFIG_KWARGS = {
     "wave_fb_k2": {"abs_first": True, "first_kernel": 2},
     "wave_fb_k4": {"abs_first": True, "first_kernel": 4},
     "wave_fb_norm2": {"abs_first": True},
+    # logstage 는 abs_first 인자가 없다 (1층이 항상 Abs). bias 는 로그단의
+    # 마디(-t_k)라 진입점에서 항상 True 로 만든다
+    "wave_logstage": {},
 }
 
 
