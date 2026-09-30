@@ -147,6 +147,104 @@ def zeroshot_logits(P, idx):
     return np.concatenate([ev, bg[:, None]], axis=1)
 
 
+def probe(a, y_te, clips_te, fs_te, st_te, E_te):
+    """PANNs 임베딩(2048) 고정 + **선형 분류기만** 학습.
+
+    zero-shot 이 "AudioSet 라벨을 접은 것" 이라면, probe 는 "임베딩이 우리
+    5클래스를 선형으로 가를 수 있는가" 를 묻는다. 표현이 충분한데 소형
+    모델이 못 따라가는 것인지, 데이터 자체가 모호한 것인지 가른다.
+
+    **해석 규칙 (결과 보기 전에 정한다)**
+      · probe @300/h >= 0.9  → **데이터 양호, 소형 모델이 병목**
+      · probe @300/h ~ 0.8 이하 → **데이터 모호성·라벨 오류 의심**
+      · 그 사이(0.8~0.9) → 둘 다 기여. 클래스별로 갈라 본다
+
+    ⚠️ 편향은 zero-shot 과 같다 — 테스트 창 선별에 PANNs 가 쓰였다.
+    """
+    import torch
+    import eval_confusion as EC
+    if E_te is None or not len(E_te):
+        sys.exit("[에러] 임베딩이 없다. --mode probe 로 캐시를 다시 만들 것")
+
+    # 학습셋 임베딩
+    tr_npz = a.npz.replace(".npz", "-train.npz") if a.npz else None
+    if tr_npz and os.path.isfile(tr_npz):
+        z = np.load(tr_npz, allow_pickle=True)
+        y_tr, E_tr = z["y"], z["E"]
+        print(f"학습 임베딩 캐시 사용: {tr_npz} ({len(y_tr):,}창)")
+    else:
+        b = argparse.Namespace(**vars(a))
+        b.split = "train"
+        y_tr, _c, _f, _s, _P, E_tr, _i, el = run_panns(b, want_embed=True)
+        if tr_npz:
+            np.savez_compressed(tr_npz, y=y_tr, E=E_tr)
+            print(f"저장: {tr_npz}")
+
+    # ①과 **같은 클래스 가중치**
+    sys.path.insert(0, os.path.join(REPO, "datasets"))
+    import safesound as S
+    w = torch.tensor(S.class_weights(), dtype=torch.float32)
+    print(f"클래스 가중치 (①과 동일): "
+          + " ".join(f"{c}={v:.3f}" for c, v in zip(CLASSES, w.tolist())))
+
+    Xtr = torch.from_numpy(E_tr.astype(np.float32))
+    Ytr = torch.from_numpy(np.asarray(y_tr)).long()
+    Xte = torch.from_numpy(E_te.astype(np.float32))
+    # 표준화 — 학습셋 통계로만 (테스트 정보를 쓰지 않는다)
+    mu, sd = Xtr.mean(0, keepdim=True), Xtr.std(0, keepdim=True) + 1e-6
+    Xtr, Xte = (Xtr - mu) / sd, (Xte - mu) / sd
+
+    torch.manual_seed(0)
+    lin = torch.nn.Linear(Xtr.shape[1], len(CLASSES))
+    opt = torch.optim.AdamW(lin.parameters(), lr=1e-3, weight_decay=1e-4)
+    lf = torch.nn.CrossEntropyLoss(weight=w)
+    n, bs = len(Xtr), 256
+    for ep in range(30):
+        perm = torch.randperm(n)
+        tot = 0.0
+        for i in range(0, n, bs):
+            idx = perm[i:i + bs]
+            opt.zero_grad()
+            loss = lf(lin(Xtr[idx]), Ytr[idx])
+            loss.backward()
+            opt.step()
+            tot += float(loss) * len(idx)
+        if (ep + 1) % 10 == 0:
+            print(f"  epoch {ep+1:>2}  loss {tot/n:.4f}")
+    with torch.no_grad():
+        lg = lin(Xte).numpy()
+
+    y = np.asarray(y_te)
+    pred = lg.argmax(1)
+    fx = EC.fixed_fa_points(lg, y, CLASSES, hop_ms=250)
+    t = fx["targets"]
+    print()
+    EC.report(fs_te, y, pred, CLASSES, n_boot=0, seed=0,
+              clips=clips_te, starts=st_te, hop_ms=250)
+    print()
+    EC.print_fixed_fa(fx, CLASSES)
+    print()
+    f3 = t["300/h"]["macro_f1"]
+    print("=== 해석 규칙 (결과 보기 전에 정한 것) ===")
+    print(f"  probe @300/h = {f3:.4f}")
+    if f3 >= 0.9:
+        print("  → **데이터 양호. 소형 모델이 병목이다.**")
+    elif f3 <= 0.8:
+        print("  → **데이터 모호성·라벨 오류 의심.** 청취 감사로 확인할 것.")
+    else:
+        print("  → 0.8~0.9 사이 — 둘 다 기여한다. 클래스별로 갈라 볼 것.")
+    print("  ⚠️ 편향: 테스트 창 선별에 PANNs 가 쓰였다 (태거 필터).")
+    print("     probe 에도 같은 편향이 실려 있어 **과대추정**일 수 있다.")
+    if a.json:
+        import json
+        out = EC.summary_json(fs_te, y, pred, CLASSES, hop_ms=250)
+        out["fixed_fa"] = fx
+        json.dump(out, open(a.json, "w", encoding="utf-8"),
+                  ensure_ascii=False, indent=1)
+        print(f"  저장: {a.json}")
+    return
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=("zeroshot", "probe"), default="zeroshot")
@@ -184,8 +282,8 @@ def main():
                 idx=np.array(idx, dtype=object), sec=el)
             print(f"저장: {cache}")
 
-    if a.mode != "zeroshot":
-        sys.exit("probe 모드는 아직 구현 전이다 (zeroshot 먼저)")
+    if a.mode == "probe":
+        return probe(a, y, clips, fsids, starts, E)
 
     logits = zeroshot_logits(P, idx)
 
