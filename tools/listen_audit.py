@@ -14,6 +14,16 @@
 
 채운 뒤 `--score audit.csv` 로 클래스별 라벨 오류율과 **원본 단위 95% CI** 를 낸다.
 
+### ⚠️ 청취 순서는 **blind 먼저, suspect 나중**이다
+
+두 세트는 **fsid 10개, 완전히 같은 창 4개**가 겹친다 (재추출하지 않았다).
+suspect 를 먼저 들으면 "여러 모델이 틀린 창" 이라는 정보와 라벨이 노출되어
+blind 판정이 오염된다. **blind 는 아무 정보 없이 먼저** 하면 순서 영향이
+없고, suspect 는 원래 라벨 공개 세트라 나중에 해도 무방하다.
+
+겹친 4창은 **같은 창을 두 번 판정**하게 되므로 **판정자 일관성 확인**에
+쓴다 (`--consistency`).
+
 ## B. 의심 창 목록 (`--mode suspect`)
 
 여러 모델(① 3시드 + D-1(√) 3시드)의 예측이 **전부 라벨과 다르고** 평균
@@ -208,6 +218,59 @@ def mode_score(a):
     print("  ⚠️ 판정자 1인이다 — 일치도를 재지 않았다 (CLAUDE.md 8장 한계 2).")
 
 
+def mode_consistency(a):
+    """blind 와 suspect 에 **같은 창**이 있는 건의 두 판정을 대조한다.
+
+    blind 에서 들은 것(`heard`)이 정답과 같으면 suspect 에서는 `라벨맞음`,
+    다르면 `라벨틀림`(또는 `모호`)이 나와야 일관적이다. 판정자 1인의
+    **자기 일관성**을 재는 유일한 수단이다 (CLAUDE.md 8장 한계 2).
+    """
+    bd = os.path.dirname(os.path.abspath(a.blind))
+    key = {}
+    with open(os.path.join(bd, "_key_DO_NOT_OPEN.csv"), encoding="utf-8-sig") as f:
+        for r in csv.DictReader(f):
+            key[r["id"]] = r
+    heard = {}
+    with open(a.blind, encoding="utf-8-sig") as f:
+        for r in csv.DictReader(f):
+            h = (r.get("heard(siren/glass/scream/dog_bark/background/unknown)")
+                 or "").strip()
+            if h:
+                heard[r["id"]] = (h, (r.get("confidence(1~3)") or "").strip())
+    sus = list(csv.DictReader(open(a.suspect, encoding="utf-8-sig")))
+
+    bywin = {(key[i]["clip_id"], key[i]["start_sample"]): i for i in key}
+    rows = []
+    for r in sus:
+        k = (r["clip_id"], r["start_sample"])
+        if k in bywin:
+            rows.append((r, bywin[k]))
+    print(f"blind ∩ suspect 같은 창 {len(rows)}건")
+    if not rows:
+        return
+    print(f"  {'suspect#':>9}{'blind id':>10}{'정답':<11}{'blind 들음':<12}"
+          f"{'확신':>5}{'suspect 판정':<14}  일관")
+    print("  " + "-" * 70)
+    ok = tot = 0
+    for r, bid in rows:
+        h, conf = heard.get(bid, ("(미기입)", ""))
+        v = (r.get("verdict(라벨맞음/라벨틀림/모호)") or "").strip() or "(미기입)"
+        if h == "(미기입)" or v == "(미기입)":
+            cons = "—"
+        else:
+            expect = "라벨맞음" if h == r["label"] else "라벨틀림"
+            cons = "예" if v == expect or v == "모호" else "**아니오**"
+            tot += 1
+            ok += 1 if cons == "예" else 0
+        print(f"  {r['rank']:>9}{bid:>10}  {r['label']:<11}{h:<12}{conf:>5}"
+              f"  {v:<14}  {cons}")
+    if tot:
+        print()
+        print(f"  일관 {ok}/{tot} ({100*ok/tot:.0f}%)")
+    print("  ⚠️ n 이 작아 비율의 신뢰구간이 매우 넓다. **경향만** 본다.")
+    print("  ⚠️ `모호` 는 일관으로 센다 — 두 판정이 모순되지 않는다.")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=("blind", "suspect"), default=None)
@@ -217,8 +280,15 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default=None)
     ap.add_argument("--score", default=None)
+    ap.add_argument("--consistency", action="store_true",
+                    help="blind ∩ suspect 같은 창의 두 판정을 대조")
+    ap.add_argument("--blind", default="data/audit/blind/audit.csv")
+    ap.add_argument("--suspect",
+                    default="data/audit/suspect/suspect.csv")
     a = ap.parse_args()
-    if a.score:
+    if a.consistency:
+        mode_consistency(a)
+    elif a.score:
         mode_score(a)
     elif a.mode == "blind":
         a.out = a.out or "data/audit/blind"

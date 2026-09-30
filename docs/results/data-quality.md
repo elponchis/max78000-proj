@@ -56,6 +56,28 @@
 
 위치: `data/audit/blind/`
 
+### ⚠️ 청취 순서: **blind 먼저 → suspect 나중**
+
+두 세트는 **fsid 10개**가 겹치고 그중 **4개는 완전히 같은 창**이다
+(`data/audit/*/OVERLAP.txt`). 재추출하지 않고 **순서로** 해결한다.
+
+- `suspect` 를 먼저 들으면 "여러 모델이 틀린 창" 이라는 정보와 **라벨이
+  노출**되어 blind 판정이 오염된다.
+- `blind` 를 아무 정보 없이 먼저 하면 오염이 없다. `suspect` 는 **원래
+  라벨 공개 세트**라 나중에 해도 순서 영향이 없다.
+
+겹친 4창(suspect #2/#11/#27/#29 = blind 50/175/161/132)은 **같은 창을 두 번
+판정**하게 되므로 **판정자 자기 일관성** 확인에 쓴다:
+
+```bash
+python3 tools/listen_audit.py --consistency
+```
+
+blind 에서 들은 것이 정답과 같으면 suspect 에서 `라벨맞음`, 다르면
+`라벨틀림` 이 나와야 일관적이다(`모호` 는 모순이 아니므로 일관으로 센다).
+**판정자 1인 한계(CLAUDE.md 8장 한계 2)를 부분적으로나마 재는 유일한
+수단**이다. ⚠️ n=4 라 비율의 신뢰구간이 매우 넓다 — **경향만** 본다.
+
 채운 뒤:
 ```bash
 python3 tools/listen_audit.py --score data/audit/blind/audit.csv
