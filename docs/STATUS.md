@@ -260,7 +260,7 @@ python3 tools/listen_audit.py --consistency                       # 겹친 4창 
 
 ### 5.3 승인 대기
 
-- **Freesound API 키** — `siren` 원본 확보 (학습 곡선 결과 보고 결정)
+- ~~**Freesound API 키** — `siren` 원본 확보~~ **불필요** (chain11 이 원본 포화를 보였다, 2026-10-01)
 - **네트워크 접근** — 외부 데이터 조사 (Sci Data 사이렌셋, MIVIA)
 - **MSDK 설치** — 이 PC 에 없다. `docs/board-bringup.md` 1절부터
 
