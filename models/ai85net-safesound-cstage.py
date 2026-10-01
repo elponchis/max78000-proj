@@ -41,8 +41,13 @@ class AI85SafeSoundCStageP1(nn.Module):
             **kwargs
     ):
         super().__init__()
-        self.voice_conv1 = ai8x.FusedConv1dReLU(
-            num_channels, 100, 1, stride=1, padding=0, bias=bias, **kwargs)
+        # ⚠️ **활성화 없는 wide 층**이다. 처음에 `FusedConv1dReLU` 로 썼다가
+        # yaml 의 `activate: None` 과 어긋났다 (2026-10-01). 합성은 yaml 을
+        # 보므로 1단계 자원 수치는 영향이 없었으나, **학습 그래프가 달라져
+        # bit-identical 전제가 깨진다.** `ai8x.Conv1d(wide=True)` 가 맞다.
+        self.voice_conv1 = ai8x.Conv1d(
+            num_channels, 100, 1, stride=1, padding=0, bias=bias,
+            wide=True, **kwargs)
 
     def forward(self, x):  # pylint: disable=arguments-differ
         return self.voice_conv1(x)

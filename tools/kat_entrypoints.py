@@ -55,7 +55,9 @@ CASES = [
     # (a) NPU 로그 근사 — 5시드를 돌도록 검사 대상이 아니었다 (2026-10-01)
     ("ai85net-safesound-logstage.py", "ai85safesoundlogstage", (128, 128)),
     ("ai85net-safesound-logstage.py", "ai85safesoundlogstage_k2", (128, 128)),
-    # (c) 2패스 — 합성 확인용 조각 (학습용 단일 모델은 3단계에서)
+    # (c) 학습용 단일 모델 (중간에 CPU 로그가 낀 한 덩어리)
+    ("ai85net-safesound-cstage-train.py", "ai85safesoundcstage", (128, 128)),
+    # (c) 2패스 — 합성 확인용 조각
     ("ai85net-safesound-cstage.py", "ai85safesoundcstage_p1", (128, 128)),
     ("ai85net-safesound-cstage.py", "ai85safesoundcstage_p2", (100, 128)),
 ]
