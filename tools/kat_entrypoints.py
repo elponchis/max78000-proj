@@ -52,7 +52,35 @@ CASES = [
     ("ai85net-safesound-mel.py", "ai85safesoundwave2dnet", (1, 128, 128)),
     ("ai85net-safesound-mel.py", "ai85safesoundwave2dfoldnet", (4, 64, 64)),
     ("ai85net-safesound-mel.py", "ai85safesoundmelteacher", (128, 128)),
+    # (c) 2패스 — 합성 확인용 조각 (학습용 단일 모델은 3단계에서)
+    ("ai85net-safesound-cstage.py", "ai85safesoundcstage_p1", (128, 128)),
+    ("ai85net-safesound-cstage.py", "ai85safesoundcstage_p2", (100, 128)),
 ]
+
+# ── 자동 발견 — **CASES 에 빠진 진입점을 잡는다** ───────────────────
+# 하드코딩 목록만 검사하면 **새 모델 파일이 조용히 빠진다** (2026-10-01,
+# ai85net-safesound-cstage.py 가 그랬다). 검사 도구가 빠뜨리는 것을 모르면
+# 검사가 아니므로, 레포의 models/*.py 전부에서 `models` 목록을 긁어
+# CASES 와 대조한다.
+_MODELS_DIR = os.path.join(REPO, "models")
+_declared = {}
+for _f in sorted(os.listdir(_MODELS_DIR)):
+    if not _f.endswith(".py"):
+        continue
+    try:
+        _m = load(_f)
+    except Exception as e:                                  # noqa: BLE001
+        print(f"⚠️ {_f}: 로드 실패 — {type(e).__name__}: {e}")
+        continue
+    for _d in getattr(_m, "models", []):
+        _declared[_d["name"]] = _f
+_covered = {ep for _, ep, _ in CASES}
+_missing = sorted(set(_declared) - _covered)
+if _missing:
+    print("⚠️ CASES 에 없는 진입점 — 아래를 추가할 것:")
+    for _ep in _missing:
+        print(f"     (\"{_declared[_ep]}\", \"{_ep}\", (?, ?)),")
+    print()
 
 print(f"{'진입점':<30}{'입력':<16}{'params':>10}  결과")
 print("-" * 72)

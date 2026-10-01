@@ -1,0 +1,25 @@
+---
+# 구성 (c) 1패스 — NPU 필터뱅크만. **32bit wide 출력**.
+#
+# D-1 의 첫 층(voice_conv1) 하나뿐이다. 다른 것은 `output_width: 32` 와
+# 활성화 제거뿐.
+#   · Abs 를 뺀 이유: 32bit 출력에 활성화를 붙일 수 있는지 불확실하고,
+#     |·| 는 CPU 에서 공짜다 (로그 루프에 융합). 붙는다면 붙이는 쪽이
+#     전송량을 줄이지는 않는다 — 어차피 int32 4바이트다.
+#   · 가중치는 D-1 의 voice_conv1 과 **같은 것**을 쓴다.
+#
+# 이 패스의 출력 100×128 int32 를 CPU 가 읽어 log2 를 걸고,
+# int8 로 양자화해 2패스 입력 메모리에 써 넣는다.
+arch: ai85safesoundcstage_p1
+dataset: SafeSound
+
+layers:
+  # ── voice_conv1 : Conv1d k=1, 128 → 100, wide 32bit
+  - pad: 0
+    activate: None
+    out_offset: 0x2000
+    processors: 0xffffffffffffffff
+    data_format: HWC
+    operation: Conv1d
+    kernel_size: 1
+    output_width: 32
