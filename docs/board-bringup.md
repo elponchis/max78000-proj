@@ -33,6 +33,59 @@
 
 ---
 
+## 1′. ★ 실제로 쓰는 경로 — **WSL 빌드 + Windows 드래그 플래싱** (2026-10-01 확정)
+
+아래 1·2절은 **Windows 네이티브 MSDK** 기준으로 쓴 것이다. 실제 환경을
+확인해 보니 **WSL2 에 이미 전부 있었다** (이전 `max78000-auth` 작업의 유산):
+
+| | 위치 | 버전 |
+|---|---|---|
+| MSDK | `~/msdk` | Examples/Libraries 전부 |
+| arm 툴체인 | `/usr/bin/arm-none-eabi-gcc` | **10.3.1** |
+| OpenOCD | `/usr/local/bin/openocd` | **0.12.0** (소스 빌드) |
+
+→ **Windows 에 MSDK 를 또 깔지 않는다.** 역할을 이렇게 나눈다:
+
+| 작업 | 환경 | 이유 |
+|---|---|---|
+| **빌드** | **WSL2** | 툴체인이 이미 있다 |
+| **플래싱** | **Windows** — DAPLink 드라이브에 `.bin` 끌어다 놓기 | WSL2 는 USB 미지원. usbipd 는 **디버거가 필요할 때만** |
+| **시리얼** | **Windows** — Tera Term / PuTTY, **115200** | 〃 |
+
+⚠️ CLAUDE.md 6장은 "펌웨어 명령을 WSL 기준으로 안내하지 말 것" 이라고
+적었다. **빌드만 예외**다 — 산출물을 Windows 로 넘기고, 플래싱·시리얼·
+디버깅은 전부 Windows 절차다.
+
+### 빌드 명령 (WSL2)
+
+```bash
+cd ~/max78000-proj
+bash scripts/fw_build.sh Hello_World        # 또는 CNN/kws20_demo
+bash scripts/fw_build.sh Hello_World clean
+```
+
+`scripts/fw_build.sh` 가 하는 일:
+- `MAXIM_PATH=~/msdk`, `BOARD=FTHR_RevA` 로 `make`
+- `.bin` 이 없으면 `.elf` 에서 `objcopy`
+- **Flash 512KB / SRAM 128KB 대비 사용률**을 함께 찍는다 (CLAUDE.md 3장)
+- 산출물을 **Windows 에서 보이는 폴더**로 복사:
+  `C:/Users/1124j/Downloads/max78000-fw/<이름>.bin`
+  (탐색기 주소창에는 `C:\Users\1124j\Downloads\max78000-fw` 로 넣는다)
+
+### 빌드 실측 (2026-10-01, 보드 없이 확인)
+
+| 예제 | text | data | bss | Flash | SRAM |
+|---|---:|---:|---:|---:|---:|
+| `Hello_World` | 36,432 | 2,596 | 1,532 | **39,028 B (7.4%)** | 4,128 B (3.1%) |
+| `CNN/kws20_demo` | 389,820 | 2,604 | 35,636 | **392,424 B (74.8%)** | 38,240 B (29.2%) |
+
+⚠️ `kws20_demo` 가 Flash 의 **74.8%** 를 쓴다. 가중치가 코드에 박혀 있어서다.
+우리 펌웨어도 같은 자리를 쓰므로, **DEMO_BUILD 에 SD·GUI·부저를 다 넣으면
+512KB 가 빠듯할 수 있다.** 측정 빌드(`MEASURE_BUILD`)를 따로 두는 이유가
+하나 더 생겼다 (CLAUDE.md 6장).
+
+---
+
 ## 1. MSDK 설치 확인과 설치
 
 ### 1.1 이미 설치돼 있는지 확인
