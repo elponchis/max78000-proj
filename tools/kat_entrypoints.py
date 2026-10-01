@@ -87,6 +87,41 @@ if _missing:
         print(f"     (\"{_declared[_ep]}\", \"{_ep}\", (?, ?)),")
     print()
 
+# ── ★ train.py 가 models/ **전체**를 import 할 수 있는가 ───────────
+# `train.py` 는 `pydoc.locate` 로 models/ 의 모든 파일을 import 한다.
+# 따라서 **파일 하나가 import 에서 터지면 그 모델과 무관한 학습까지
+# 전부 죽는다.** 실제로 그렇게 chain15 의 마지막 시드와 chain16 의 첫
+# 시드가 죽었다 (2026-10-01, 경계 파일 경로를 `abspath` 로 잡아 심링크를
+# 못 푼 것). **import 시점 부작용을 두지 말 것.**
+#
+# ⚠️ 반드시 **ai8x-training 쪽 경로**(심링크)로 import 해야 한다.
+#    레포 경로로만 보면 심링크 때문에 생기는 문제를 놓친다.
+_AI8X = os.path.expanduser("~/ai8x-training")
+if os.path.isdir(os.path.join(_AI8X, "models")):
+    import pydoc                                    # noqa: PLC0415
+    _cwd = os.getcwd()
+    _sp = list(sys.path)
+    os.chdir(_AI8X)
+    sys.path.insert(0, _AI8X)
+    _bad = []
+    for _f in sorted(os.listdir(os.path.join(_AI8X, "models"))):
+        if not _f.endswith(".py") or _f == "__init__.py":
+            continue
+        try:
+            pydoc.safeimport("models." + _f[:-3])
+        except Exception as e:                      # noqa: BLE001
+            _bad.append((_f, type(e).__name__, str(e)[:100]))
+    os.chdir(_cwd)
+    sys.path[:] = _sp
+    if _bad:
+        print(f"✘ models/ import 실패 {len(_bad)}건 — "
+              "**이 파일들이 모든 학습을 죽인다**:")
+        for _f, _t, _m in _bad:
+            print(f"     {_f}: {_t} {_m}")
+        sys.exit(1)
+    print("✔ models/ 전체 import 가능 (심링크 경로 기준)")
+    print()
+
 print(f"{'진입점':<30}{'입력':<16}{'params':>10}  결과")
 print("-" * 72)
 bad = []

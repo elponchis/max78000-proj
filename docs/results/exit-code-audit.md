@@ -78,3 +78,56 @@ chain11 학습 곡선, chain14 혼합 증강.
 
 이번엔 운이 좋아 아무것도 깨지지 않았다. **운에 기댄 것이 문제다** —
 그래서 도구로 남긴다.
+
+---
+
+# 후속 — 고친 종료 코드 처리가 **바로 두 건을 잡았다** (2026-10-01 13:20)
+
+chain15 의 마지막 시드와 chain16 의 첫 시드가 연달아 실패했고,
+`local rc=$?` 가 둘 다 `exit 1` 로 찍어 체인을 멈췄다.
+**예전 코드였다면 둘 다 "(exit 0)" 으로 지나갔다.**
+
+## 원인 — 하나다
+
+`models/ai85net-safesound-cstage-train.py` 가 **import 시점에** 경계
+파일을 읽었고, 경로를 `abspath(__file__)` 로 잡았다.
+
+```python
+_BOUNDS_NPY = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),  # ← 링크 안 풂
+    "data/synth/cstage_bounds.npy")
+_BOUNDS = torch.from_numpy(np.load(_BOUNDS_NPY))                  # ← import 시점
+```
+
+이 파일은 `~/ai8x-training/models/` 에 **심볼릭 링크**로 걸려 그쪽에서
+import 된다. `abspath` 는 링크를 풀지 않으므로 레포가 `~/ai8x-training`
+으로 잡혀 파일을 못 찾았다.
+
+## ★ 더 중요한 것 — **무관한 학습까지 죽었다**
+
+`train.py` 는 `pydoc.locate` 로 `models/` 의 **모든** 파일을 import 한다.
+따라서 (c) 와 아무 상관 없는 **① mix50 시드 3** 이 같이 죽었다.
+
+> **모델 파일의 import 시점 부작용은 그 레포의 모든 학습을 죽인다.**
+
+## 고친 것 셋
+
+1. `abspath` → **`realpath`**
+2. 경계 읽기를 **지연 로드**로 (`_bounds()`). import 는 어떤 경우에도
+   예외를 내지 않는다.
+3. `tools/kat_entrypoints.py` 가 **심링크 경로에서 `models/` 전체를
+   import** 해 본다. 하나라도 터지면 실패로 끝난다.
+   ⚠️ 레포 경로로만 보면 **심링크 때문에 생기는 문제를 놓친다** —
+   그래서 `~/ai8x-training` 으로 `chdir` 해서 검사한다.
+
+## 되돌린 것
+
+`run_chain17.sh` 로 잃은 시드(`safesound-mel-mix50-v1-s3`)만 다시 돌린다.
+chain16 은 17 뒤로 밀었다 (`run_chain1[0-57].sh` 대기).
+
+## 교훈 — 이번엔 운이 아니었다
+
+앞 절의 감사에서 "운이 좋아 아무것도 깨지지 않았다, 운에 기댄 것이
+문제다" 라고 적었다. **세 시간 뒤에 실제로 깨졌고, 고쳐 둔 게이트가
+잡았다.** 게이트가 없었으면 ① mix50 3시드 판정을 2시드로 낸 줄 모르고
+보고했을 것이다.

@@ -76,11 +76,32 @@ _LN2 = float(np.log(2.0))
 #     **기기에는 이 반올림이 없다** — NPU 가 int32 를 직접 주므로
 #     `round` 는 학습 그래프가 float 를 정수로 옮기는 단계일 뿐이다.
 #     따라서 train/serve 불일치가 아니다.
+# ⚠️ **`realpath` 여야 한다.** 이 파일은 `~/ai8x-training/models/` 에
+# 심볼릭 링크로 걸려 그쪽에서 import 된다. `abspath` 는 링크를 풀지 않아
+# 레포가 `~/ai8x-training` 으로 잡히고 경계 파일을 못 찾는다.
 _BOUNDS_NPY = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
     "data/synth/cstage_bounds.npy")
-_BOUNDS = torch.from_numpy(np.load(_BOUNDS_NPY))
-assert _BOUNDS.numel() == 255, "경계는 255개여야 한다 (레벨 256개)"
+
+# ⚠️ **import 시점에 읽지 않는다.** `train.py` 는 `models/` 의 **모든**
+# 파일을 import 하므로(pydoc.locate), 여기서 예외가 나면 **이 모델과
+# 무관한 학습까지 전부 죽는다.** 실제로 그렇게 chain15 의 마지막 시드가
+# 죽었다 (2026-10-01). 모델을 만들 때 처음 한 번만 읽는다.
+_BOUNDS = None
+
+
+def _bounds():
+    """계단 경계 255개. 처음 쓸 때 읽는다."""
+    global _BOUNDS                                  # noqa: PLW0603
+    if _BOUNDS is None:
+        if not os.path.isfile(_BOUNDS_NPY):
+            raise FileNotFoundError(
+                f"{_BOUNDS_NPY} 가 없다. "
+                "`python3 tools/gen_cstage_bounds.py` 를 먼저 돌릴 것")
+        b = torch.from_numpy(np.load(_BOUNDS_NPY))
+        assert b.numel() == 255, "경계는 255개여야 한다 (레벨 256개)"
+        _BOUNDS = b
+    return _BOUNDS
 
 
 class _IntLog(torch.autograd.Function):
@@ -90,7 +111,7 @@ class _IntLog(torch.autograd.Function):
     def forward(ctx, y):
         ctx.save_for_backward(y)
         q = torch.bucketize(y.detach().abs().double(),
-                            _BOUNDS.to(y.device)) - 128
+                            _bounds().to(y.device)) - 128
         return q.to(y.dtype)
 
     @staticmethod
