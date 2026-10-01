@@ -16,6 +16,21 @@
 
 ---
 
+> ## ★ 급하면 여기만 — **확정된 경로** (2026-10-01 성공)
+>
+> | 단계 | 환경 | 명령 |
+> |---|---|---|
+> | 빌드 | WSL2 | `bash scripts/fw_build.sh Hello_World` |
+> | USB 공유 (1회) | Windows 관리자 | `usbipd bind --busid 1-3` |
+> | USB 전달 (연결마다) | Windows | `usbipd attach --wsl --busid 1-3` |
+> | HID (WSL 재시작마다) | WSL **root** | `modprobe usbhid` |
+> | 플래싱 | WSL **root** | `bash scripts/fw_flash.sh Hello_World` |
+> | 시리얼 | WSL **root** | `/dev/ttyACM0` 115200 |
+>
+> **MSD 드래그앤드롭은 쓰지 않는다** — 이 보드에서 3회 모두
+> `transfer timed out`. 상세·실패 기록은 **2′절**.
+> `sudo` 대신 **`wsl.exe -u root`** (sudo 는 비번 프롬프트에서 멈춘다).
+
 ## 0. 준비물 확인
 
 | 항목 | 확인 |
@@ -182,6 +197,117 @@ GNU Make 4.x
 
 세 줄이 다 나오면 툴체인이 산다. `MAXIM_PATH` 가 비어 있으면 MSYS2 를 닫고
 PowerShell 을 새로 연 뒤 다시 실행한다.
+
+---
+
+## 2′. ★★ 확정된 브링업 경로 — **성공 기록** (2026-10-01)
+
+2절의 MSD 드래그앤드롭은 **이 보드에서 작동하지 않았다.** 아래가 실제로
+통한 경로이고, 앞으로 모든 플래싱은 이것으로 한다.
+
+### 한눈에
+
+| 단계 | 환경 | 명령 |
+|---|---|---|
+| 빌드 | **WSL2** (uid 1000) | `bash scripts/fw_build.sh Hello_World` |
+| USB 공유 (**1회만**) | **Windows 관리자** | `usbipd bind --busid 1-3` |
+| USB 전달 (**연결마다**) | **Windows** | `usbipd attach --wsl --busid 1-3` |
+| HID 모듈 (**WSL 재시작마다**) | **WSL root** | `modprobe usbhid` |
+| 플래싱 | **WSL root** | `bash scripts/fw_flash.sh Hello_World` |
+| 시리얼 | **WSL root** | `/dev/ttyACM0` 115200 |
+
+⚠️ `wsl.exe -d max78000 **-u root**` 로 들어간다. **`sudo` 를 쓰지 않는다** —
+계정에 비밀번호가 걸려 있어 tty 없는 호출에서 프롬프트에 멈춘다. WSL 은
+root 진입에 비밀번호를 요구하지 않는다.
+
+### 실패한 경로 — MSD 드래그앤드롭
+
+세 가지 쓰기 방식 **전부** 같은 오류였다:
+
+```
+D:\FAIL.TXT
+  error: The transfer timed out.
+  type: transient, user
+```
+
+| 방식 | 결과 |
+|---|---|
+| 탐색기 드래그 | ✘ |
+| `FileStream` 단일 쓰기 (0.1초) | ✘ |
+| `FileOptions.WriteThrough` | ✘ |
+
+**보드 불량이 아니다** — DAPLink `Remount count` 가 1 → 3 으로 늘었으므로
+보드는 쓰기를 받고 리마운트까지 했다. MSD 전송 경로 문제다.
+SWD 는 `** Verified OK **` 까지 확인해 주므로 오히려 더 믿을 만하다.
+
+### ★ 가장 헷갈렸던 것 — `unable to find a matching CMSIS-DAP device`
+
+```
+Error: unable to find a matching CMSIS-DAP device
+** OpenOCD init failed **
+```
+
+**권한 문제로 보이지만 아니다.** root 로 돌려도 똑같이 실패한다.
+
+진짜 원인: **CMSIS-DAP v1 은 HID 기반이고 WSL 커널이 `usbhid` 를 기본으로
+올리지 않아 `/dev/hidraw*` 가 없다.** `lsusb` 에는 장치가 멀쩡히 보이므로
+(`0d28:0204 NXP ARM mbed`) 더 헷갈린다.
+
+```bash
+modprobe usbhid        # → /dev/hidraw0 생성
+```
+
+이 한 줄로 해결된다. `hidraw` 모듈은 **따로 없다**(`FATAL: Module hidraw
+not found`) — `usbhid` 가 hidraw 장치를 만든다.
+
+### 성공 시 이렇게 보인다
+
+```
+Info : CMSIS-DAP: SWD supported
+Info : CMSIS-DAP: FW Version = 0254
+Info : CMSIS-DAP: Serial# = 04440001bc77ca46...97969906
+Info : CMSIS-DAP: Interface Initialised (SWD)
+Info : SWD DPIDR 0x2ba01477
+Info : [max32xxx.cpu] Cortex-M4 r0p1 processor detected
+Info : [max32xxx.cpu] target has 6 breakpoints, 4 watchpoints
+** Programming Started **
+** Programming Finished **
+** Verify Started **
+** Verified OK **
+** Resetting Target **
+```
+
+`Serial#` 이 `DETAILS.TXT` 의 `Unique ID` 와 같은지 보면 **그 보드에 올린
+것이 맞다**는 확인이 된다.
+
+시리얼:
+```
+count : 15
+count : 16
+count : 17
+```
+
+### 보드 정보 (DETAILS.TXT, 2026-10-01)
+
+| | |
+|---|---|
+| Unique ID | `04440001bc77ca4600000000000000000000000097969906` |
+| HIC ID | `97969906` |
+| Interface Version | **0254** |
+| Daplink Mode | Interface |
+| Auto Reset | 1 |
+| USB Interfaces | MSD, CDC, HID, WebUSB |
+| usbipd BUSID | **1-3** (`0d28:0204`) |
+| 검출된 코어 | **Cortex-M4 r0p1**, SWD DPIDR `0x2ba01477` |
+
+### 주의할 상태 변화
+
+- **attach 하면 Windows 쪽 `D:`(DAPLINK) 와 `COM3` 이 사라진다.** 정상이다.
+  시리얼은 WSL `/dev/ttyACM0` 으로 읽는다.
+- Windows 로 되돌리려면 `usbipd detach --busid 1-3`.
+- `pyocd` 를 Windows 에 `--user` 로 깔아 두었다(0.45.1). 프로브는 잡지만
+  **MAX78000 내장 타깃이 없어** CMSIS 팩이 필요하고 인덱스 다운로드가
+  느리다(1817개). SWD 경로가 되므로 **쓰지 않는다** — 지워도 된다.
 
 ---
 
