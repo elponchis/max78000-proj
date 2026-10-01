@@ -68,8 +68,19 @@ GROUPS = {
 
 # 로컬에 학습 로그가 없는 실행. Colab 에서 체크포인트만 가져왔다.
 # 완주는 **체크포인트의 epoch 필드**로 확인한다 — 로그만큼 강하지는 않다.
-EXTERNAL = {
-    "safesound-mel-v1": "data/safesound-mel-v1_qat_best.pth.tar",
+# (현재 비어 있다 — ① s1 로그를 2026-10-01 에 받아 넣었다)
+EXTERNAL = {}
+
+# **이어 돌린 실행.** 로그에 마지막 구간의 에폭만 있으므로, 에폭 수만 보면
+# "완주" 로 찍히지만 그 로그 하나가 150에폭 전부를 증명하지는 않는다.
+# 감사 출력에 표시해 둔다.
+#   값 = (앞 구간을 담은 폴더들, 비고)
+RESUMED = {
+    "safesound-mel-v1": (
+        ["safesound-mel-v1___2026.09.26-142152",
+         "safesound-mel-v1___2026.09.26-144743"],
+        "Colab. 153124 가 144743 의 epoch 145 체크포인트에서 재개해 146~149 "
+        "를 돌고 최종 테스트. 앞 구간 로그는 로컬에 없다"),
 }
 
 
@@ -111,6 +122,19 @@ def last_epoch(run_dir):
                 if m:
                     out = max(out, int(m.group(1)))
     return out
+
+
+def min_epoch(run_dir):
+    """로그에서 본 가장 작은 에폭 번호. 이어 돌린 실행을 가리기 위해 쓴다."""
+    out = None
+    for lg in glob.glob(os.path.join(run_dir, "*.log")):
+        with open(lg, encoding="utf-8", errors="replace") as f:
+            for ln in f:
+                m = EPOCH_RE.search(ln)
+                if m:
+                    v = int(m.group(1))
+                    out = v if out is None else min(out, v)
+    return -1 if out is None else out
 
 
 def ckpt_epoch(path):
@@ -177,6 +201,10 @@ def main():
                         else "  ← " + (why or "에폭 부족"))
                 (prog if running else bad).append(
                     (g, n, why or "마지막 에폭 %d (기대 %d)" % (e, want)))
+            elif n in RESUMED:
+                first = min_epoch(d)
+                note = "  ← 이어 돌림 (이 로그는 %d~%d)" % (first, e)
+                weak.append((g, n, RESUMED[n][1]))
             print("%-32s%7d%6s%10s%7s%s" % (
                 n, e, tag, "✔" if ok else "✘", "✔" if hck else "✘", note))
 
@@ -187,7 +215,7 @@ def main():
             print("   [%s] %s — %s" % (g, n, w))
         print()
     if weak:
-        print("⚠️ 약한 확인 %d건 — 로그가 없어 체크포인트로만 봤다:" % len(weak))
+        print("⚠️ 약한 확인 %d건 — 완주했으나 근거가 한 단계 약하다:" % len(weak))
         for g, n, w in weak:
             print("   [%s] %s — %s" % (g, n, w))
         print()
