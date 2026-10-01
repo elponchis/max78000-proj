@@ -35,7 +35,7 @@ import numpy as np
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "tools"))
-from log2_q8 import LUT, log2_q8, to_int8          # noqa: E402
+from log2_q8 import LUT, log2_q8, log2_q8_abs, to_int8          # noqa: E402
 
 C_SRC = os.path.join(REPO, "firmware/common/log2_q8.c")
 LUT_INC = os.path.join(REPO, "firmware/common/log2_q8_lut.inc")
@@ -78,6 +78,8 @@ def build():
     lib = ctypes.CDLL(so)
     lib.log2_q8.argtypes = [ctypes.c_uint32]
     lib.log2_q8.restype = ctypes.c_int32
+    lib.log2_q8_abs.argtypes = [ctypes.c_int32]
+    lib.log2_q8_abs.restype = ctypes.c_int32
     lib.log2_q8_to_int8.argtypes = [ctypes.c_int32, ctypes.c_int32,
                                     ctypes.c_int32]
     lib.log2_q8_to_int8.restype = ctypes.c_int8
@@ -132,6 +134,36 @@ def main():
         ok, u = check(n, lib, vs)
         all_ok &= ok
         pool.append(u[:200000])
+
+    # ── 부호 처리 — **D-1 의 Abs 를 CPU 가 대신하는 자리** ─────────
+    # p1 은 activate: None 인 wide 층이라 **부호 있는 int32** 를 낸다.
+    # 이 변환이 빠져 있으면 음수가 uint32 로 랩어라운드해 거대한 값이 되고,
+    # 로그가 통째로 틀린다. **반드시 KAT 대상이다.**
+    print()
+    sgn = np.unique(np.concatenate([
+        np.arange(-(1 << 16), 1 << 16, dtype=np.int64),         # 0 주변 전수
+        np.array([-(1 << 31), -(1 << 31) + 1, (1 << 31) - 1,    # 경계
+                  -1, 0, 1], dtype=np.int64),
+        -(1 << ks), (1 << ks) - 1,                              # ±2^k
+        rng.integers(-(1 << 31), 1 << 31, size=2_000_000, dtype=np.int64),
+    ]))
+    py = log2_q8_abs(sgn)
+    c = np.fromiter((lib.log2_q8_abs(int(v)) for v in sgn),
+                    dtype=np.int32, count=len(sgn))
+    bad = np.nonzero(py != c)[0]
+    ok = len(bad) == 0
+    all_ok &= ok
+    print(f"  {'부호 있는 int32 (abs)':<28} {len(sgn):>11,}개  "
+          + ("✔ 전부 일치" if ok else f"✘ 불일치 {len(bad):,}개"))
+    if not ok:
+        for i in bad[:5]:
+            print(f"      v={int(sgn[i]):>12}  py={int(py[i]):>8}  c={int(c[i]):>8}")
+    # ±v 가 같은 값을 내는가 (Abs 의 정의)
+    pos = sgn[sgn > 0]
+    sym = np.array_equal(log2_q8_abs(pos), log2_q8_abs(-pos))
+    all_ok &= sym
+    print(f"  {'대칭성 log(+v) == log(-v)':<28} {len(pos):>11,}개  "
+          + ("✔" if sym else "✘ 깨짐"))
 
     # to_int8 — 포화와 바닥 나눗셈까지
     print()

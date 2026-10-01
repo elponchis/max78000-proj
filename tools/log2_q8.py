@@ -71,6 +71,19 @@ def log2_q8(v):
     return out.astype(np.int32)
 
 
+def log2_q8_abs(v):
+    """**부호 있는 int32** 하나/배열 → Q8 로그. `firmware` 의 동명 함수와 같다.
+
+    (c) 의 p1 은 활성화가 없는 wide 층이라 부호 있는 int32 를 낸다.
+    D-1 의 첫 층 `Abs` 를 **CPU 가 대신하는 자리**가 여기다 — 채널별
+    |re|, |im| 이고 파워(re^2+im^2)가 아니다.
+    """
+    v = np.asarray(v, dtype=np.int64)
+    if np.any(v < -(1 << 31)) or np.any(v > (1 << 31) - 1):
+        raise ValueError("입력은 int32 범위여야 한다")
+    return log2_q8(np.abs(v))
+
+
 def to_int8(lg, lo_q8, span_q8):
     """Q8 로그값을 int8 로. **포화**한다 (랩어라운드 금지, CLAUDE.md 7장).
 

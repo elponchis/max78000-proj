@@ -296,7 +296,7 @@ python3 tools/listen_audit.py --consistency                       # 겹친 4창 
 
 | 확인 | 결과 |
 |---|---|
-| `output_width: 32` on Conv1d | **된다** |
+| `output_width: 32` on Conv1d | **된다** (단 **Abs 와 동시 불가** — `output_width must be 8 when activation is used`) |
 | **442KB 동시 적재** | **된다** — `--weight-start 342`, 366/768 (47.7%) |
 | 가중치 | 12,800 + 152,576 = **165,376 B (37.4%)** = D-1 과 동일 |
 | **NPU 사이클** | 27,137 + 44,582 = **71,719** vs D-1 71,718 → **분할 비용 0** |
@@ -311,6 +311,7 @@ python3 tools/listen_audit.py --consistency                       # 겹친 4창 
 |---|---|
 | 파이썬/C `log2_q8` | **비트 일치** — 전수 하위16bit + 2^k 경계 + 로그격자 + 무작위 1e7 |
 | `to_int8` (포화·바닥나눗셈) | **비트 일치** (창 3종) |
+| **부호 처리 `log2_q8_abs`** | **비트 일치** (int32 전 범위 213만, 대칭성 포함) |
 | **`output_shift`** | 학습 **−3** = 서빙 **−3** = 합성 **−3** |
 | 로그 근사 오차 | **0.044 dB** (최대) — (a) 의 구간선형 2.03 dB 보다 46배 정확 |
 

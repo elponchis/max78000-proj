@@ -44,6 +44,26 @@ int32_t log2_q8(uint32_t v)
     return (e << LOG2Q8_Q) + (int32_t)log2_q8_lut[m & 0xFFu];
 }
 
+/* NPU 의 int32 출력 하나를 Q8 로그로. **부호 처리가 여기 있다.**
+ *
+ * D-1 은 첫 층 활성화가 `Abs` 였다 (cos/sin 쌍의 |re|, |im| 을 얻기 위해 —
+ * ReLU 면 위상에 따라 두 채널이 동시에 0 이 되어 밴드가 사라진다).
+ * (c) 의 p1 은 `activate: None` 인 wide 층이라 **부호 있는 int32** 가 나오고,
+ * 그 `Abs` 를 CPU 가 대신한다. 즉 **D-1 과 같은 양**(채널별 |re|, |im|)이고
+ * 파워(re^2 + im^2)가 아니다 — 파워로 바꾸면 채널 수가 반이 되어 D-1 과
+ * 비교가 깨진다.
+ *
+ * ⚠️ `-v` 를 signed 로 쓰면 INT32_MIN 에서 UB 다. unsigned 로 캐스팅 후 뺀다.
+ *    실제로는 누산기가 128탭 x int8 x int8 이라 |v| <= 2,064,512 (약 2^21)
+ *    이므로 INT32_MIN 은 나오지 않지만, 함수가 전 범위에서 정의돼야
+ *    KAT 를 전 범위로 돌릴 수 있다.
+ */
+int32_t log2_q8_abs(int32_t v)
+{
+    const uint32_t m = (v < 0) ? (0u - (uint32_t)v) : (uint32_t)v;
+    return log2_q8(m);
+}
+
 /* Q8 로그값을 int8 로. **포화**한다 (랩어라운드 금지 — CLAUDE.md 7장).
  *
  * ⚠️ MSDK kws20_demo 는 int8 대입에서 포화시키지 않아 큰 소리의 부호가
