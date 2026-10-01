@@ -1,0 +1,168 @@
+Word starts from index 14976 to 7552, padded with 3584 zeros, avg:418 > 350 
+3130240: Starts CNN: 5
+3130240: Completes CNN: 5
+CNN Time: 1849 us
+Min: -32,   Max: 13 
+----------------------------------------- 
+Detected word: LEFT (99.8%)
+----------------------------------------- 
+Word starts from index 10112 to 2688, padded with 3584 zeros, avg:362 > 350 
+3152896: Starts CNN: 6
+3152896: Completes CNN: 6
+CNN Time: 1849 us
+Min: -31,   Max: 19 
+----------------------------------------- 
+Detected word: RIGHT (100.0%)
+----------------------------------------- 
+Word starts from index 12800 to 3712, padded with 5248 zeros, avg:447 > 350 
+3172992: Starts CNN: 7
+3172992: Completes CNN: 7
+CNN Time: 1849 us
+Min: -47,   Max: 29 
+----------------------------------------- 
+Detected word: OFF (96.4%)
+----------------------------------------- 
+Word starts from index 3072 to 7296, padded with 8320 zeros, avg:470 > 350 
+3180288: Starts CNN: 8
+3180288: Completes CNN: 8
+CNN Time: 1849 us
+Min: -8,   Max: 3 
+----------------------------------------- 
+Detected word: Unknown
+----------------------------------------- 
+Word starts from index 5888 to 10112, padded with 8320 zeros, avg:458 > 350 
+3198720: Starts CNN: 9
+3198720: Completes CNN: 9
+CNN Time: 1849 us
+Min: -27,   Max: 12 
+----------------------------------------- 
+Detected word: Unknown
+----------------------------------------- 
+Word starts from index 8448 to 15872, padded with 5120 zeros, avg:403 > 350 
+3214592: Starts CNN: 10
+3214592: Completes CNN: 10
+CNN Time: 1849 us
+Min: -25,   Max: 12 
+----------------------------------------- 
+Detected word: YES (100.0%)
+----------------------------------------- 
+Word starts from index 13696 to 7680, padded with 2176 zeros, avg:497 > 350 
+3238656: Starts CNN: 11
+3238656: Completes CNN: 11
+CNN Time: 1849 us
+Min: -30,   Max: 17 
+----------------------------------------- 
+Detected word: NO (99.6%)
+----------------------------------------- 
+Word starts from index 12544 to 4352, padded with 4352 zeros, avg:368 > 350 
+3259392: Starts CNN: 12
+3259392: Completes CNN: 12
+CNN Time: 1849 us
+Min: -20,   Max: 12 
+----------------------------------------- 
+Detected word: Unknown
+----------------------------------------- 
+Word starts from index 15232 to 7040, padded with 4352 zeros, avg:358 > 350 
+3287168: Starts CNN: 13
+3287168: Completes CNN: 13
+CNN Time: 1849 us
+Min: -28,   Max: 16 
+----------------------------------------- 
+Detected word: OFF (100.0%)
+----------------------------------------- 
+Word starts from index 11904 to 3712, padded with 4352 zeros, avg:409 > 350 
+3311616: Starts CNN: 14
+3311616: Completes CNN: 14
+CNN Time: 1849 us
+Min: -21,   Max: 16 
+----------------------------------------- 
+Detected word: ZERO (100.0%)
+----------------------------------------- 
+Word starts from index 9600 to 1024, padded with 4736 zeros, avg:387 > 350 
+3329024: Starts CNN: 15
+3329024: Completes CNN: 15
+CNN Time: 1849 us
+Min: -65,   Max: 31 
+----------------------------------------- 
+Detected word: ONE (99.6%)
+----------------------------------------- 
+Word starts from index 14976 to 6400, padded with 4736 zeros, avg:509 > 350 
+3356544: Starts CNN: 16
+3356544: Completes CNN: 16
+CNN Time: 1849 us
+Min: -19,   Max: 15 
+----------------------------------------- 
+Detected word: TWO (100.0%)
+----------------------------------------- 
+Word starts from index 9984 to 1408, padded with 4736 zeros, avg:371 > 350 
+3379072: Starts CNN: 17
+3379072: Completes CNN: 17
+CNN Time: 1849 us
+Min: -31,   Max: 19 
+----------------------------------------- 
+Detected word: THREE (99.9%)
+----------------------------------------- 
+Word starts from index 10880 to 2304, padded with 4736 zeros, avg:437 > 350 
+3402496: Starts CNN: 18
+3402496: Completes CNN: 18
+CNN Time: 1849 us
+Min: -25,   Max: 20 
+----------------------------------------- 
+Detected word: FOUR (100.0%)
+----------------------------------------- 
+Word starts from index 256 to 4480, padded with 8320 zeros, avg:376 > 350 
+3406976: Starts CNN: 19
+3406976: Completes CNN: 19
+CNN Time: 1849 us
+Min: -8,   Max: 4 
+----------------------------------------- 
+Detected word: Unknown
+----------------------------------------- 
+Word starts from index 6528 to 15232, padded with 3840 zeros, avg:484 > 350 
+3422208: Starts CNN: 20
+3422208: Completes CNN: 20
+CNN Time: 1849 us
+Min: -25,   Max: 24 
+----------------------------------------- 
+Detected word: FIVE (99.9%)
+----------------------------------------- 
+Word starts from index 1152 to 8320, padded with 5376 zeros, avg:430 > 350 
+3430528: Starts CNN: 21
+3430528: Completes CNN: 21
+CNN Time: 1849 us
+Min: -9,   Max: 7 
+----------------------------------------- 
+Detected word: Unknown
+----------------------------------------- 
+Word starts from index 4992 to 13696, padded with 3840 zeros, avg:360 > 350 
+3444224: Starts CNN: 22
+3444224: Completes CNN: 22
+CNN Time: 1849 us
+Min: -15,   Max: 11 
+----------------------------------------- 
+Detected word: SIX (100.0%)
+----------------------------------------- 
+Word starts from index 12672 to 6528, padded with 2304 zeros, avg:497 > 350 
+3467136: Starts CNN: 23
+3467136: Completes CNN: 23
+CNN Time: 1849 us
+Min: -27,   Max: 15 
+----------------------------------------- 
+Detected word: SEVEN (100.0%)
+----------------------------------------- 
+Word starts from index 12416 to 2560, padded with 6016 zeros, avg:412 > 350 
+3486080: Starts CNN: 24
+3486080: Completes CNN: 24
+CNN Time: 1849 us
+Min: -27,   Max: 16 
+----------------------------------------- 
+Detected word: EIGHT (100.0%)
+----------------------------------------- 
+Word starts from index 1152 to 9856, padded with 3840 zeros, avg:460 > 350 
+3495936: Starts CNN: 25
+3495936: Completes CNN: 25
+CNN Time: 1849 us
+Min: -11,   Max: 5 
+----------------------------------------- 
+Detected word: Unknown
+----------------------------------------- 
