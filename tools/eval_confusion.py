@@ -284,6 +284,10 @@ CONFIGS = {
     # (a) NPU 안 로그 근사 — 별도 모델 파일
     "wave_logstage": ("ai85net-safesound-logstage.py", "AI85SafeSoundLogStage",
                       "SafeSound"),
+    # (c) NPU 필터뱅크 → CPU 정수 로그 → NPU 분류기.
+    # 데이터셋은 ④와 같다 (로그는 모델 안에 있다 — 전처리가 아니다)
+    "wave_cstage": ("ai85net-safesound-cstage-train.py",
+                    "AI85SafeSoundCStageTrain", "SafeSound"),
 }
 
 # 제곱근 가중치(D-1 root) 는 **여기에 항목이 없다.** 손실 가중치만 다르고
@@ -308,6 +312,8 @@ CONFIG_KWARGS = {
     # logstage 는 abs_first 인자가 없다 (1층이 항상 Abs). bias 는 로그단의
     # 마디(-t_k)라 진입점에서 항상 True 로 만든다
     "wave_logstage": {},
+    # cstage 도 추가 인자가 없다 (로그단 상수는 모델 파일의 모듈 상수)
+    "wave_cstage": {},
 }
 
 
