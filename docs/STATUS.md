@@ -567,8 +567,12 @@ x64 − x4 = −0.0202 [−0.041, +0.0007] (미확정).
    불일치 0. load 108,512 (1.085 ms) / **infer 408,522 (4.085 ms = ④의 2.84배)**
    / unload 809. 합계 ≈ 5.18 ms. **CPU 멜 전처리는 미포함.**
    `synthesis-check.md` 9절
-5. **CPU 멜 전처리 C 구현** — **구현·PC 대조·플래싱까지 됨 (2026-10-02).
-   POR 후 시리얼 값 대기**
+5. ~~**CPU 멜 전처리 C 구현**~~ **확보 (2026-10-02, POR 직후 시리얼)** —
+   보드 KAT **불일치 0/4096**, 전처리 **47.87 ms** (최악, 1000회).
+   단계: 프레임 17% / **rfft 51%** / 멜 13% / 로그 19%.
+   **① 종단간 53.05 ms (hop 의 21.2%) = ④(2.53 ms)의 20.9배, 그 90%가 CPU
+   전처리.** 에너지 추정 ① 약 604~1,507 µJ, ①/④ 비 8.5~11.6.
+   `synthesis-check.md` 10절, `energy-estimate.md` 4.1절. **남은 것: 최적화 후 값**
    - `firmware/common/melfeat.c` (float32, CMSIS-DSP `arm_rfft_fast_f32`),
      표는 `tools/gen_mel_tables.py` 가 `melfeat.py` 에서 생성
    - **PC 대조** (`tools/kat_melfeat_c.py`, 같은 소스를 PC 에서 컴파일, FFT 만
