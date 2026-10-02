@@ -115,6 +115,44 @@ _REF = (float(_WIN.sum()) / 2.0) ** 2
 HOP_INC = 250
 OFF_INC = 16384 - ((N_FRAMES - 1) * HOP_INC + N_FFT)      # 122
 
+# ── "정확도 대 에너지 곡선" 변형 (2026-10-02) ─────────────────────────────
+# ①′ 의 CPU 전처리 비용을 줄인 프레임 정의들. 전부 **증분 계산이 된다** (hop 이
+# 판단 주기 4,000 의 약수), 끝 정렬·무패딩·고정 로그 스케일은 ①′ 와 같다.
+# 프레임 수는 1초 창(16,384)에 들어가는 최대값이다.
+#   이름      hop  프레임  멜   판단당 새 프레임  쓰는 샘플   겹침
+#   inc       250    64   64        16           16,262     51%   ← ①′
+#   h500      500    32   64         8           16,012      2%
+#   h500m32   500    32   32         8           16,012      2%
+#   m32       250    64   32        16           16,262     51%
+#   h400      400    40   64        10           16,112     22%
+INC_SPECS = {
+    "inc": (250, 64, 64),
+    "h500": (500, 32, 64),
+    "h500m32": (500, 32, 32),
+    "m32": (250, 64, 32),
+    "h400": (400, 40, 64),
+}
+_FB_CACHE = {N_MELS: _FB}
+
+
+def _fb(n_mels):
+    if n_mels not in _FB_CACHE:
+        _FB_CACHE[n_mels] = mel_filterbank(n_mels=n_mels)
+    return _FB_CACHE[n_mels]
+
+
+def inc_offset(framing):
+    """끝 정렬 오프셋 — 창의 맨 앞에서 쓰지 않는 샘플 수."""
+    hop, n_frames, _ = INC_SPECS[framing]
+    return 16384 - ((n_frames - 1) * hop + N_FFT)
+
+
+def framing_shape(framing):
+    """(멜 수, 프레임 수) — 모델 입력의 모양."""
+    if framing in INC_SPECS:
+        return INC_SPECS[framing][2], INC_SPECS[framing][1]
+    return N_MELS, N_FRAMES
+
 
 def stft_power(x, framing="reflect"):
     """(N_FRAMES, n_fft//2+1) 정규화 파워 스펙트럼.
@@ -126,10 +164,11 @@ def stft_power(x, framing="reflect"):
 
     `framing="inc"` 는 ①′ 다 (위 주석): hop 250, 패딩 없음, 끝 정렬.
     """
-    if framing == "inc":
+    if framing in INC_SPECS:
+        hop, n_frames, _ = INC_SPECS[framing]
         xp = np.asarray(x, dtype=np.float64)
-        idx = (OFF_INC + np.arange(N_FFT)[None, :]
-               + (np.arange(N_FRAMES) * HOP_INC)[:, None])
+        idx = (inc_offset(framing) + np.arange(N_FFT)[None, :]
+               + (np.arange(n_frames) * hop)[:, None])
     else:
         xp = np.pad(np.asarray(x, dtype=np.float64), (PAD, PAD), mode="reflect")
         idx = np.arange(N_FFT)[None, :] + (np.arange(N_FRAMES) * HOP)[:, None]
@@ -145,7 +184,8 @@ def log_mel_db(w_int8, framing="reflect"):
     지점에서 시작하므로 **여기서 정규화를 끼워 넣으면 안 된다**.
     """
     x = np.asarray(w_int8, dtype=np.float64) / 128.0
-    mel = stft_power(x, framing) @ _FB.T            # (frames, mels)
+    fb = _fb(framing_shape(framing)[0])
+    mel = stft_power(x, framing) @ fb.T             # (frames, mels)
     return 10.0 * np.log10(mel.T + EPS)             # (mels, frames)
 
 
@@ -206,10 +246,22 @@ COMP_SCHEMES = {
     # 프레임·압축은 "loginc" 와 같고 **DFT 기저가 정수 가중치**라는 점만 다르다.
     "loginc_q8": (None, TOP_DB, SPAN_DB),
     "loginc_q4": (None, TOP_DB, SPAN_DB),
+    # "정확도 대 에너지 곡선" 변형 — 압축은 같고 프레임 정의(INC_SPECS)만 다르다
+    "log_h500": (None, TOP_DB, SPAN_DB),
+    "log_h500m32": (None, TOP_DB, SPAN_DB),
+    "log_m32": (None, TOP_DB, SPAN_DB),
+    "log_h400": (None, TOP_DB, SPAN_DB),
 }
 
 # 법칙 → 프레임 정의. 여기 없으면 "reflect"(현행 ①)다.
-SCHEME_FRAMING = {"loginc": "inc", "loginc_q8": "inc", "loginc_q4": "inc"}
+SCHEME_FRAMING = {"loginc": "inc", "loginc_q8": "inc", "loginc_q4": "inc",
+                  "log_h500": "h500", "log_h500m32": "h500m32",
+                  "log_m32": "m32", "log_h400": "h400"}
+
+
+def scheme_shape(scheme):
+    """법칙 이름 → (멜 수, 프레임 수)."""
+    return framing_shape(SCHEME_FRAMING.get(scheme, "reflect"))
 # 법칙 → STFT 기저의 가중치 비트폭 (NPU Conv1d 로 옮긴 판). 없으면 float FFT.
 SCHEME_STFT_BITS = {"loginc_q8": 8, "loginc_q4": 4}
 _QBASIS = {}

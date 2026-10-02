@@ -88,8 +88,9 @@ class SafeSoundMel(SafeSound):
             raise ValueError("증강 split 은 캐시할 수 없다")
         path = path or self.cache_path
         n = len(self)
+        n_mels, n_frames = MF.scheme_shape(self.scheme)
         out = np.lib.format.open_memmap(
-            path, mode="w+", dtype=np.int8, shape=(n, MF.N_MELS, MF.N_FRAMES))
+            path, mode="w+", dtype=np.int8, shape=(n, n_mels, n_frames))
         for i in range(n):
             out[i] = self._features(i)
             if verbose and (i + 1) % 2000 == 0:
@@ -156,8 +157,9 @@ def _mel_loader(scheme, subset_frac=None, clip_prob=0.0, cls=None):
                     if load_train else None)
         # 테스트셋은 무증강이므로 캐시해 둔다. 없으면 즉석 계산으로 돌아간다.
         tag = "" if scheme == "log" else f"_{scheme}"
+        n_mels, n_frames = MF.scheme_shape(scheme)
         cache = os.path.join(root, "test",
-                             f"melcache{tag}_{MF.N_MELS}x{MF.N_FRAMES}.npy")
+                             f"melcache{tag}_{n_mels}x{n_frames}.npy")
         test_ds = (DS(root, "test", transform=transform,
                       scheme=scheme,
                       cache=cache if os.path.isfile(cache) else None)
@@ -245,6 +247,21 @@ datasets.append({
     "weight": class_weights(),
     "loader": _mel_loader("loginc", cls=SafeSoundMel1D),
 })
+
+# "정확도 대 에너지 곡선" 변형 (2026-10-02) — ①′ 의 CPU 전처리를 줄인 프레임
+# 정의들 (melfeat.INC_SPECS). 모델은 같은 2D CNN 이고 입력 모양만 다르다
+# (FC 입력 길이는 모델이 스스로 계산한다).
+for _name, _scheme in (("SafeSoundMelH500", "log_h500"),
+                       ("SafeSoundMelH500M32", "log_h500m32"),
+                       ("SafeSoundMelM32", "log_m32"),
+                       ("SafeSoundMelH400", "log_h400")):
+    datasets.append({
+        "name": _name,
+        "input": (1,) + MF.scheme_shape(_scheme),
+        "output": tuple(CLASSES),
+        "weight": class_weights(),
+        "loader": _mel_loader(_scheme),
+    })
 
 for _name, _scheme in (("SafeSoundMelLin", "lin"),
                        ("SafeSoundMelCbrt", "cbrt"),

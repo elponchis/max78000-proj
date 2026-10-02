@@ -270,6 +270,11 @@ CONFIGS = {
                   "SafeSoundMelLog72"),
     "mel_inc": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelInc"),
     "mel_inc_q8": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelInc"),
+    "mel_h500": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelH500"),
+    "mel_h500m32": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet",
+                    "SafeSoundMelH500M32"),
+    "mel_m32": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelM32"),
+    "mel_h400": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelH400"),
     # 구성 A — ①′ 로그 멜을 ④의 1D 뒷단에 (표현/구조 분리)
     "mel1d_inc": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSoundMelInc1D"),
     "mel_inc_q4": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelInc"),
@@ -322,6 +327,11 @@ CONFIG_DATA = {
     "mel_inc": ("SafeSound", {"scheme": "loginc"}),
     # B 사전 확인 — ①′ 체크포인트를 **NPU 정수 STFT 특징**으로 평가 (재학습 없음)
     "mel1d_inc": ("SafeSound", {"scheme": "loginc"}),
+    # "정확도 대 에너지 곡선" 변형 — 프레임 정의만 다르다 (모델 입력 모양도)
+    "mel_h500": ("SafeSound", {"scheme": "log_h500"}),
+    "mel_h500m32": ("SafeSound", {"scheme": "log_h500m32"}),
+    "mel_m32": ("SafeSound", {"scheme": "log_m32"}),
+    "mel_h400": ("SafeSound", {"scheme": "log_h400"}),
     "mel_inc_q8": ("SafeSound", {"scheme": "loginc_q8"}),
     "mel_inc_q4": ("SafeSound", {"scheme": "loginc_q4"}),
     "wave_fb_norm2": ("SafeSound", {"norm_pow2": True}),
@@ -357,6 +367,11 @@ CONFIG_KWARGS = {
     "wave_n16g64": {},
     # 구성 A: 입력 64채널(멜) × 길이 64(프레임), voice_conv3 의 풀링 없음
     "mel1d_inc": {"num_channels": 64, "dimensions": (64, 1), "pool3": False},
+    # 곡선 변형: 입력 (멜, 프레임) — FC 입력 길이가 이 값으로 정해진다
+    "mel_h500": {"dimensions": (64, 32)},
+    "mel_h500m32": {"dimensions": (32, 32)},
+    "mel_m32": {"dimensions": (32, 64)},
+    "mel_h400": {"dimensions": (64, 40)},
 }
 
 

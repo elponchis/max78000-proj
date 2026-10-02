@@ -116,9 +116,29 @@ class AI85SafeSoundMelNet(nn.Module):
         self.conv6 = ai8x.FusedMaxPoolConv2dReLU(ch(128), ch(128), 1, pool_size=2,
                                                  pool_stride=2, stride=1,
                                                  padding=0, bias=bias, **kwargs)
-        # 128×2×2 → flatten 512
-        self.fc = ai8x.Linear(ch(128) * 2 * 2, num_classes, bias=bias,
+        # 128×2×2 → flatten 512 (입력 64×64 일 때).
+        #
+        # ⚠️ flatten 길이를 **실제로 통과시켜 구한다** (2026-10-02). 입력이
+        #    64×64 가 아닌 변형(프레임 32·40, 멜 32 — "정확도 대 에너지 곡선")에서
+        #    FC 입력이 달라진다: 64×32 → 256, 32×32 → 128, 64×40 → 256.
+        #    conv 만 통과시키므로 난수를 쓰지 않는다 — 기존 구성(64×64 → 512)의
+        #    초기화·재현성은 그대로다.
+        flat = self._flatten_len(num_channels, dimensions, pool_first)
+        self.fc = ai8x.Linear(flat, num_classes, bias=bias,
                               wide=True, **kwargs)
+
+    def _flatten_len(self, num_channels, dimensions, pool_first):
+        """conv 스택에 0 을 한 번 흘려 FC 입력 길이를 구한다 (파라미터 없음)."""
+        if isinstance(dimensions, (tuple, list)) and len(dimensions) == 2:
+            h, w = int(dimensions[0]), int(dimensions[1])
+        else:
+            h = w = 128 if pool_first else 64
+        with torch.no_grad():
+            x = torch.zeros(1, num_channels, h, w)
+            for m in (self.conv1, self.conv2, self.conv3, self.conv4,
+                      self.conv5, self.conv6):
+                x = m(x)
+        return int(x.numel())
 
     def forward(self, x):  # pylint: disable=arguments-differ
         """Forward prop"""
