@@ -124,7 +124,19 @@ class SafeSoundMel(SafeSound):
         return x, target
 
 
-def _mel_loader(scheme, subset_frac=None, clip_prob=0.0):
+class SafeSoundMel1D(SafeSoundMel):
+    """같은 로그 멜을 **1D 모델용 배치**로 낸다 — (멜 64 = 채널, 프레임 64 = 길이).
+
+    구성 A (`ai85safesoundnet_mel1d`)용이다. 특징 값은 SafeSoundMel 과 **완전히
+    같고** 텐서 모양만 (1, 64, 64) → (64, 64) 로 다르다.
+    """
+
+    def __getitem__(self, i):
+        x, target = super().__getitem__(i)        # (1, N_MELS, N_FRAMES), 변환 적용됨
+        return x.squeeze(0), target
+
+
+def _mel_loader(scheme, subset_frac=None, clip_prob=0.0, cls=None):
     """압축 법칙 하나에 대한 ai8x-training 규약 로더를 만든다.
 
     ⚠️ **캐시 파일 이름에 법칙을 넣는다.** 넣지 않으면 (1) 의 로그 캐시를
@@ -134,10 +146,11 @@ def _mel_loader(scheme, subset_frac=None, clip_prob=0.0):
         (data_dir, args) = data
         root = os.path.join(data_dir, "SafeSound")   # 파형과 **같은 샤드**다
         transform = ai8x.normalize(args=args)
+        DS = cls or SafeSoundMel
 
         # ⚠️ 부분집합은 **train 에만** 건다. test 를 줄이면 네 점이
         # 서로 다른 테스트셋을 보게 되어 곡선이 성립하지 않는다.
-        train_ds = (SafeSoundMel(root, "train", transform=transform,
+        train_ds = (DS(root, "train", transform=transform,
                                  scheme=scheme, subset_frac=subset_frac,
                                  clip_prob=clip_prob)
                     if load_train else None)
@@ -145,12 +158,13 @@ def _mel_loader(scheme, subset_frac=None, clip_prob=0.0):
         tag = "" if scheme == "log" else f"_{scheme}"
         cache = os.path.join(root, "test",
                              f"melcache{tag}_{MF.N_MELS}x{MF.N_FRAMES}.npy")
-        test_ds = (SafeSoundMel(root, "test", transform=transform,
-                                scheme=scheme,
-                                cache=cache if os.path.isfile(cache) else None)
+        test_ds = (DS(root, "test", transform=transform,
+                      scheme=scheme,
+                      cache=cache if os.path.isfile(cache) else None)
                    if load_test else None)
         return train_ds, test_ds
-    get_datasets.__name__ = f"safesound_mel_{scheme}_get_datasets"
+    get_datasets.__name__ = (f"safesound_mel_{scheme}"
+                             f"{'_1d' if cls is SafeSoundMel1D else ''}_get_datasets")
     return get_datasets
 
 
@@ -221,6 +235,15 @@ datasets.append({
     "output": tuple(CLASSES),
     "weight": class_weights(),
     "loader": _mel_loader("loginc"),
+})
+
+# 구성 A — ①′ 와 **같은 특징**을 1D 모델용 (채널 = 멜, 길이 = 프레임)으로.
+datasets.append({
+    "name": "SafeSoundMelInc1D",
+    "input": (MF.N_MELS, MF.N_FRAMES),
+    "output": tuple(CLASSES),
+    "weight": class_weights(),
+    "loader": _mel_loader("loginc", cls=SafeSoundMel1D),
 })
 
 for _name, _scheme in (("SafeSoundMelLin", "lin"),

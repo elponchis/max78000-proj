@@ -56,6 +56,7 @@ class AI85SafeSoundNet(nn.Module):
             width_mult=1.0,
             abs_first=False,
             first_kernel=1,
+            pool3=True,
             **kwargs
     ):
         super().__init__()
@@ -98,8 +99,16 @@ class AI85SafeSoundNet(nn.Module):
         self.voice_conv2 = ai8x.FusedConv1dReLU(ch(100), ch(96), 3, stride=1,
                                                 padding=0, bias=bias, **kwargs)
         # T: 126  F: 96
-        self.voice_conv3 = ai8x.FusedMaxPoolConv1dReLU(ch(96), ch(64), 3, stride=1,
-                                                       padding=1, bias=bias, **kwargs)
+        # `pool3=False` 는 **입력 길이가 64 인 경우**(구성 A — 로그 멜 64프레임)다.
+        # 길이가 절반이라 풀링을 그대로 두면 마지막 층(k=6)에서 길이가 0 이 된다.
+        # 이 층의 MaxPool 하나만 빼면 62 → 60 → (pool) 30 으로 **kws_conv1 이후가
+        # 원래와 같은 길이(30, 28, 14, 4)** 가 되어 뒤쪽 층·FC 가 그대로다.
+        self.voice_conv3 = (
+            ai8x.FusedMaxPoolConv1dReLU(ch(96), ch(64), 3, stride=1,
+                                        padding=1, bias=bias, **kwargs)
+            if pool3 else
+            ai8x.FusedConv1dReLU(ch(96), ch(64), 3, stride=1,
+                                 padding=1, bias=bias, **kwargs))
         # T: 63  F: 64
         self.voice_conv4 = ai8x.FusedConv1dReLU(ch(64), ch(48), 3, stride=1,
                                                 padding=0, bias=bias, **kwargs)
@@ -254,8 +263,31 @@ def ai85safesoundnet_w150(pretrained=False, **kwargs):
     return AI85SafeSoundNet(width_mult=1.5, **kwargs)
 
 
+def ai85safesoundnet_mel1d(pretrained=False, **kwargs):
+    """**구성 A** — ①′ 로그 멜(64멜 × 64프레임)을 ④의 1D 뒷단에 넣는다.
+
+    "①−④ 격차가 입력 표현에서 오는가, 뒷단 구조(2D 대 1D)에서 오는가" 를 가른다.
+    입력은 채널 = 멜 64, 길이 = 프레임 64 다 (`SafeSoundMelInc1D`).
+
+    ④와 다른 것은 **둘뿐**이다.
+      · 첫 층 입력 채널 128 → 64 (가중치 12,800 → 6,400)
+      · voice_conv3 의 MaxPool 제거 — 입력 길이가 128 → 64 로 절반이라, 그대로
+        두면 마지막 층(k=6)에서 길이가 0 이 된다. 이 하나만 빼면 kws_conv1
+        이후의 길이(30, 28, 14, 4)와 FC 입력(256)이 ④와 같다
+    파라미터 159,057 — ④(165,457)의 **−3.9%** (±10% 조건 안).
+
+    ⚠️ `num_channels`·`dimensions` 는 setdefault 로만 둔다 (train.py 가 데이터셋의
+    `input` 에서 뽑아 항상 넘긴다 — 하드코딩하면 중복 인자로 죽는다).
+    """
+    assert not pretrained
+    kwargs.setdefault("num_channels", 64)
+    kwargs.setdefault("dimensions", (64, 1))
+    return AI85SafeSoundNet(pool3=False, **kwargs)
+
+
 models = [
     {'name': 'ai85safesoundnet', 'min_input': 1, 'dim': 1},
+    {'name': 'ai85safesoundnet_mel1d', 'min_input': 1, 'dim': 1},
     {'name': 'ai85safesoundnet_w025', 'min_input': 1, 'dim': 1},
     {'name': 'ai85safesoundnet_w050', 'min_input': 1, 'dim': 1},
     {'name': 'ai85safesoundnet_w150', 'min_input': 1, 'dim': 1},

@@ -270,6 +270,8 @@ CONFIGS = {
                   "SafeSoundMelLog72"),
     "mel_inc": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelInc"),
     "mel_inc_q8": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelInc"),
+    # 구성 A — ①′ 로그 멜을 ④의 1D 뒷단에 (표현/구조 분리)
+    "mel1d_inc": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSoundMelInc1D"),
     "mel_inc_q4": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelInc"),
     # wave2D 대조 — ①과 같은 2D 구조에 ④와 같은 raw 파형. 표현/구조 분리용.
     # **fold 판이 기본값**이다 (정보 손실 없음). pool 판은 비교용으로만 남긴다
@@ -319,6 +321,7 @@ CONFIG_DATA = {
     # ①′ — 증분 계산이 되는 프레임 정의 (hop 250, 반사 패딩 없음, 끝 정렬)
     "mel_inc": ("SafeSound", {"scheme": "loginc"}),
     # B 사전 확인 — ①′ 체크포인트를 **NPU 정수 STFT 특징**으로 평가 (재학습 없음)
+    "mel1d_inc": ("SafeSound", {"scheme": "loginc"}),
     "mel_inc_q8": ("SafeSound", {"scheme": "loginc_q8"}),
     "mel_inc_q4": ("SafeSound", {"scheme": "loginc_q4"}),
     "wave_fb_norm2": ("SafeSound", {"norm_pow2": True}),
@@ -352,6 +355,8 @@ CONFIG_KWARGS = {
     "wave_cstage": {},
     "wave_n16g4": {},
     "wave_n16g64": {},
+    # 구성 A: 입력 64채널(멜) × 길이 64(프레임), voice_conv3 의 풀링 없음
+    "mel1d_inc": {"num_channels": 64, "dimensions": (64, 1), "pool3": False},
 }
 
 
@@ -366,6 +371,9 @@ def add_config_arg(ap):
 
 def dataset_class(config="wave"):
     """구성에 맞는 Dataset 클래스. 세 모듈 모두 `CLASSES` 를 공유한다."""
+    if config.startswith("mel1d"):
+        import safesound_mel
+        return safesound_mel.SafeSoundMel1D
     if config == "mel" or config.startswith("mel_"):
         import safesound_mel
         return safesound_mel.SafeSoundMel

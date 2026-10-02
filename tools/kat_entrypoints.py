@@ -43,6 +43,8 @@ CASES = [
     ("ai85net-safesound.py", "ai85safesoundnet_fb_relu", (128, 128)),
     ("ai85net-safesound.py", "ai85safesoundnet_fb_k2", (128, 128)),
     ("ai85net-safesound.py", "ai85safesoundnet_fb_k4", (128, 128)),
+    # 구성 A — 입력이 (멜 64, 프레임 64) 다
+    ("ai85net-safesound.py", "ai85safesoundnet_mel1d", (64, 64)),
     ("ai85net-safesound.py", "ai85safesoundnet_w025", (128, 128)),
     ("ai85net-safesound.py", "ai85safesoundnet_w050", (128, 128)),
     ("ai85net-safesound.py", "ai85safesoundnet_w150", (128, 128)),
