@@ -158,6 +158,9 @@ int main(void)
         printf("KAT sampleoutput: %s\n", kat == CNN_OK ? "PASS (bit-exact)" : "FAIL");
         for (int i = 0; i < CNN_NUM_OUTPUTS; i++)
             printf("  class %d: raw %ld\n", i, (long)kat_raw[i]);
+        // 기록 규칙: 코어·CNN 클럭 병기, 바쁜 대기 기준임을 명시
+        printf("core clock %lu Hz  CNN clock PCLK %lu Hz / 1  wait: busy (no sleep)\n",
+               (unsigned long)SystemCoreClock, (unsigned long)PeripheralClock);
         printf("counter: %s\n", use_systick ? "SysTick (DWT CYCCNT not running)" : "DWT CYCCNT");
         printf("%d iterations, output mismatches: %lu\n", N_ITER, (unsigned long)bad);
         report("load", t_load, SystemCoreClock);
