@@ -1,0 +1,16 @@
+# 구성 B — NPU 고정 STFT 층 (16프레임). tools/b_stft_synth.py 생성.
+# 비용 확인용이다 (학습·구현 전). 가중치는 DFT 기저 x Hann 의 4bit 상수.
+arch: stftconv
+dataset: SafeSoundSTFT16
+
+layers:
+  # Conv1d k=3, 250 -> 510 (Re/Im x 255빈), 활성화 없음, 32bit 출력
+  - pad: 0
+    activate: None
+    out_offset: 0x4000
+    processors: 0xffffffffffffffff
+    data_format: HWC
+    operation: Conv1d
+    kernel_size: 3
+    quantization: 4
+    output_width: 32
