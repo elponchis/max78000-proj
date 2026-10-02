@@ -202,10 +202,57 @@ COMP_SCHEMES = {
     "cbrt": (1.0 / 3.0, COMP_TOP_DB, None),  # 세제곱근 (72.2dB)
     # ①′ — 압축은 "log" 와 **같고 프레임 정의만** 다르다 (SCHEME_FRAMING)
     "loginc": (None, TOP_DB, SPAN_DB),
+    # B 사전 확인 — STFT 를 **NPU 의 고정 Conv1d** 로 옮긴 판의 시뮬레이션.
+    # 프레임·압축은 "loginc" 와 같고 **DFT 기저가 정수 가중치**라는 점만 다르다.
+    "loginc_q8": (None, TOP_DB, SPAN_DB),
+    "loginc_q4": (None, TOP_DB, SPAN_DB),
 }
 
 # 법칙 → 프레임 정의. 여기 없으면 "reflect"(현행 ①)다.
-SCHEME_FRAMING = {"loginc": "inc"}
+SCHEME_FRAMING = {"loginc": "inc", "loginc_q8": "inc", "loginc_q4": "inc"}
+# 법칙 → STFT 기저의 가중치 비트폭 (NPU Conv1d 로 옮긴 판). 없으면 float FFT.
+SCHEME_STFT_BITS = {"loginc_q8": 8, "loginc_q4": 4}
+_QBASIS = {}
+
+
+def _stft_basis_q(bits):
+    """(2, n_fft//2+1, n_fft) 정수 DFT 기저와 스케일 S.
+
+    `w[0,k,n] = round(S * hann[n] * cos(2πkn/N))`, `w[1,k,n] = round(S * hann[n] *
+    -sin(...))`, S = 2^(bits-1) - 1. NPU Conv1d 한 층의 가중치가 된다 (층 안의
+    가중치는 스케일 하나를 공유한다).
+    """
+    if bits not in _QBASIS:
+        s = float(2 ** (bits - 1) - 1)
+        n = np.arange(N_FFT)
+        k = np.arange(N_FFT // 2 + 1)[:, None]
+        ang = 2.0 * np.pi * k * n[None, :] / N_FFT
+        w = np.stack([np.round(s * _WIN[None, :] * np.cos(ang)),
+                      np.round(s * _WIN[None, :] * -np.sin(ang))]).astype(np.int64)
+        _QBASIS[bits] = (w, s)
+    return _QBASIS[bits]
+
+
+def stft_power_q(w_int8, bits, framing="inc"):
+    """NPU 고정 Conv1d STFT 의 시뮬레이션 — **정수 누산값**에서 파워를 만든다.
+
+    NPU 는 int8 입력 × int8(또는 4bit) 가중치의 합을 int32 로 내고(활성화 없는
+    wide 출력), CPU 가 re² + im² → 멜 → 로그를 한다. 누산은 정확한 정수라
+    여기 numpy 계산이 곧 기기 값이다 (2의 거듭제곱 스케일만 다를 수 있다).
+    반환은 `stft_power` 와 같은 눈금의 정규화 파워다.
+    """
+    assert framing == "inc", "NPU STFT 는 ①′ 프레임 정의에서만 정의한다"
+    wq, s = _stft_basis_q(bits)
+    x = np.asarray(w_int8, dtype=np.int64)
+    idx = (OFF_INC + np.arange(N_FFT)[None, :]
+           + (np.arange(N_FRAMES) * HOP_INC)[:, None])
+    # float64 로 곱한다 — |누산값| <= 512*128*127 = 8.3e6 이라 **정확한 정수**이고
+    # (2^53 한참 아래), int64 행렬곱(BLAS 미사용)보다 수십 배 빠르다.
+    fr = x[idx].astype(np.float64)                    # (frames, n_fft)
+    re = fr @ wq[0].T.astype(np.float64)              # (frames, bins) 정수값
+    im = fr @ wq[1].T.astype(np.float64)
+    p = re * re + im * im
+    return p / (s * s * 128.0 * 128.0) / _REF
 
 
 def comp_span_db(alpha):
@@ -234,6 +281,10 @@ def mel_int8(w_int8, scheme="log"):
     """
     alpha, top_db, span_db = COMP_SCHEMES[scheme]
     framing = SCHEME_FRAMING.get(scheme, "reflect")
+    bits = SCHEME_STFT_BITS.get(scheme)
+    if bits is not None:                              # NPU 정수 STFT 시뮬레이션
+        mel = stft_power_q(w_int8, bits, framing) @ _FB.T
+        return db_to_int8(10.0 * np.log10(mel.T + EPS), top_db, span_db)
     if alpha is None:
         return db_to_int8(log_mel_db(w_int8, framing), top_db, span_db)
     x = np.asarray(w_int8, dtype=np.float64) / 128.0

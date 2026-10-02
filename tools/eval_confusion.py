@@ -269,6 +269,8 @@ CONFIGS = {
     "mel_log72": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet",
                   "SafeSoundMelLog72"),
     "mel_inc": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelInc"),
+    "mel_inc_q8": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelInc"),
+    "mel_inc_q4": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelInc"),
     # wave2D 대조 — ①과 같은 2D 구조에 ④와 같은 raw 파형. 표현/구조 분리용.
     # **fold 판이 기본값**이다 (정보 손실 없음). pool 판은 비교용으로만 남긴다
     "wave2dfold": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet",
@@ -316,6 +318,9 @@ CONFIG_DATA = {
     "mel_log72": ("SafeSound", {"scheme": "log72"}),
     # ①′ — 증분 계산이 되는 프레임 정의 (hop 250, 반사 패딩 없음, 끝 정렬)
     "mel_inc": ("SafeSound", {"scheme": "loginc"}),
+    # B 사전 확인 — ①′ 체크포인트를 **NPU 정수 STFT 특징**으로 평가 (재학습 없음)
+    "mel_inc_q8": ("SafeSound", {"scheme": "loginc_q8"}),
+    "mel_inc_q4": ("SafeSound", {"scheme": "loginc_q4"}),
     "wave_fb_norm2": ("SafeSound", {"norm_pow2": True}),
     "wave_n16g4": ("SafeSound16", {"gmax": 4}),
     "wave_n16g64": ("SafeSound16", {"gmax": 64}),
