@@ -7,14 +7,19 @@
 # 프로젝트 안의 파일은 전부 생성물이다 — 고칠 때는 원본을 고치고 다시 돌린다.
 set -eu
 P=$(cd "$(dirname "$0")/../.." && pwd)
-if [ "${1:-}" = "inc" ]; then NAME=melinc; MAIN=melinc_main.c; else NAME=melfeat; MAIN=melfeat_main.c; fi
+#   bash firmware/cpu/make_melfeat.sh opt      # ①′ 최적화 판 비교 → firmware/cpu/melopt
+case "${1:-}" in
+  inc) NAME=melinc; MAIN=melinc_main.c ;;
+  opt) NAME=melopt; MAIN=melopt_main.c ;;
+  *)   NAME=melfeat; MAIN=melfeat_main.c ;;
+esac
 DST=$P/firmware/cpu/$NAME
 mkdir -p "$DST"
 cp "$P/firmware/npu/safesound_wave/Makefile" "$DST/Makefile"     # MSDK 공용 Makefile
 cp "$P/firmware/common/melfeat.c" "$P/firmware/common/melfeat.h" \
    "$P/firmware/common/mel_tables.h" "$DST/"
 cp "$P/tools/kat_vectors/melkat_vectors.h" "$DST/"
-[ "$NAME" = melinc ] && cp "$P/firmware/common/melinc_kat.h" "$DST/"
+[ "$NAME" != melfeat ] && cp "$P/firmware/common/melinc_kat.h" "$DST/"
 cp "$P/firmware/common/$MAIN" "$DST/main.c"
 cat > "$DST/project.mk" <<'EOF'
 # @generated — firmware/cpu/make_melfeat.sh

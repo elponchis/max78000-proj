@@ -166,7 +166,27 @@ def inc_tests(lib, a):
         stream_bad += not np.array_equal(out.reshape(ref.shape), ref)
     print(f"  (c) 연속 스트림 {n_dec}회 판단: 일괄 계산과 다른 판단 {stream_bad}개 → "
           f"{'비트 일치' if stream_bad == 0 else '**실패**'}")
-    return mx <= 2 and inc_bad == 0 and stream_bad == 0
+
+    # (d) 최적화 판 V1 (LUT 로그) — PC 에서 볼 수 있는 변형은 이것뿐이다
+    #     (q15/q31 rfft 는 CMSIS-DSP 라 보드 KAT 로만 본다)
+    lib.melfeat_inc_batch_v.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int]
+    n = bad = g2 = 0
+    mx1 = 0
+    for j in sel:
+        arr, i = rows[j]
+        w = np.ascontiguousarray(arr[i][MARGIN:MARGIN + WIN], dtype=np.int8)
+        out = np.zeros(MF.N_MELS * MF.N_FRAMES, dtype=np.int8)
+        lib.melfeat_inc_batch_v(w.ctypes.data_as(ctypes.c_void_p),
+                                out.ctypes.data_as(ctypes.c_void_p), 1)
+        df = np.abs(out.reshape(MF.N_MELS, MF.N_FRAMES).astype(np.int16)
+                    - MF.mel_int8(w, "loginc").astype(np.int16))
+        n += df.size
+        bad += int((df > 0).sum())
+        g2 += int((df > 2).sum())
+        mx1 = max(mx1, int(df.max()))
+    print(f"  (d) V1 (LUT 로그) vs 파이썬 loginc — {len(sel)}창: 불일치 {100 * bad / n:.3f}%  "
+          f">2 LSB {100 * g2 / n:.4f}%  최대 {mx1} LSB → {'통과' if mx1 <= 2 else '**실패**'}")
+    return mx <= 2 and inc_bad == 0 and stream_bad == 0 and mx1 <= 2
 
 
 if __name__ == "__main__":
