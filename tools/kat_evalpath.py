@@ -54,6 +54,9 @@ CASES = [
     ("D-1 정규화", "ai85safesoundnet_fb", "SafeSoundNorm2", "wave_fb_norm2",
      "data/logs-local/safesound-fbnorm2-v1___2026.09.30-001903/"
      "safesound-fbnorm2-v1_qat_best.pth.tar"),
+    # 멜 압축 법칙 — 같은 구멍 (config `mel` 로 평가하면 로그 특징이 들어간다)
+    ("①-cbrt", "ai85safesoundmelnet", "SafeSoundMelCbrt", "mel_cbrt", "glob:"
+     "data/logs-local/safesound-melcbrt-v1___*/safesound-melcbrt-v1_qat_best.pth.tar"),
 ]
 
 CONF_RE = re.compile(r"==> Confusion:\s*\n((?:\s*\[.*\]\s*\n?)+)")
@@ -121,6 +124,10 @@ def main():
     print("-" * 56)
     bad = []
     for name, model, dataset, config, ckpt in cases:
+        if ckpt.startswith("glob:"):               # 폴더 이름의 시각을 모를 때
+            import glob
+            hits = sorted(glob.glob(os.path.join(REPO, ckpt[5:])))
+            ckpt = os.path.relpath(hits[-1], REPO) if hits else ckpt[5:]
         if not os.path.isfile(os.path.join(REPO, ckpt)):
             print(f"{name:<14}  체크포인트 없음 — 건너뜀 ({ckpt})")
             continue

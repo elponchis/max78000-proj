@@ -213,6 +213,16 @@ datasets.append({
     "loader": _mel_loader("log", clip_prob=0.5),
 })
 
+# ①′ — 증분 계산이 되는 프레임 정의 (melfeat.HOP_INC). 모델·스케줄·가중치·
+# 창 집합·증강은 ① 과 같고 **프레임 격자만** 다르다.
+datasets.append({
+    "name": "SafeSoundMelInc",
+    "input": (1, MF.N_MELS, MF.N_FRAMES),
+    "output": tuple(CLASSES),
+    "weight": class_weights(),
+    "loader": _mel_loader("loginc"),
+})
+
 for _name, _scheme in (("SafeSoundMelLin", "lin"),
                        ("SafeSoundMelCbrt", "cbrt"),
                        ("SafeSoundMelLog72", "log72"),

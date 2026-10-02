@@ -99,29 +99,53 @@ _WIN = hann()
 _REF = (float(_WIN.sum()) / 2.0) ** 2
 
 
-def stft_power(x):
+# ── 프레임 정의 ①′ — 증분 계산이 되는 판 (2026-10-02) ─────────────────────
+# 위의 정의(hop 256 + 창 단위 reflect 패딩)는 **판단마다 64프레임을 전부**
+# 다시 계산해야 한다: hop 256 이 판단 주기 4,000 샘플의 약수가 아니고, 프레임이
+# 창의 양끝 패딩에 묶여 있다. 보드 실측 47.87 ms (synthesis-check.md 10절).
+#
+# ①′ 는 hop 을 **250** 으로 두고 패딩을 없앤다. 판단 주기 4,000 = 정확히
+# 16프레임이라 판단마다 **새 프레임 16개만** 계산하고 나머지 48개는 링 버퍼에서
+# 재사용한다. 프레임 k 는 스트림의 [250k, 250k+512) 에만 의존한다.
+#   · 쓰는 샘플: 63*250 + 512 = 16,262. 1초 창의 **끝에 맞춘다** (샘플
+#     122..16,383) — 실기기의 "가장 최근 64프레임" 과 같다
+#   · 맨 앞 122 샘플(7.6 ms)은 보지 않는다 → ④ 와 0.7% 다른 오디오를 본다
+#     (논문 방법·한계에 명시)
+#   · n_fft·창·멜·로그 스케일(TOP_DB 0 / SPAN 70)은 그대로다
+HOP_INC = 250
+OFF_INC = 16384 - ((N_FRAMES - 1) * HOP_INC + N_FFT)      # 122
+
+
+def stft_power(x, framing="reflect"):
     """(N_FRAMES, n_fft//2+1) 정규화 파워 스펙트럼.
 
     입력은 float 파형이며 풀스케일이 ±1.0 이다. reflect 패딩을 쓰는 이유는
     `center=True` 대신 **프레임 수를 64 에 정확히 맞추면서** 구성 ④ 와 같은
     16,384 샘플만 보기 위해서다 — 여유 샘플을 더 가져오면 두 구성이 서로 다른
     오디오를 보게 되어 비교가 깨진다.
+
+    `framing="inc"` 는 ①′ 다 (위 주석): hop 250, 패딩 없음, 끝 정렬.
     """
-    xp = np.pad(np.asarray(x, dtype=np.float64), (PAD, PAD), mode="reflect")
-    idx = np.arange(N_FFT)[None, :] + (np.arange(N_FRAMES) * HOP)[:, None]
+    if framing == "inc":
+        xp = np.asarray(x, dtype=np.float64)
+        idx = (OFF_INC + np.arange(N_FFT)[None, :]
+               + (np.arange(N_FRAMES) * HOP_INC)[:, None])
+    else:
+        xp = np.pad(np.asarray(x, dtype=np.float64), (PAD, PAD), mode="reflect")
+        idx = np.arange(N_FFT)[None, :] + (np.arange(N_FRAMES) * HOP)[:, None]
     frames = xp[idx] * _WIN[None, :]
     spec = np.fft.rfft(frames, n=N_FFT, axis=1)
     return (spec.real ** 2 + spec.imag ** 2) / _REF
 
 
-def log_mel_db(w_int8):
+def log_mel_db(w_int8, framing="reflect"):
     """int8 파형 (16384,) → 로그 멜 dB (N_MELS, N_FRAMES) float64.
 
     int8 을 128 로 나눠 ±1.0 풀스케일로 맞춘다. 학습·평가·펌웨어가 모두 이
     지점에서 시작하므로 **여기서 정규화를 끼워 넣으면 안 된다**.
     """
     x = np.asarray(w_int8, dtype=np.float64) / 128.0
-    mel = stft_power(x) @ _FB.T                     # (frames, mels)
+    mel = stft_power(x, framing) @ _FB.T            # (frames, mels)
     return 10.0 * np.log10(mel.T + EPS)             # (mels, frames)
 
 
@@ -176,7 +200,12 @@ COMP_SCHEMES = {
     "lin":  (0.5, COMP_TOP_DB, None),       # 진폭 선형 (48.1dB)
     "linp": (1.0, COMP_TOP_DB, None),       # 파워 선형 (24.1dB) — 참고용
     "cbrt": (1.0 / 3.0, COMP_TOP_DB, None),  # 세제곱근 (72.2dB)
+    # ①′ — 압축은 "log" 와 **같고 프레임 정의만** 다르다 (SCHEME_FRAMING)
+    "loginc": (None, TOP_DB, SPAN_DB),
 }
+
+# 법칙 → 프레임 정의. 여기 없으면 "reflect"(현행 ①)다.
+SCHEME_FRAMING = {"loginc": "inc"}
 
 
 def comp_span_db(alpha):
@@ -204,8 +233,9 @@ def mel_int8(w_int8, scheme="log"):
     낸다 (같은 경로를 탄다 — 두 구현이 갈리면 비교가 오염된다).
     """
     alpha, top_db, span_db = COMP_SCHEMES[scheme]
+    framing = SCHEME_FRAMING.get(scheme, "reflect")
     if alpha is None:
-        return db_to_int8(log_mel_db(w_int8), top_db, span_db)
+        return db_to_int8(log_mel_db(w_int8, framing), top_db, span_db)
     x = np.asarray(w_int8, dtype=np.float64) / 128.0
-    mel_p = (stft_power(x) @ _FB.T).T                 # (mels, frames)
+    mel_p = (stft_power(x, framing) @ _FB.T).T        # (mels, frames)
     return power_to_int8(mel_p, alpha, top_db)

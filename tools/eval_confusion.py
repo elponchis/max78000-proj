@@ -263,6 +263,12 @@ def report(fsids, y_true, y_pred, names, n_boot, seed,
 CONFIGS = {
     "wave": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
     "mel": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMel"),
+    # 같은 모델, **입력 특징만** 다르다 (CONFIG_DATA 의 scheme)
+    "mel_lin": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelLin"),
+    "mel_cbrt": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelCbrt"),
+    "mel_log72": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet",
+                  "SafeSoundMelLog72"),
+    "mel_inc": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelInc"),
     # wave2D 대조 — ①과 같은 2D 구조에 ④와 같은 raw 파형. 표현/구조 분리용.
     # **fold 판이 기본값**이다 (정보 손실 없음). pool 판은 비교용으로만 남긴다
     "wave2dfold": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet",
@@ -299,7 +305,17 @@ CONFIGS = {
 # `wave_fb_norm2` 가 빠져 있어서 (2026-10-02 발견) 정규화로 학습한 모델을
 # **정규화 없는 시험셋**으로 평가했다 — CONFIGS 의 셋째 칸(데이터셋 이름)은
 # 표기일 뿐 로더가 읽지 않는다. 1단계 "−0.039" 는 그 불일치가 섞인 값이었다.
+#
+# ⚠️ **멜 압축 법칙도 같은 구멍이었다** (2026-10-02 발견). `1 lin`·`1 cbrt`·
+# `1 log72` 를 전부 config `mel` 로 평가해 왔는데, 그러면 Dataset 이 기본
+# 법칙("log")으로 특징을 만든다 — 선형·세제곱근으로 학습한 모델을 **로그
+# 특징**으로 평가한 것이다. 법칙별 config 를 따로 둔다.
 CONFIG_DATA = {
+    "mel_lin": ("SafeSound", {"scheme": "lin"}),
+    "mel_cbrt": ("SafeSound", {"scheme": "cbrt"}),
+    "mel_log72": ("SafeSound", {"scheme": "log72"}),
+    # ①′ — 증분 계산이 되는 프레임 정의 (hop 250, 반사 패딩 없음, 끝 정렬)
+    "mel_inc": ("SafeSound", {"scheme": "loginc"}),
     "wave_fb_norm2": ("SafeSound", {"norm_pow2": True}),
     "wave_n16g4": ("SafeSound16", {"gmax": 4}),
     "wave_n16g64": ("SafeSound16", {"gmax": 64}),
@@ -345,7 +361,7 @@ def add_config_arg(ap):
 
 def dataset_class(config="wave"):
     """구성에 맞는 Dataset 클래스. 세 모듈 모두 `CLASSES` 를 공유한다."""
-    if config == "mel":
+    if config == "mel" or config.startswith("mel_"):
         import safesound_mel
         return safesound_mel.SafeSoundMel
     if config == "wave2dfold":
