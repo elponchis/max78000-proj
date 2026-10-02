@@ -6,10 +6,11 @@
 | 실험 | siren | 다른 클래스 |
 |---|---:|---|
 | 제곱근 가중치 (파형) | −4.7pp | glass·dog_bark 상승 |
-| 음량 정규화 (b1) | −8~−11pp | glass 상승 |
+| ~~음량 정규화 (b1)~~ | ~~−8~−11pp~~ | **정정 (2026-10-02)**: 평가 버그였다. 정정 후 +3.1pp |
 | **(a) NPU 로그 근사** | **−15.6pp** | glass·scream·dog_bark **+9~15pp** |
 
 세 변경의 공통점: **레벨 정보를 지우거나 압축한다.**
+(⚠️ 정규화 행은 근거에서 빠진다 — `docs/STATUS.md` 5.7. 남는 것은 두 변경이다.)
 
 > **가설**: `siren` 은 고유 원본이 202개뿐이라 모델이 소리의 모양이 아니라
 > **음량(레벨)** 을 단서로 쓰고 있다.
@@ -68,6 +69,19 @@ class GainDataset:
     def __len__(self):
         return len(self.b)
 
+    def _apply16(self, w):
+        """int16 샤드용 — 게인을 **정규화 전** int16 위에서 건다.
+
+        실기기에서 레벨 변동은 마이크 쪽(int16)에서 생기고 정규화는 그 뒤다.
+        int16 범위(마이크 풀스케일)를 넘을 때만 되돌리기/포화가 갈린다.
+        """
+        y = w.astype(np.float32) * self.g
+        if not self.hard:
+            peak = float(np.abs(y).max())
+            if peak > 32767.0:
+                y *= 32767.0 / peak
+        return np.clip(np.round(y), -32768, 32767).astype(np.int16)
+
     def _apply(self, w):
         y = w.astype(np.float32) * self.g
         if self.hard:
@@ -85,7 +99,16 @@ class GainDataset:
         stored = np.asarray(b._shard(shard)[row])
         rng = np.random.default_rng()
         w = b._crop(stored, left, right, rng)       # augment=False → 가운데
-        w = self._apply(w)
+        # ⚠️ 전처리가 데이터셋 인자로 들어가는 구성은 **게인 뒤에** 그 전처리를
+        # 태운다 (2026-10-02). 이 메서드가 base.__getitem__ 을 우회하므로
+        # 빠뜨리면 정규화로 학습한 모델을 정규화 없는 입력으로 재게 된다.
+        if hasattr(b, "gmax"):                      # int16 샤드 + 변환 전 정규화
+            import safesound as S
+            _, w = S.norm16(self._apply16(w), b.gmax)
+        else:
+            w = self._apply(w)
+            if getattr(b, "norm_pow2", False):      # 1단계 — int8 위 시프트
+                _, w = b._norm_pow2(w)
         if hasattr(b, "scheme"):                    # 멜 구성
             import melfeat as MF
             f = MF.mel_int8(w, b.scheme)
@@ -115,7 +138,10 @@ def logits_for(ck, config, data, gain_db, hard, batch=128):
     kw.pop("first_kernel", None)
     kw.pop("pool_first", None)
     kw.pop("bias", None)
-    base = cls(os.path.join(data, "SafeSound"), "test",
+    # 샤드 루트·전처리 인자는 평가 경로와 **같은 표**에서 읽는다
+    root, dkw = EC.CONFIG_DATA.get(config, ("SafeSound", {}))
+    kw.update(dkw)
+    base = cls(os.path.join(data, root), "test",
                transform=ai8x.normalize(args=_ap.Namespace(act_mode_8bit=False)),
                augment=False, **kw)
     ds = GainDataset(base, gain_db, hard)
