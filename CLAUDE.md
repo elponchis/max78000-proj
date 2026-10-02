@@ -546,7 +546,10 @@ micBuff[i] = (sample) * SAMPLE_SCALE_FACTOR / 256;   // SAMPLE_SCALE_FACTOR = 4
 그때 `--floor-db` 와 채움 풀 레벨을 다시 본다 (`TASKS.md` Phase 3).
 
 ### MAX78000FTHR
-- **지연**: DWT 사이클 카운터. 1000회 측정 후 최악값 기준 보고.
+- **지연**: ~~DWT 사이클 카운터~~ **SysTick** (코어 클럭 사이클). 1000회 측정 후
+  최악값 기준 보고. ⚠️ MAX78000 의 M4 에는 **DWT CYCCNT 가 없다** (2026-10-02
+  실측: `DWT->CTRL` NOCYCCNT=1). G2 등 문서의 "DWT" 는 SysTick 으로 읽을 것.
+  SysTick 을 직접 켠 동안에는 `MXC_Delay` 를 부르지 않는다 (멈춘다).
 - **에너지**: 온보드 계측 회로가 없으므로 외부 측정.
   - 1순위: 오실로스코프 + 1Ω 션트 (배터리 경로 직렬)
   - 2순위: Nordic PPK2 (약 15만원) / USB 전류계 / PMIC 퓨얼게이지 장시간 로깅

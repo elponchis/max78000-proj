@@ -38,11 +38,34 @@ static q15_t ml_softmax[CNN_NUM_OUTPUTS];
 
 static uint32_t t_load[N_ITER], t_infer[N_ITER], t_unload[N_ITER];
 
+// 사이클 카운터. DWT CYCCNT 를 먼저 시도하고, **돌지 않으면 SysTick** 을 쓴다.
+// 2026-10-02 실측: **MAX78000 의 M4 에는 CYCCNT 가 없다** — `DWT->CTRL` 이
+// 0x4f000001 로 NOCYCCNT(bit 25)=1 이고 CYCCNT 는 항상 0 이다. 따라서 실제로는
+// 늘 SysTick 이다. SysTick 도 코어 클럭(100 MHz)을 세므로 단위는 같다 —
+// 24bit 라 167 ms 에서 감기지만 우리가 재는 구간은 그보다 훨씬 짧다.
+static int use_systick;
+static uint32_t tick_mask = 0xFFFFFFFFu;
+
+static inline uint32_t tick(void)
+{
+    return use_systick ? (0x00FFFFFFu - SysTick->VAL) : DWT->CYCCNT;
+}
+
 static void dwt_init(void)
 {
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
     DWT->CYCCNT = 0;
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+    uint32_t a = DWT->CYCCNT;
+    for (volatile int i = 0; i < 1000; i++) {}
+    if (DWT->CYCCNT == a) {
+        use_systick = 1;
+        tick_mask = 0x00FFFFFFu;
+        SysTick->CTRL = 0;
+        SysTick->LOAD = 0x00FFFFFFu;
+        SysTick->VAL = 0;
+        SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk; // 인터럽트 없음
+    }
 }
 
 static int cmp_u32(const void *a, const void *b)
@@ -103,22 +126,26 @@ int main(void)
     // ── 2. DWT N_ITER 회 ──────────────────────────────────────────────
     uint32_t bad = 0;
     for (int i = 0; i < N_ITER; i++) {
-        uint32_t c0 = DWT->CYCCNT;
+        uint32_t c0 = tick();
         load_input();
-        uint32_t c1 = DWT->CYCCNT;
+        uint32_t c1 = tick();
         cnn_start();
         while (cnn_time == 0) {}
-        uint32_t c2 = DWT->CYCCNT;
+        uint32_t c2 = tick();
         if (check_output() != CNN_OK) bad++; // 측정 구간 밖
-        uint32_t c3 = DWT->CYCCNT;
+        uint32_t c3 = tick();
         cnn_unload((uint32_t *)ml_data);
         softmax_q17p14_q15((const q31_t *)ml_data, CNN_NUM_OUTPUTS, ml_softmax);
-        uint32_t c4 = DWT->CYCCNT;
+        uint32_t c4 = tick();
         cnn_stop();
-        t_load[i] = c1 - c0;
-        t_infer[i] = c2 - c1;
-        t_unload[i] = c4 - c3;
+        t_load[i] = (c1 - c0) & tick_mask;
+        t_infer[i] = (c2 - c1) & tick_mask;
+        t_unload[i] = (c4 - c3) & tick_mask;
     }
+    // ⚠️ 측정 뒤에는 **MXC_Delay 를 쓰지 않는다.** 우리가 SysTick 을 인터럽트
+    //    없이 켜 둔 상태에서 MXC_Delay 를 부르면 오버플로 인터럽트를 기다리며
+    //    영원히 멈춘다 (2026-10-02, 디버거로 pc 가 MXC_Delay 안인 것을 확인).
+    SysTick->CTRL = 0;
 
     cnn_disable();
 
@@ -131,11 +158,12 @@ int main(void)
         printf("KAT sampleoutput: %s\n", kat == CNN_OK ? "PASS (bit-exact)" : "FAIL");
         for (int i = 0; i < CNN_NUM_OUTPUTS; i++)
             printf("  class %d: raw %ld\n", i, (long)kat_raw[i]);
-        printf("DWT %d iterations, output mismatches: %lu\n", N_ITER, (unsigned long)bad);
+        printf("counter: %s\n", use_systick ? "SysTick (DWT CYCCNT not running)" : "DWT CYCCNT");
+        printf("%d iterations, output mismatches: %lu\n", N_ITER, (unsigned long)bad);
         report("load", t_load, SystemCoreClock);
         report("infer", t_infer, SystemCoreClock);
         report("unload", t_unload, SystemCoreClock);
         printf("=== END ===\n");
-        MXC_Delay(SEC(5));
+        for (volatile uint32_t w = 0; w < 40000000u; w++) {} // 수 초 (바쁜 대기)
     }
 }

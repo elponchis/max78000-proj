@@ -553,11 +553,16 @@ x64 − x4 = −0.0202 [−0.041, +0.0007] (미확정).
    `docs/results/synthesis-check.md` 7절
 2. **④ 측정 펌웨어** — **빌드·플래싱까지 됨** (Flash 45.0% / SRAM 12.9%,
    `Verified OK`). `firmware/npu/safesound_wave`, `firmware/common/measure_main.c`
-3. **`sampleoutput.h` 비트 일치 + DWT 1000회** — **수치 미확보 (`TBD`)**.
-   플래싱 직후 시리얼이 `*` 로 깨졌다. **POR(USB 뽑았다 꽂기) → `usbipd attach`
-   → `modprobe usbhid` → `bash scripts/fw_serial.sh 20`** 이면 읽힌다
-   (펌웨어가 결과를 5초마다 다시 찍는다. 재플래싱 불필요).
-   `Console_Init()` 재호출로는 고쳐지지 않았다
+3. ~~**`sampleoutput.h` 비트 일치 + 1000회 지연**~~ **확보 (2026-10-02)**
+   - KAT **PASS (bit-exact)**, 1000회 불일치 0 (POR 후 시리얼)
+   - ④ 지연 (코어 사이클, 최악): load 108,740 (1.087 ms) / **infer 144,950
+     (1.4495 ms, 1000회 동일)** / unload+softmax 801 (8 µs).
+     합계 ≈ **2.54 ms = hop 250 ms 의 1.0%**
+   - ⚠️ **DWT CYCCNT 는 이 칩에 없다** (NOCYCCNT=1) → **SysTick** 으로 쟀다
+   - ⚠️ 지연 값은 **SWD 로 RAM 에서 읽었다** (`scripts/fw_peek.sh`). POR 직후
+     시리얼로 재확인 필요. 플래싱마다 POR 이 필요하다 (안 하면 시리얼이
+     깨지거나 안 나온다)
+   - 상세: `docs/results/synthesis-check.md` 8절
 4. 그다음: ① 측정 펌웨어(같은 스크립트로 `safesound_mel`), 마이크 경로
    int8 **포화** 구현, CPU 멜 전처리 C 구현, CMSIS-NN 대조군
 5. (사람 대기) 청취 blind 200 → suspect 30, `fa-listen` 재생성
