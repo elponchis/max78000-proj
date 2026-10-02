@@ -49,6 +49,11 @@ CASES = [
      "safesound-fbabs-v1_qat_best.pth.tar"),
     ("① 로그 멜", "ai85safesoundmelnet", "SafeSoundMel", "mel",
      "data/safesound-mel-v1_qat_best.pth.tar"),
+    # 전처리가 **데이터셋 인자**로 들어가는 구성 (2026-10-02 추가). 위 셋은
+    # 전부 기본 로더라, 우리 평가 경로가 정규화를 빼먹어도 잡지 못했다.
+    ("D-1 정규화", "ai85safesoundnet_fb", "SafeSoundNorm2", "wave_fb_norm2",
+     "data/logs-local/safesound-fbnorm2-v1___2026.09.30-001903/"
+     "safesound-fbnorm2-v1_qat_best.pth.tar"),
 ]
 
 CONF_RE = re.compile(r"==> Confusion:\s*\n((?:\s*\[.*\]\s*\n?)+)")

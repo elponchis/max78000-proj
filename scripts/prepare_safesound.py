@@ -383,13 +383,15 @@ def store_row(x, s, r, args, pool):
     위치에 놓인 0.3초짜리라 자르는 위치를 밀면 이벤트가 잘려 나갈 수 있다.
     창을 온전히 두는 쪽이 낫다 — 짧은 이벤트는 증강보다 라벨 정확성이 급하다.
 
-    반환: (int8 STORE 배열, 확보된 왼쪽 여유, 오른쪽 여유)
+    반환: (int8 STORE 배열, 확보된 왼쪽 여유, 오른쪽 여유).
+    `--store-dtype int16` 이면 int16 (실기기 스케일, `to_int16`) 이다.
     """
+    conv = to_int16 if getattr(args, "store_dtype", "int8") == "int16" else to_int8
     left = int(min(MARGIN, s))
     right = int(min(MARGIN, len(x) - (s + WIN)))
     core = x[s - left:s + WIN + right]
     if left == MARGIN and right == MARGIN:
-        return to_int8(core), left, right
+        return conv(core), left, right
 
     row = np.zeros(STORE, dtype=np.float32)
     if pool is not None:
@@ -398,7 +400,7 @@ def store_row(x, s, r, args, pool):
                                      max_rms=ev * 10 ** (args.fill_snr_db / -20.0))
         row[:] = _bed(STORE, seg, scale, rank_id(r["clip_id"]) % len(seg))
     row[MARGIN - left:MARGIN + WIN + right] = core
-    return to_int8(row), left, right
+    return conv(row), left, right
 
 
 def fill_note(info):
@@ -796,6 +798,24 @@ def to_int8(w):
     포화로 구현해야 이 전처리와 일치한다 — CLAUDE.md 7장, TASKS.md Phase 5.
     """
     return np.clip(np.round(w * 127.0), -128, 127).astype(np.int8)
+
+
+# int16 저장 스케일 (라운드 6 (b) 2단계). 실기기의 int16 → int8 이 `>> 6`
+# (×4/256) 이므로 int8 풀스케일 127 은 int16 **8,128** (= 127 × 64) 에 대응한다
+# — CLAUDE.md 7장 "실기기 스케일". float 1.0 을 그 값에 맞추면 이 샤드가 곧
+# **펌웨어가 int8 로 줄이기 직전에 보는 int16** 이고, 위로 12dB(32,767 까지)의
+# 여유가 실기기와 똑같이 남는다.
+INT16_FS = 127 * 64
+
+
+def to_int16(w):
+    """[-1,1] float → 실기기 int16 스케일. `round(x16 / 64)` 가 `to_int8` 에 대응한다.
+
+    ⚠️ int16 → int8 은 float → int8 과 **이중 반올림**이라 1 LSB 다를 수 있다.
+    그래서 기존 int8 샤드를 대체하지 않고 별도 디렉터리에 병행 보관한다
+    (docs/results/g8-round6-design.md b.2.5).
+    """
+    return np.clip(np.round(w * float(INT16_FS)), -32768, 32767).astype(np.int16)
 
 
 # ──────────────────────────────────────────────────────────── 경로 해석
@@ -1431,6 +1451,9 @@ def build(rows, args, tagger):
     """실제 캐시 생성. 클립 하나씩 처리해 즉시 샤드에 append."""
     floor_lin = args.floor_zero
     thr = tag_thresholds(args)
+    if args.store_dtype == "int16" and \
+            os.path.abspath(args.out) == os.path.abspath("data/processed/safesound"):
+        sys.exit("[에러] int16 샤드는 --out 을 따로 줄 것 (기존 int8 샤드 보호)")
     os.makedirs(args.out, exist_ok=True)
     prog_path = os.path.join(args.out, "progress.json")
     done = set()
@@ -1523,6 +1546,10 @@ def build_parser():
     ap.add_argument("--us8k-dir", default="data/raw/US8K_audio")
     ap.add_argument("--esc50-dir", default="data/raw/ESC50_audio")
     ap.add_argument("--out", default="data/processed/safesound")
+    ap.add_argument("--store-dtype", choices=["int8", "int16"], default="int8",
+                    help="샤드 저장 형식. int16 은 int8 변환 **전** 정규화 실험용 "
+                         "(실기기 int16 스케일). **--out 을 반드시 따로 줄 것** — "
+                         "기존 int8 샤드를 덮으면 기존 실행 전부와의 비교가 깨진다")
     ap.add_argument("--sample-dir", default="data/interim/listen")
     ap.add_argument("--overrides", default="data_overrides.csv",
                     help="청취 판정 override CSV (없으면 무시). `load_overrides` 참조")

@@ -263,6 +263,10 @@ class SafeSound(Dataset):
             sh, w = self._norm_pow2(w)
             self.norm_sh_hist[sh] += 1
 
+        return self._to_tensor(w), target
+
+    def _to_tensor(self, w):
+        """int8 창 (WIN,) → 모델 입력 텐서 (128,128)."""
         # int8 [-128,127] → [0,1) → ai8x.normalize 가 다시 [-128,127] 로 되돌린다.
         # kws20.py 와 같은 관례다: 거기서는 uint8 로 저장해 `inp /= 256`
         # (datasets/kws20.py:592) 한 뒤 `ai8x.normalize` (ai8x.py:29, 즉
@@ -277,7 +281,88 @@ class SafeSound(Dataset):
         x = torch.transpose(x.reshape((-1, ROW)), 1, 0)   # (128,128)
         if self.transform is not None:
             x = self.transform(x)
-        return x, target
+        return x
+
+
+# ── 음량 정규화 2단계 — int8 변환 **전** (라운드 6 (b) 2단계, 2026-10-02) ──
+# 샤드가 int16 (실기기 스케일, prepare_safesound.py --store-dtype int16) 이다.
+# 1단계와 달리 **정밀도가 보존된다**: 조용한 창을 키운 뒤에 int8 로 줄이므로
+# 양자화 계단이 함께 커지지 않는다. 또 int8 포화점(int16 ±8,128) 위 12dB 가
+# int16 에 살아 있어 **큰 소리는 줄여서** 포화를 피한다 (1단계는 증폭만 했다).
+#
+# 연산 (학습·평가·펌웨어 공통, **정수만** 쓴다 — 비트 단위 재현):
+#     peak = max |x16[n]|                         n = 0..16383
+#     G    = clamp( (TARGET << 16) / max(peak,1), 1, GMAX << 10 )   # Q16, 정수 나눗셈
+#     y[n] = sat8( (x16[n] * G + 32768) >> 16 )
+# 기준(정규화 없음)은 `>> 6` 이므로 G = 1<<10 이 게인 1 이다. `x16 * G` 는
+# peak·G <= TARGET<<16 이라 int32 를 넘지 않는다.
+N16_TARGET = 96         # 정규화 후 int8 피크. 1단계와 같은 값 (-2.4dB)
+N16_Q = 16
+N16_UNITY = 1 << 10     # Q16 에서 `>> 6` 과 같은 게인
+
+
+def int16_to_int8(x16):
+    """정규화 없는 기준 변환 — `sat8((x + 32) >> 6)`. int8 0 비율 판정용."""
+    return np.clip((x16.astype(np.int32) + 32) >> 6, -128, 127).astype(np.int8)
+
+
+def norm16(x16, gmax):
+    """int16 창 → (Q16 게인, 정규화된 int8 창). 위 주석의 연산 그대로."""
+    x = x16.astype(np.int64)
+    peak = int(np.abs(x).max())
+    g = (N16_TARGET << N16_Q) // max(peak, 1)
+    g = max(1, min(g, int(gmax) * N16_UNITY))
+    y = (x * g + (1 << (N16_Q - 1))) >> N16_Q
+    return g, np.clip(y, -128, 127).astype(np.int8)
+
+
+class SafeSound16(SafeSound):
+    """int16 샤드 + int8 변환 전 음량 정규화. 인덱스·증강 규칙은 SafeSound 와 같다.
+
+    `gmax` 는 조용한 창에 거는 최대 증폭(기준 대비 배수)이다.
+      4  — 1단계와 같은 상한 (+12dB). 조용한 방의 잡음을 덜 키운다
+      64 — int16 정밀도가 허락하는 한 끝까지 (+36dB). kws20.py 의 peak 정규화에
+           가장 가까운, **창 하나만 보고 재현 가능한** 형태
+    """
+
+    def __init__(self, root, d_type, transform=None, augment=None, gmax=4, **kw):
+        super().__init__(root, d_type, transform=transform, augment=augment, **kw)
+        self.gmax = int(gmax)
+
+    def _rand_gain16(self, w, rng):
+        """랜덤 게인 ±gain_db 를 **int16 위에서** 건다.
+
+        int8 판(`_rand_gain`)과 다른 점: 피크가 int8 포화점을 넘어도 되돌리지
+        않는다 — 실기기에서 그 소리는 int16 에 그대로 들어오고 정규화가 줄인다.
+        되돌리는 것은 int16 자체(마이크 풀스케일)를 넘을 때뿐이다.
+        int8 0 비율 판정은 **정규화 전** 기준 변환으로 한다 (CLAUDE.md 7장
+        규칙 3 — 데이터 준비 기준은 정규화 이전 절대 레벨).
+        """
+        f = w.astype(np.float32)
+        for _ in range(GAIN_TRIES):
+            g = 10.0 ** (float(rng.uniform(-self.gain_db, self.gain_db)) / 20.0)
+            y = f * g
+            peak = float(np.abs(y).max())
+            if peak > 32767.0:
+                y *= 32767.0 / peak
+            q = np.clip(np.round(y), -32768, 32767).astype(np.int16)
+            if float((int16_to_int8(q) == 0).mean()) <= self.floor_zero:
+                return q
+        return w
+
+    def __getitem__(self, i):
+        target, shard, row, left, right = self.index[i]
+        stored = np.asarray(self._shard(shard)[row])      # int16, (STORE,)
+        if stored.dtype != np.int16:
+            raise TypeError(f"int16 샤드가 아니다: {shard} ({stored.dtype})")
+
+        rng = np.random.default_rng()
+        w = self._crop(stored, left, right, rng)
+        if self.augment:
+            w = self._rand_gain16(w, rng)
+        # 정규화는 증강 뒤 — 테스트셋에도 걸린다 (전처리이지 증강이 아니다)
+        _, w8 = norm16(w, self.gmax)
+        return self._to_tensor(w8), target
 
 
 def safesound_get_datasets(data, load_train=True, load_test=True,
@@ -309,6 +394,27 @@ def safesound_mix50_get_datasets(data, load_train=True, load_test=True):
 def safesound_norm2_get_datasets(data, load_train=True, load_test=True):
     """SafeSoundNorm2 로더 (람다를 쓰지 않는다 — ai8x 가 이름을 로그에 찍는다)."""
     return safesound_get_datasets(data, load_train, load_test, norm_pow2=True)
+
+
+def _n16_get_datasets(data, load_train, load_test, gmax):
+    (data_dir, args) = data
+    root = os.path.join(data_dir, "SafeSound16")
+    transform = ai8x.normalize(args=args)
+    train_ds = (SafeSound16(root, "train", transform=transform, gmax=gmax)
+                if load_train else None)
+    test_ds = (SafeSound16(root, "test", transform=transform, gmax=gmax)
+               if load_test else None)
+    return train_ds, test_ds
+
+
+def safesound_n16g4_get_datasets(data, load_train=True, load_test=True):
+    """SafeSoundN16G4 로더 — int8 변환 전 정규화, 최대 증폭 x4."""
+    return _n16_get_datasets(data, load_train, load_test, 4)
+
+
+def safesound_n16g64_get_datasets(data, load_train=True, load_test=True):
+    """SafeSoundN16G64 로더 — int8 변환 전 정규화, 최대 증폭 x64."""
+    return _n16_get_datasets(data, load_train, load_test, 64)
 
 
 def _fsid_unit(fsid):
@@ -393,6 +499,22 @@ datasets = [
         "output": tuple(CLASSES),
         "weight": class_weights(),
         "loader": safesound_norm2_get_datasets,
+    },
+    {
+        # 라운드 6 (b) 2단계 — int16 샤드, int8 변환 **전** 정규화.
+        # ④ 와 모델·학습 설정이 같고 **입력 전처리만** 다르다.
+        "name": "SafeSoundN16G4",
+        "input": (128, 128),
+        "output": tuple(CLASSES),
+        "weight": class_weights(),
+        "loader": safesound_n16g4_get_datasets,
+    },
+    {
+        "name": "SafeSoundN16G64",
+        "input": (128, 128),
+        "output": tuple(CLASSES),
+        "weight": class_weights(),
+        "loader": safesound_n16g64_get_datasets,
     },
     {
         # 제곱근 역빈도 가중치 (power=0.5). 데이터·모델·나머지 설정은 전부

@@ -288,6 +288,21 @@ CONFIGS = {
     # 데이터셋은 ④와 같다 (로그는 모델 안에 있다 — 전처리가 아니다)
     "wave_cstage": ("ai85net-safesound-cstage-train.py",
                     "AI85SafeSoundCStageTrain", "SafeSound"),
+    # 라운드 6 (b) 2단계 — int16 샤드, int8 변환 전 정규화. 모델은 ④ 그대로
+    "wave_n16g4": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSoundN16G4"),
+    "wave_n16g64": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSoundN16G64"),
+}
+
+# 구성별 (샤드 루트 이름, Dataset 생성 인자). 여기 없는 구성은 ("SafeSound", {}).
+#
+# ⚠️ **전처리가 데이터셋 인자로 들어가는 구성은 반드시 여기에 적는다.**
+# `wave_fb_norm2` 가 빠져 있어서 (2026-10-02 발견) 정규화로 학습한 모델을
+# **정규화 없는 시험셋**으로 평가했다 — CONFIGS 의 셋째 칸(데이터셋 이름)은
+# 표기일 뿐 로더가 읽지 않는다. 1단계 "−0.039" 는 그 불일치가 섞인 값이었다.
+CONFIG_DATA = {
+    "wave_fb_norm2": ("SafeSound", {"norm_pow2": True}),
+    "wave_n16g4": ("SafeSound16", {"gmax": 4}),
+    "wave_n16g64": ("SafeSound16", {"gmax": 64}),
 }
 
 # 제곱근 가중치(D-1 root) 는 **여기에 항목이 없다.** 손실 가중치만 다르고
@@ -314,6 +329,8 @@ CONFIG_KWARGS = {
     "wave_logstage": {},
     # cstage 도 추가 인자가 없다 (로그단 상수는 모델 파일의 모듈 상수)
     "wave_cstage": {},
+    "wave_n16g4": {},
+    "wave_n16g64": {},
 }
 
 
@@ -338,7 +355,16 @@ def dataset_class(config="wave"):
         import safesound_wave2d
         return safesound_wave2d.SafeSoundWave2D
     import safesound
+    if config in ("wave_n16g4", "wave_n16g64"):
+        return safesound.SafeSound16
     return safesound.SafeSound
+
+
+def make_dataset(config, data_dir, split, transform):
+    """평가용 Dataset (무증강). 샤드 루트와 전처리 인자를 `CONFIG_DATA` 에서 읽는다."""
+    root, kw = CONFIG_DATA.get(config, ("SafeSound", {}))
+    return dataset_class(config)(os.path.join(data_dir, root), split,
+                                 transform=transform, augment=False, **kw)
 
 
 def load_model(checkpoint, n_classes, ai8x_dir, simulate=False, bias=False,
@@ -433,10 +459,10 @@ def collect_logits(args, names, split="test", indices=None):
                        args.bias, config=config)
 
     # 샤드 경로는 두 구성이 **같다** — 멜 구성도 같은 창을 읽고 표현만 바꾼다
-    ds = dataset_class(config)(
-        os.path.join(args.data, "SafeSound"), split,
-        transform=ai8x.normalize(args=argparse.Namespace(
-            act_mode_8bit=args.simulate)), augment=False)
+    # (전처리가 다른 구성은 `CONFIG_DATA` 가 루트·인자를 바꾼다)
+    ds = make_dataset(config, args.data, split,
+                      ai8x.normalize(args=argparse.Namespace(
+                          act_mode_8bit=args.simulate)))
     # 검증셋 평가처럼 일부만 볼 때 쓴다. 증강은 꺼 둔 채로다 (평가 조건).
     order = list(range(len(ds))) if indices is None else list(indices)
     fsids, clips, starts, y_true, logits = [], [], [], [], []
