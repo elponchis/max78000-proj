@@ -81,6 +81,11 @@ def main():
             f"#define MEL_WIN {16384}\n#define MEL_N_FFT {MF.N_FFT}\n"
             f"#define MEL_HOP {MF.HOP}\n#define MEL_PAD {MF.PAD}\n"
             f"#define MEL_N_MELS {MF.N_MELS}\n#define MEL_N_FRAMES {MF.N_FRAMES}\n"
+            "/* (1)' 증분 프레임 정의 - hop 250, 패딩 없음, 끝 정렬 */\n"
+            f"#define MEL_HOP_INC {MF.HOP_INC}\n#define MEL_OFF_INC {MF.OFF_INC}\n"
+            f"#define MEL_INC_STEP 4000   /* 판단 주기 (샘플) */\n"
+            f"#define MEL_INC_FRAMES {4000 // MF.HOP_INC}  /* 판단당 새 프레임 */\n"
+            f"#define MEL_INC_TAIL {MF.N_FFT - MF.HOP_INC}   /* 이어 붙일 직전 샘플 */\n"
             f"#define MEL_INV_REF {cf(1.0 / MF._REF)}\n"          # noqa: SLF001
             f"#define MEL_EPS {cf(MF.EPS)}\n"
             f"/* q = round((10*log10(p) - TOP_DB) * 255/SPAN_DB) + 127\n"

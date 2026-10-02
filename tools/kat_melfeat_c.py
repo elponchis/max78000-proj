@@ -95,7 +95,78 @@ def main():
               f"{100 * g2 / n:>9.4f}%{mx:>6}")
     print(f"\n전체 불일치 {100 * tot_bad / tot:.3f}%  최대 차이 {worst} LSB "
           f"(허용 ±2 LSB) → {'통과' if worst <= 2 else '**실패**'}")
-    sys.exit(0 if worst <= 2 else 1)
+
+    ok_inc = inc_tests(lib, a)
+    sys.exit(0 if worst <= 2 and ok_inc else 1)
+
+
+def c_call(lib, fn, w):
+    out = np.zeros(MF.N_MELS * MF.N_FRAMES, dtype=np.int8)
+    w = np.ascontiguousarray(w, dtype=np.int8)
+    getattr(lib, fn)(w.ctypes.data_as(ctypes.c_void_p),
+                     out.ctypes.data_as(ctypes.c_void_p))
+    return out.reshape(MF.N_MELS, MF.N_FRAMES)
+
+
+def c_inc(lib, w):
+    """증분 경로로 1초 창 하나를 만든다 — 꼬리 262 + 4,000 샘플 x 4."""
+    tail0 = MF.OFF_INC + (MF.N_FFT - MF.HOP_INC)             # 122 + 262 = 384
+    t = np.ascontiguousarray(w[MF.OFF_INC:tail0], dtype=np.int8)
+    lib.melfeat_inc_reset(t.ctypes.data_as(ctypes.c_void_p))
+    for k in range(4):
+        blk = np.ascontiguousarray(w[tail0 + 4000 * k:tail0 + 4000 * (k + 1)],
+                                   dtype=np.int8)
+        lib.melfeat_inc_push(blk.ctypes.data_as(ctypes.c_void_p))
+    out = np.zeros(MF.N_MELS * MF.N_FRAMES, dtype=np.int8)
+    lib.melfeat_inc_get(out.ctypes.data_as(ctypes.c_void_p))
+    return out.reshape(MF.N_MELS, MF.N_FRAMES)
+
+
+def inc_tests(lib, a):
+    """①′ — (a) C 일괄 vs 파이썬 loginc (b) C 증분 == C 일괄 (c) 연속 스트림."""
+    print("\n── ①′ (hop 250, 패딩 없음, 끝 정렬) ──")
+    rng = np.random.default_rng(1)
+    rows = []
+    for c in CLASSES:
+        for f in sorted(glob.glob(os.path.join(a.root, "test", c, "shard_*.npy"))):
+            arr = np.load(f, mmap_mode="r")
+            rows += [(arr, i) for i in range(len(arr))]
+    sel = rng.permutation(len(rows))[:min(len(rows), 2 * a.n)]
+    n = bad = 0
+    mx = inc_bad = 0
+    for j in sel:
+        arr, i = rows[j]
+        w = np.asarray(arr[i][MARGIN:MARGIN + WIN])
+        cb = c_call(lib, "melfeat_inc_batch", w)
+        df = np.abs(cb.astype(np.int16) - MF.mel_int8(w, "loginc").astype(np.int16))
+        n += df.size
+        bad += int((df > 0).sum())
+        mx = max(mx, int(df.max()))
+        inc_bad += not np.array_equal(c_inc(lib, w), cb)
+    print(f"  (a) C 일괄 vs 파이썬 loginc — {len(sel)}창: 불일치 {100 * bad / n:.3f}%  "
+          f"최대 {mx} LSB → {'통과' if mx <= 2 else '**실패**'}")
+    print(f"  (b) C 증분(4회 push) == C 일괄 — {len(sel)}창: 다른 창 {inc_bad}개 → "
+          f"{'비트 일치' if inc_bad == 0 else '**실패**'}")
+
+    # (c) 연속 스트림 — 판단 20회. 매번 최근 16,262 샘플의 일괄 계산과 같아야 한다
+    s = np.concatenate([np.asarray(rows[j][0][rows[j][1]][MARGIN:MARGIN + WIN])
+                        for j in sel[:8]]).astype(np.int8)
+    lib.melfeat_inc_reset(None)
+    stream_bad = 0
+    n_dec = len(s) // 4000
+    for k in range(n_dec):
+        blk = np.ascontiguousarray(s[4000 * k:4000 * (k + 1)])
+        lib.melfeat_inc_push(blk.ctypes.data_as(ctypes.c_void_p))
+        end = 4000 * (k + 1)
+        if end < WIN:
+            continue                      # 아직 64프레임이 차지 않았다
+        out = np.zeros(MF.N_MELS * MF.N_FRAMES, dtype=np.int8)
+        lib.melfeat_inc_get(out.ctypes.data_as(ctypes.c_void_p))
+        ref = c_call(lib, "melfeat_inc_batch", s[end - WIN:end])
+        stream_bad += not np.array_equal(out.reshape(ref.shape), ref)
+    print(f"  (c) 연속 스트림 {n_dec}회 판단: 일괄 계산과 다른 판단 {stream_bad}개 → "
+          f"{'비트 일치' if stream_bad == 0 else '**실패**'}")
+    return mx <= 2 and inc_bad == 0 and stream_bad == 0
 
 
 if __name__ == "__main__":

@@ -12,6 +12,12 @@
 #define MEL_PAD 128
 #define MEL_N_MELS 64
 #define MEL_N_FRAMES 64
+/* (1)' 증분 프레임 정의 - hop 250, 패딩 없음, 끝 정렬 */
+#define MEL_HOP_INC 250
+#define MEL_OFF_INC 122
+#define MEL_INC_STEP 4000   /* 판단 주기 (샘플) */
+#define MEL_INC_FRAMES 16  /* 판단당 새 프레임 */
+#define MEL_INC_TAIL 262   /* 이어 붙일 직전 샘플 */
 #define MEL_INV_REF 6.10351562e-05f
 #define MEL_EPS 1e-12f
 /* q = round((10*log10(p) - TOP_DB) * 255/SPAN_DB) + 127
