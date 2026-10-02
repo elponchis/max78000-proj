@@ -31,3 +31,6 @@ latest_log_file
 # ai8x train.py 가 CWD 에 남기는 편의 심볼릭 링크
 latest_log_dir
 latest_log_file
+
+# 펌웨어 빌드 산출물
+firmware/**/build/

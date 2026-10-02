@@ -33,6 +33,8 @@ if [ -z "$EX" ]; then
 fi
 
 DIR="$MSDK/Examples/$TARGET/$EX"
+# 우리 프로젝트(firmware/npu/<이름> 등)는 **디렉터리 경로**로 준다
+[ -f "$EX/Makefile" ] && DIR=$(cd "$EX" && pwd)
 if [ ! -d "$DIR" ]; then
   echo "[에러] 예제가 없다: $DIR"
   echo "       있는 것:"

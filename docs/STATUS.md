@@ -97,6 +97,7 @@ k=4 는 ① 멜의 `n_fft=512` 와 창 길이가 같은데도 격차가 그대�
 | 구성 | 가중치 | 사이클 | 비고 |
 |---|---:|---:|---|
 | ④ / D-1 | 165,376 B (37.4%) | 71,718 | **D-1 의 `Abs` 가 합성된다** |
+| **① 로그 멜** (2026-10-02) | 157,472 B (35.6%) | **204,029 (2.84배)** | 데이터 135,168 B (25.8%), 채널당 4,096픽셀. CPU 전처리는 별도 |
 | (a) logstage | 245,376 B (55.5%) | **274,726 (3.83배)** | 중간층 `activate: None` 합성됨, bias 400/2,048 B |
 
 문서: `docs/results/synthesis-check.md`, `g8-round6-design.md`
@@ -267,7 +268,7 @@ python3 tools/listen_audit.py --consistency                       # 겹친 4창 
 
 - ~~**Freesound API 키** — `siren` 원본 확보~~ **불필요** (chain11 이 원본 포화를 보였다, 2026-10-01)
 - **네트워크 접근** — 외부 데이터 조사 (Sci Data 사이렌셋, MIVIA)
-- **MSDK 설치** — 이 PC 에 없다. `docs/board-bringup.md` 1절부터
+- ~~**MSDK 설치**~~ — WSL 에 이미 있다 (`~/msdk`, `docs/board-bringup.md` 1′절)
 
 ---
 
@@ -547,11 +548,18 @@ x64 − x4 = −0.0202 [−0.041, +0.0007] (미확정).
 **(2026-10-02 갱신)** 정확도 축의 학습 실험은 **전부 닫았다** — (c) 라인(5.6),
 정규화 라인(5.7), 혼합 증강(미채택). 남은 것은 보드다.
 
-1. **① 합성** — `ai85safesoundmelnet` 이 MAX78000 에 올라가는지
-   (가중치 442KB / 데이터 512KB / 채널당 8,192픽셀). 1.5절 표에 ①이 없다
-2. **④ 펌웨어** — 측정 전용 빌드, int8 변환 **포화** 구현
-3. **`sampleoutput.h` 비트 일치** — 합성기 기준 출력 vs 보드 출력
-4. **DWT 1000회** — 지연 최악값·중앙값
+1. ~~**① 합성**~~ **통과 (2026-10-02)** — 가중치 157,472 B (35.6%),
+   **204,029 사이클 (④의 2.84배)**, 데이터 135,168 B (25.8%), 채널당 4,096픽셀.
+   `docs/results/synthesis-check.md` 7절
+2. **④ 측정 펌웨어** — **빌드·플래싱까지 됨** (Flash 45.0% / SRAM 12.9%,
+   `Verified OK`). `firmware/npu/safesound_wave`, `firmware/common/measure_main.c`
+3. **`sampleoutput.h` 비트 일치 + DWT 1000회** — **수치 미확보 (`TBD`)**.
+   플래싱 직후 시리얼이 `*` 로 깨졌다. **POR(USB 뽑았다 꽂기) → `usbipd attach`
+   → `modprobe usbhid` → `bash scripts/fw_serial.sh 20`** 이면 읽힌다
+   (펌웨어가 결과를 5초마다 다시 찍는다. 재플래싱 불필요).
+   `Console_Init()` 재호출로는 고쳐지지 않았다
+4. 그다음: ① 측정 펌웨어(같은 스크립트로 `safesound_mel`), 마이크 경로
+   int8 **포화** 구현, CPU 멜 전처리 C 구현, CMSIS-NN 대조군
 5. (사람 대기) 청취 blind 200 → suspect 30, `fa-listen` 재생성
 
 ~~1. chain11 → U-1~~ 완료(4절) · ~~2. chain14~~ 미채택(4절, chain15 3시드:

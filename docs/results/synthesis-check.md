@@ -175,3 +175,38 @@ yaml 두 개는 레포에 있다 (`synthesis/`).
   학습 결과를 보고 채택이 정해지면 그때 합성한다.
 - **CMSIS-NN 대조군.** 같은 `weights.h` 를 `arm_convolve_*_s8` 에 매핑한다
   (CLAUDE.md 6장). 보드 대기.
+
+---
+
+## 7. 구성 ① (로그 멜 2D CNN) 합성 — **통과** (2026-10-02)
+
+| | ① 로그 멜 | (비교) ④ |
+|---|---:|---:|
+| 체크포인트 | `data/safesound-mel-v1_qat_best.pth.tar` (s1) | — |
+| 합성 설정 | `synthesis/safesound-mel-hwc.yaml` | `safesound-wave-hwc.yaml` |
+| 가중치 | **157,472 B (35.6%)** | 165,376 B (37.4%) |
+| 바이어스 | 0 B | 0 B |
+| **NPU 사이클** | **204,029** | 71,718 (**①이 2.84배**) |
+| 연산 | 19,315,712 ops (18.9M macc) | 8,398,432 ops |
+| 데이터 메모리 (동시 최대) | **135,168 B (25.8%)** — 입력 4,096 + L0 출력 32×64×64 | 29,184 B (5.6%) |
+| 채널당 픽셀 (HWC 한도 8,192) | **4,096 (50%)** | 128 |
+| `-8` 평가 Top1 (양자화 체크포인트) | 87.08% | — |
+
+- 층별 연산은 L1(32→32, 64×64 입력)이 9.6M ops 로 절반이다.
+- ⚠️ **사이클 수는 합성 로그 값**이다. 지연은 보드 DWT 로 잰다. ①은 여기에
+  **CPU 전처리(STFT+멜+로그)가 더** 붙는다 — NPU 만으로도 ④의 2.84배라는 것은
+  "①이 정확도를 얻는 대신 NPU 쪽에서도 비용을 더 낸다" 는 뜻이다.
+- 재생성: `bash data/logs-local/synth_mel.sh` (양자화 → `-8` 샘플 → `ai8xize.py`).
+  산출물 `data/synth/out/safesound_mel/`.
+
+## 8. ④ C 빌드와 측정 펌웨어 (2026-10-02)
+
+6절의 "C 빌드" 는 해소됐다 — MSDK 는 WSL 에 있었다 (`~/msdk`).
+
+- `firmware/npu/sync_from_synth.sh <prefix>` 가 합성 산출물에서 벤더 생성
+  파일을 가져오고 main 을 `firmware/common/measure_main.c` 로 바꾼다
+  (KAT 비트 대조 + DWT 1000회, LED·타이머 없음).
+- `bash scripts/fw_build.sh firmware/npu/safesound_wave` →
+  **Flash 236,140 B (45.0%) / SRAM 16,852 B (12.9%)**.
+- 플래싱 `** Verified OK **`. **온디바이스 KAT·DWT 수치는 아직 없다** — 플래싱
+  직후 시리얼이 `*` 로 깨져(POR 필요 증상) 읽지 못했다. `TBD`.
