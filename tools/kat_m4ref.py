@@ -29,10 +29,23 @@ import export_m4_weights as E                                # noqa: E402
 WIN, MARGIN = 16384, 1600
 
 
-def build():
-    so = os.path.join(tempfile.gettempdir(), "libm4ref_host.so")
-    subprocess.run(["gcc", "-O2", "-fPIC", "-shared", "-o", so,
-                    os.path.join(REPO, "firmware/common/m4ref.c")], check=True)
+def build(impl="ref"):
+    """`ref` = 단순 C 참조 구현, `cmsis` = CMSIS-NN 판 (PC 에서는 DSP 확장 없는 경로)."""
+    so = os.path.join(tempfile.gettempdir(), f"libm4{impl}_host.so")
+    if impl == "ref":
+        cmd = ["gcc", "-O2", "-fPIC", "-shared", "-o", so,
+               os.path.join(REPO, "firmware/common/m4ref.c")]
+    else:
+        cn = os.environ.get("CMSIS_NN") or os.path.expanduser("~/CMSIS-NN")
+        srcs = subprocess.run(
+            ["bash", os.path.join(REPO, "firmware/cpu/cmsis_nn_srcs.sh")],
+            capture_output=True, text=True, check=True).stdout.split()
+        # ⚠️ SINGLE_ROUNDING 이 비트 일치의 조건이다 (m4cmsis.c 머리말)
+        cmd = ["gcc", "-O2", "-fPIC", "-shared", "-DCMSIS_NN_USE_SINGLE_ROUNDING",
+               "-I", os.path.join(cn, "Include"),
+               "-I", os.path.join(REPO, "firmware/common"), "-o", so,
+               os.path.join(REPO, "firmware/common/m4cmsis.c")] + srcs
+    subprocess.run(cmd, check=True)
     return ctypes.CDLL(so)
 
 
@@ -57,8 +70,10 @@ def np_infer(ws, shifts, fc_shift, w):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=200)
+    ap.add_argument("--impl", choices=("ref", "cmsis"), default="ref")
     a = ap.parse_args()
-    lib = build()
+    lib = build(a.impl)
+    print(f"구현: {'단순 C 참조' if a.impl == 'ref' else 'CMSIS-NN (SINGLE_ROUNDING)'}")
 
     hdr = open(os.path.join(REPO, "firmware/common/m4_weights.h"), encoding="utf-8").read()
     fc_shift = int(re.search(r"#define M4_FC_SHIFT (\d+)", hdr).group(1))
@@ -87,7 +102,11 @@ def main():
         bad += c_infer(lib, w) != np_infer(ws, shifts, fc_shift, w)
     print(f"2. 시험셋 {len(sel)}창: C != numpy 기준 {bad}건  → "
           f"{'전부 일치' if bad == 0 else '**불일치**'}")
-    sys.exit(0 if ok1 and bad == 0 else 1)
+    st = 0
+    if a.impl == "cmsis":
+        st = ctypes.c_int.in_dll(lib, "m4cmsis_status").value
+        print(f"3. CMSIS-NN 상태 플래그: {st} → {'정상' if st == 0 else '**인자 거부/버퍼 부족**'}")
+    sys.exit(0 if ok1 and bad == 0 and st == 0 else 1)
 
 
 if __name__ == "__main__":

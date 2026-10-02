@@ -21,6 +21,14 @@
 #define N_ITER 1000
 #endif
 
+// 구현 표기 — 표에 그대로 옮긴다. -DM4_CMSIS 면 m4cmsis.c (CMSIS-NN) 를 링크한다.
+#ifdef M4_CMSIS
+#define M4_IMPL_NAME "CMSIS-NN (arm_convolve_wrapper_s8, SINGLE_ROUNDING), -O2"
+extern int m4cmsis_status;
+#else
+#define M4_IMPL_NAME "plain C reference (-O2), NOT CMSIS-NN"
+#endif
+
 static int8_t win[M4_WIN];
 static int32_t logits[M4_NUM_OUTPUTS];
 static uint32_t t_load[N_ITER], t_infer[N_ITER];
@@ -49,7 +57,7 @@ int main(void)
 
     printf("Waiting...\n");
     MXC_Delay(SEC(2)); // 디버거가 끼어들 틈 (지우지 말 것)
-    printf("measuring m4ref (%d iterations, about 1 s each) ...\n", N_ITER);
+    printf("measuring M4 software inference: %s (%d iterations) ...\n", M4_IMPL_NAME, N_ITER);
 
     // ── 1. KAT ────────────────────────────────────────────────────────
     m4ref_infer(m4_kat_input, logits);
@@ -79,7 +87,10 @@ int main(void)
 
     while (1) {
         printf("\n=== SafeSound M4 software inference: safesound_wave weights ===\n");
-        printf("implementation: plain C reference (-O2), NOT CMSIS-NN\n");
+        printf("implementation: %s\n", M4_IMPL_NAME);
+#ifdef M4_CMSIS
+        printf("CMSIS-NN status flags: %d (0 = ok)\n", m4cmsis_status);
+#endif
         printf("build %s %s  N_ITER %d\n", __DATE__, __TIME__, N_ITER);
         printf("core clock %lu Hz  CNN: disabled  timer: TMR0 (1 us)\n",
                (unsigned long)SystemCoreClock);
