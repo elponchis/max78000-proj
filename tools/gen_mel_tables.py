@@ -49,7 +49,17 @@ def iarr(name, a, ctype="uint16_t", per=16):
 
 
 def main():
-    fb = MF._FB                                              # noqa: SLF001
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--framing", default="inc", choices=sorted(MF.INC_SPECS),
+                    help="증분 프레임 정의 (melfeat.INC_SPECS). 기본 inc = ①′. "
+                         "다른 값이면 멜 수·프레임 수·hop 이 그 변형의 것이 된다")
+    ap.add_argument("--out", default=OUT)
+    a = ap.parse_args()
+    hop_inc, n_frames, n_mels = MF.INC_SPECS[a.framing]
+    off_inc = MF.inc_offset(a.framing)
+    out_path = a.out
+    fb = MF._fb(n_mels)                                      # noqa: SLF001
     win = MF._WIN / 128.0                                    # noqa: SLF001
     start, length, weights = [], [], []
     # 꼭대기 필터의 위쪽 끝이 8000 Hz 인데 mel↔Hz 왕복의 반올림으로 나이퀴스트
@@ -57,7 +67,7 @@ def main():
     TINY = 1e-9
     dropped = float(fb[(fb > 0.0) & (fb <= TINY)].max(initial=0.0))
     print(f"버린 가중치 최대값: {dropped:.3g} (문턱 {TINY:g})")
-    for m in range(MF.N_MELS):
+    for m in range(n_mels):
         nz = np.nonzero(fb[m] > TINY)[0]
         assert len(nz) and (np.diff(nz) == 1).all(), f"필터 {m} 가 연속 구간이 아니다"
         start.append(nz[0])
@@ -69,23 +79,26 @@ def main():
     assert lo >= 1 and hi <= MF.N_FFT // 2 - 1, (lo, hi)
 
     k = (10.0 / np.log(10.0)) * (255.0 / MF.SPAN_DB)         # ln → int8 단계
-    with open(OUT, "w", encoding="utf-8") as f:
+    assert max(length) <= 255, "mel_fb_len 이 uint8 을 넘는다"
+    with open(out_path, "w", encoding="utf-8") as f:
         f.write(
             "/* @generated — tools/gen_mel_tables.py (datasets/melfeat.py 에서).\n"
             " * 손으로 고치지 말 것. melfeat.py 를 바꾸면 다시 생성한다.\n"
-            f" * n_fft {MF.N_FFT}, hop {MF.HOP}, pad {MF.PAD}(reflect), "
-            f"n_mels {MF.N_MELS}, frames {MF.N_FRAMES},\n"
+            f" * 프레임 정의 \"{a.framing}\": 증분 hop {hop_inc}, 프레임 {n_frames}, "
+            f"멜 {n_mels}, 끝 정렬 오프셋 {off_inc}\n"
+            f" * n_fft {MF.N_FFT}, (reflect 판: hop {MF.HOP}, pad {MF.PAD} — "
+            f"\"inc\" 가 아닌 변형에서는 쓰지 않는다)\n"
             f" * {MF.FMIN:g}-{MF.FMAX:g} Hz HTK, TOP_DB {MF.TOP_DB}, "
             f"SPAN_DB {MF.SPAN_DB}. 쓰는 빈 {lo}..{hi}, 가중치 {len(weights)}개 */\n"
             "#ifndef MEL_TABLES_H\n#define MEL_TABLES_H\n#include <stdint.h>\n\n"
             f"#define MEL_WIN {16384}\n#define MEL_N_FFT {MF.N_FFT}\n"
             f"#define MEL_HOP {MF.HOP}\n#define MEL_PAD {MF.PAD}\n"
-            f"#define MEL_N_MELS {MF.N_MELS}\n#define MEL_N_FRAMES {MF.N_FRAMES}\n"
-            "/* (1)' 증분 프레임 정의 - hop 250, 패딩 없음, 끝 정렬 */\n"
-            f"#define MEL_HOP_INC {MF.HOP_INC}\n#define MEL_OFF_INC {MF.OFF_INC}\n"
+            f"#define MEL_N_MELS {n_mels}\n#define MEL_N_FRAMES {n_frames}\n"
+            "/* 증분 프레임 정의 - 패딩 없음, 끝 정렬 */\n"
+            f"#define MEL_HOP_INC {hop_inc}\n#define MEL_OFF_INC {off_inc}\n"
             f"#define MEL_INC_STEP 4000   /* 판단 주기 (샘플) */\n"
-            f"#define MEL_INC_FRAMES {4000 // MF.HOP_INC}  /* 판단당 새 프레임 */\n"
-            f"#define MEL_INC_TAIL {MF.N_FFT - MF.HOP_INC}   /* 이어 붙일 직전 샘플 */\n"
+            f"#define MEL_INC_FRAMES {4000 // hop_inc}  /* 판단당 새 프레임 */\n"
+            f"#define MEL_INC_TAIL {MF.N_FFT - hop_inc}   /* 이어 붙일 직전 샘플 */\n"
             f"#define MEL_INV_REF {cf(1.0 / MF._REF)}\n"          # noqa: SLF001
             f"#define MEL_EPS {cf(MF.EPS)}\n"
             f"/* q = round((10*log10(p) - TOP_DB) * 255/SPAN_DB) + 127\n"
@@ -98,7 +111,8 @@ def main():
         f.write(iarr("mel_fb_len", length, "uint8_t"))
         f.write(farr("mel_fb_w", weights))
         f.write("#endif\n")
-    print(f"저장: {OUT}  (빈 {lo}..{hi}, 가중치 {len(weights)}개)")
+    print(f"저장: {out_path}  ({a.framing}: 멜 {n_mels} x 프레임 {n_frames}, "
+          f"hop {hop_inc}, 빈 {lo}..{hi}, 가중치 {len(weights)}개)")
 
 
 if __name__ == "__main__":

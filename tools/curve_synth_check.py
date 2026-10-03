@@ -67,6 +67,39 @@ def main():
         n = sum(v.numel() for k, v in sd.items() if k.endswith("op.weight"))
         print(f"{name}: 입력 (1,{nm},{nf})  FC 입력 {fl}  가중치 {n:,}")
 
+    # ── 구성 A (①′ 로그 멜 × ④의 1D 뒷단) — 그림에 놓으려면 NPU 사이클이 필요하다
+    conv1d = [("voice_conv1", 100, 64, 1), ("voice_conv2", 96, 100, 3),
+              ("voice_conv3", 64, 96, 3), ("voice_conv4", 48, 64, 3),
+              ("kws_conv1", 64, 48, 3), ("kws_conv2", 96, 64, 3),
+              ("kws_conv3", 100, 96, 3), ("kws_conv4", 64, 100, 6)]
+    sd = {}
+    for lname, co, ci, k in conv1d + [("fc", 5, 256, 0)]:
+        sd[f"{lname}.output_shift"] = torch.tensor([0.0])
+        sd[f"{lname}.weight_bits"] = torch.tensor([8])
+        sd[f"{lname}.bias_bits"] = torch.tensor([8])
+        sd[f"{lname}.quantize_activation"] = torch.tensor([1.0])
+        sd[f"{lname}.adjust_output_shift"] = torch.tensor([0.0])
+        sd[f"{lname}.shift_quantile"] = torch.tensor([1.0])
+        shape = (co, ci, k) if k else (co, ci)
+        sd[f"{lname}.op.weight"] = torch.from_numpy(
+            rng.integers(-20, 21, shape).astype(np.float32))
+    torch.save({"epoch": 0, "state_dict": sd, "arch": "ai85safesoundnet_mel1d"},
+               os.path.join(OUT, "curve-a1d-fake.pth.tar"))
+    np.save(os.path.join(SYN, "tests", "sample_curvechecka1d.npy"),
+            rng.integers(-128, 128, (64, 64)).astype(np.int64))
+    y = open(os.path.join(REPO, "synthesis", "safesound-wave-hwc.yaml"),
+             encoding="utf-8").read()
+    # voice_conv3 의 MaxPool 만 뺀다 (모델의 pool3=False 와 같다) — 첫 번째 것
+    pool = "  - max_pool: 2\n    pool_stride: 2\n    pad: 1\n"
+    assert pool in y
+    y = y.replace(pool, "  - pad: 1\n", 1)
+    y = y.replace("arch: ai85safesoundnet", "arch: ai85safesoundnet_mel1d")
+    y = y.replace("dataset: SafeSound", "dataset: CurveCheckA1D")
+    with open(os.path.join(OUT, "curve-a1d.yaml"), "w", encoding="utf-8") as f:
+        f.write(y)
+    n = sum(v.numel() for k, v in sd.items() if k.endswith("op.weight"))
+    print(f"a1d: 입력 (64,64)  가중치 {n:,}")
+
 
 if __name__ == "__main__":
     main()

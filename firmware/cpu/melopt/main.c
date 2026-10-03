@@ -99,9 +99,25 @@ int main(void)
         melfeat_inc_push_v(&w[tail0], var, res[v].prof, tick, TICK_MASK);
     }
 
+    // 링 버퍼 풀기 (get) — 변형과 무관하다. N_ITER 회
+    static uint32_t g_mn, g_md, g_mx;
+    for (int i = 0; i < N_ITER; i++) {
+        uint32_t c0 = tick();
+        melfeat_inc_get(feat);
+        t_push[i] = (tick() - c0) & TICK_MASK;
+    }
+    qsort(t_push, N_ITER, sizeof(t_push[0]), cmp_u32);
+    g_mn = t_push[0];
+    g_md = t_push[N_ITER / 2];
+    g_mx = t_push[N_ITER - 1];
+
     SysTick->CTRL = 0;
     while (1) {
         printf("\n=== SafeSound CPU preprocess: log-mel incremental, variants ===\n");
+        printf("framing: hop %d  frames %d  mels %d  new frames per decision %d\n", MEL_HOP_INC,
+               MEL_N_FRAMES, MEL_N_MELS, MEL_INC_FRAMES);
+        printf("get (ring -> %dx%d) cycles min %lu  med %lu  max %lu\n", MEL_N_MELS,
+               MEL_N_FRAMES, (unsigned long)g_mn, (unsigned long)g_md, (unsigned long)g_mx);
         printf("build %s %s  N_ITER %d  (push = 16 new frames per decision)\n", __DATE__,
                __TIME__, N_ITER);
         printf("core clock %lu Hz  CNN: disabled  counter: SysTick\n",
@@ -113,8 +129,8 @@ int main(void)
             printf("%s | push cycles min %lu  med %lu  mean %lu  max %lu\n", names[v],
                    (unsigned long)res[v].mn, (unsigned long)res[v].md,
                    (unsigned long)res[v].mean, (unsigned long)res[v].mx);
-            printf("%s | stages (16 frames): frame %lu  rfft %lu  power+mel %lu  log %lu\n",
-                   names[v], (unsigned long)res[v].prof[0], (unsigned long)res[v].prof[1],
+            printf("%s | stages (%d frames): frame %lu  rfft %lu  power+mel %lu  log %lu\n",
+                   names[v], MEL_INC_FRAMES, (unsigned long)res[v].prof[0], (unsigned long)res[v].prof[1],
                    (unsigned long)res[v].prof[2], (unsigned long)res[v].prof[3]);
         }
         printf("=== END ===\n");

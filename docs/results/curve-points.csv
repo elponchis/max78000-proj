@@ -1,0 +1,9 @@
+id,label,group,f1,f1_sd,n_seeds,time_ms,e_datasheet_uJ,e_literature_uJ,board,note
+wave,(4) raw waveform 1D,raw_npu,0.5329,0.0238,5,2.53,71,130,1,board-measured latency
+melinc,(1)' log-mel 2D (hop 250),mel_npu,0.6694,0.0064,3,15.04,267,565,1,board-measured latency (V1 preprocessing)
+h500,hop 500,mel_npu,0.6509,0.0113,3,7.5,134,283,0,latency estimated from V1 per-frame cycles + synthesized NPU cycles
+h500m32,hop 500 + 32 mel,mel_npu,0.6412,0.0060,3,6.0,87,197,0,latency estimated
+m32,32 mel,mel_npu,0.6434,0.0115,3,11.9,173,392,0,latency estimated
+a1d,A: log-mel + 1D backend,mel_npu_1d,0.5638,0.0100,3,10.9,122,307,0,latency estimated (NPU 38514 cycles synthesized)
+m4cmsis,M4 CMSIS-NN,m4,0.5329,0.0238,5,225.7,2007,5598,1,board-measured latency; same weights and outputs as (4)
+m4plain,M4 plain C,m4,0.5329,0.0238,5,864.0,7680,21430,1,board-measured latency; same weights and outputs as (4)
