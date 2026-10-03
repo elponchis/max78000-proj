@@ -27,7 +27,10 @@ import ai8x                                                 # noqa: E402
 import melfeat as MF                                         # noqa: E402
 
 SCHEMES = {"loginc": "inc", "log_h500": "h500", "log_h500m32": "h500m32",
-           "log_m32": "m32", "log_h400": "h400"}
+           "log_m32": "m32", "log_h400": "h400",
+           # 2차 후보 — 풀링 4단 모델 (ai85safesoundmelnet_p4)
+           "log_u1000": "u1000", "log_u1000f1024": "u1000f1024", "log_u800": "u800"}
+P4 = {"u1000", "u1000f1024", "u800"}
 FAIL = []
 
 
@@ -53,20 +56,24 @@ def main():
           f"{'겹침':>6}{'FC 입력':>8}{'파라미터':>10}{'442KB':>7}")
     for scheme, fr in SCHEMES.items():
         hop, nf, nm = MF.INC_SPECS[fr]
+        nfft = MF.inc_nfft(fr)
         off = MF.inc_offset(fr)
         new = 4000 // hop
         a = MF.mel_int8(s[:16384], scheme)
         b = MF.mel_int8(s[4000:4000 + 16384], scheme)
-        m = mod.ai85safesoundmelnet(num_channels=1, dimensions=(nm, nf))
+        build = mod.ai85safesoundmelnet_p4 if fr in P4 else mod.ai85safesoundmelnet
+        m = build(num_channels=1, dimensions=(nm, nf))
         n_par = sum(p.numel() for n_, p in m.named_parameters() if n_.endswith("op.weight"))
         with torch.no_grad():
             y = m(torch.zeros(2, 1, nm, nf))
-        print(f"  {scheme:<13}{hop:>5}{nf:>6}{nm:>4}{new:>9}{off:>11}"
-              f"{100 * (MF.N_FFT - hop) / MF.N_FFT:>5.0f}%{m.fc.op.in_features:>8}"
-              f"{n_par:>10,}{100 * n_par / 442368:>6.1f}%")
+        # 겹침이 음수면 프레임 사이에 **어느 프레임도 보지 않는 샘플**이 있다
+        ov = 100 * (nfft - hop) / nfft if hop <= nfft else -100 * (hop - nfft) / hop
+        print(f"  {scheme:<15}{hop:>5}{nf:>6}{nm:>4}{new:>9}{off:>11}"
+              f"{ov:>5.0f}%{m.fc.op.in_features:>8}"
+              f"{n_par:>10,}{100 * n_par / 442368:>6.1f}%  n_fft {nfft}")
         check(f"{scheme}: 모양 ({nm},{nf})", a.shape == (nm, nf))
         check(f"{scheme}: 판단 주기가 hop 의 배수", 4000 % hop == 0)
-        check(f"{scheme}: 끝 정렬", off >= 0 and off + (nf - 1) * hop + MF.N_FFT == 16384)
+        check(f"{scheme}: 끝 정렬", off >= 0 and off + (nf - 1) * hop + nfft == 16384)
         check(f"{scheme}: 증분 — {nf - new}프레임 공유 (비트 일치)",
               np.array_equal(a[:, new:], b[:, :nf - new]))
         check(f"{scheme}: forward 출력 (2,5)", tuple(y.shape) == (2, 5))

@@ -254,7 +254,11 @@ datasets.append({
 for _name, _scheme in (("SafeSoundMelH500", "log_h500"),
                        ("SafeSoundMelH500M32", "log_h500m32"),
                        ("SafeSoundMelM32", "log_m32"),
-                       ("SafeSoundMelH400", "log_h400")):
+                       ("SafeSoundMelH400", "log_h400"),
+                       # 2차 후보 (초저비용) — 모델은 ai85safesoundmelnet_p4
+                       ("SafeSoundMelU1000", "log_u1000"),
+                       ("SafeSoundMelU1000F1024", "log_u1000f1024"),
+                       ("SafeSoundMelU800", "log_u800")):
     datasets.append({
         "name": _name,
         "input": (1,) + MF.scheme_shape(_scheme),

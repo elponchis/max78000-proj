@@ -20,14 +20,18 @@ import torch
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SYN = os.path.expanduser("~/ai8x-synthesis")
 OUT = os.path.join(REPO, "data", "synth")
-SHAPES = {"h500": (64, 32), "h500m32": (32, 32), "m32": (32, 64), "h400": (64, 40)}
+SHAPES = {"h500": (64, 32), "h500m32": (32, 32), "m32": (32, 64), "h400": (64, 40),
+          # 2차 후보 — 풀링 4단 (conv6 의 MaxPool 없음). u1000 과 u1000f1024 는
+          # 입력 모양이 같아 NPU 사이클도 같다
+          "u1000": (32, 16), "u800": (32, 20)}
+P4 = {"u1000", "u800"}
 # (이름, out_ch, in_ch, 커널) — models/ai85net-safesound-mel.py 1× 폭
 CONVS = [("conv1", 32, 1, 3), ("conv2", 32, 32, 3), ("conv3", 64, 32, 3),
          ("conv4", 64, 64, 3), ("conv5", 128, 64, 3), ("conv6", 128, 128, 1)]
 
 
-def flat_len(h, w):
-    for _ in range(5):                       # conv2..conv6 의 2×2 풀링
+def flat_len(h, w, pools=5):
+    for _ in range(pools):                   # conv2..conv6 의 2×2 풀링 (p4 는 4단)
         h, w = h // 2, w // 2
     return 128 * h * w
 
@@ -47,7 +51,7 @@ def main():
             sd[f"{lname}.shift_quantile"] = torch.tensor([1.0])
             sd[f"{lname}.op.weight"] = torch.from_numpy(
                 rng.integers(-20, 21, (co, ci, k, k)).astype(np.float32))
-        fl = flat_len(nm, nf)
+        fl = flat_len(nm, nf, 4 if name in P4 else 5)
         for key, val in (("output_shift", torch.tensor([0.0])),
                          ("weight_bits", torch.tensor([8])),
                          ("bias_bits", torch.tensor([8])),
@@ -62,8 +66,14 @@ def main():
         ds = f"CurveCheck{name}"
         np.save(os.path.join(SYN, "tests", f"sample_{ds.lower()}.npy"),
                 rng.integers(-128, 128, (1, nm, nf)).astype(np.int64))
+        y = base.replace("dataset: SafeSoundMel", f"dataset: {ds}")
+        if name in P4:
+            # conv6 (1×1) 의 MaxPool 을 뺀다 — yaml 에서 마지막 max_pool 블록
+            pool = "  - max_pool: 2\n    pool_stride: 2\n    pad: 0\n"
+            assert y.count(pool) == 1, "conv6 의 풀링 블록을 못 찾았다"
+            y = y.replace(pool, "  - pad: 0\n")
         with open(os.path.join(OUT, f"curve-{name}.yaml"), "w", encoding="utf-8") as f:
-            f.write(base.replace("dataset: SafeSoundMel", f"dataset: {ds}"))
+            f.write(y)
         n = sum(v.numel() for k, v in sd.items() if k.endswith("op.weight"))
         print(f"{name}: 입력 (1,{nm},{nf})  FC 입력 {fl}  가중치 {n:,}")
 

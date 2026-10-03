@@ -50,6 +50,8 @@ CASES = [
     ("ai85net-safesound.py", "ai85safesoundnet_w150", (128, 128)),
     ("ai85net-safesound-mel.py", "ai85safesoundmelnet", (1, 64, 64)),
     ("ai85net-safesound-mel.py", "ai85safesoundmelnet_w050", (1, 64, 64)),
+    # 풀링 4단 판 — 2차 후보 (32멜 × 16프레임)
+    ("ai85net-safesound-mel.py", "ai85safesoundmelnet_p4", (1, 32, 16)),
     ("ai85net-safesound-mel.py", "ai85safesoundmelnet_w150", (1, 64, 64)),
     ("ai85net-safesound-mel.py", "ai85safesoundwave2dnet", (1, 128, 128)),
     ("ai85net-safesound-mel.py", "ai85safesoundwave2dfoldnet", (4, 64, 64)),

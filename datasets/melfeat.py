@@ -131,20 +131,45 @@ INC_SPECS = {
     "h500m32": (500, 32, 32),
     "m32": (250, 64, 32),
     "h400": (400, 40, 64),
+    # ── 2차 후보 (2026-10-03) — "추정 에너지가 ④ 이하인 로그 멜이 ④보다 정확한가"
+    #   이름         hop   프레임  멜  n_fft  새 프레임  쓰는 샘플  미관측 구간
+    #   u1000        1000    16   32   512      4       15,512     48.8%
+    #   u1000f1024   1000    16   32  1024      4       16,024      0% (겹침 2%)
+    #   u800          800    20   32   512      5       15,712     36.0%
+    # hop > n_fft 이면 프레임 사이에 **어느 프레임도 보지 않는 샘플**이 생긴다.
+    # u1000 대 u1000f1024 는 입력 모양이 같고 n_fft 만 달라 그 영향을 따로 본다.
+    "u1000": (1000, 16, 32),
+    "u1000f1024": (1000, 16, 32),
+    "u800": (800, 20, 32),
 }
-_FB_CACHE = {N_MELS: _FB}
+# 프레임 정의별 n_fft. 여기 없으면 N_FFT(512).
+INC_NFFT = {"u1000f1024": 1024}
+_FB_CACHE = {(N_MELS, N_FFT): _FB}
+_WIN_CACHE = {N_FFT: (_WIN, _REF)}
 
 
-def _fb(n_mels):
-    if n_mels not in _FB_CACHE:
-        _FB_CACHE[n_mels] = mel_filterbank(n_mels=n_mels)
-    return _FB_CACHE[n_mels]
+def inc_nfft(framing):
+    return INC_NFFT.get(framing, N_FFT)
+
+
+def _fb(n_mels, n_fft=N_FFT):
+    if (n_mels, n_fft) not in _FB_CACHE:
+        _FB_CACHE[(n_mels, n_fft)] = mel_filterbank(n_mels=n_mels, n_fft=n_fft)
+    return _FB_CACHE[(n_mels, n_fft)]
+
+
+def _win_ref(n_fft):
+    """(Hann 창, 기준 파워). 기준은 풀스케일 사인 = 0dB 가 되게 창마다 다시 잡는다."""
+    if n_fft not in _WIN_CACHE:
+        w = hann(n_fft)
+        _WIN_CACHE[n_fft] = (w, (float(w.sum()) / 2.0) ** 2)
+    return _WIN_CACHE[n_fft]
 
 
 def inc_offset(framing):
     """끝 정렬 오프셋 — 창의 맨 앞에서 쓰지 않는 샘플 수."""
     hop, n_frames, _ = INC_SPECS[framing]
-    return 16384 - ((n_frames - 1) * hop + N_FFT)
+    return 16384 - ((n_frames - 1) * hop + inc_nfft(framing))
 
 
 def framing_shape(framing):
@@ -164,17 +189,20 @@ def stft_power(x, framing="reflect"):
 
     `framing="inc"` 는 ①′ 다 (위 주석): hop 250, 패딩 없음, 끝 정렬.
     """
+    n_fft = N_FFT
     if framing in INC_SPECS:
         hop, n_frames, _ = INC_SPECS[framing]
+        n_fft = inc_nfft(framing)
         xp = np.asarray(x, dtype=np.float64)
-        idx = (inc_offset(framing) + np.arange(N_FFT)[None, :]
+        idx = (inc_offset(framing) + np.arange(n_fft)[None, :]
                + (np.arange(n_frames) * hop)[:, None])
     else:
         xp = np.pad(np.asarray(x, dtype=np.float64), (PAD, PAD), mode="reflect")
         idx = np.arange(N_FFT)[None, :] + (np.arange(N_FRAMES) * HOP)[:, None]
-    frames = xp[idx] * _WIN[None, :]
-    spec = np.fft.rfft(frames, n=N_FFT, axis=1)
-    return (spec.real ** 2 + spec.imag ** 2) / _REF
+    win, ref = _win_ref(n_fft)
+    frames = xp[idx] * win[None, :]
+    spec = np.fft.rfft(frames, n=n_fft, axis=1)
+    return (spec.real ** 2 + spec.imag ** 2) / ref
 
 
 def log_mel_db(w_int8, framing="reflect"):
@@ -184,7 +212,8 @@ def log_mel_db(w_int8, framing="reflect"):
     지점에서 시작하므로 **여기서 정규화를 끼워 넣으면 안 된다**.
     """
     x = np.asarray(w_int8, dtype=np.float64) / 128.0
-    fb = _fb(framing_shape(framing)[0])
+    fb = _fb(framing_shape(framing)[0],
+             inc_nfft(framing) if framing in INC_SPECS else N_FFT)
     mel = stft_power(x, framing) @ fb.T             # (frames, mels)
     return 10.0 * np.log10(mel.T + EPS)             # (mels, frames)
 
@@ -251,12 +280,18 @@ COMP_SCHEMES = {
     "log_h500m32": (None, TOP_DB, SPAN_DB),
     "log_m32": (None, TOP_DB, SPAN_DB),
     "log_h400": (None, TOP_DB, SPAN_DB),
+    # 2차 후보 (초저비용)
+    "log_u1000": (None, TOP_DB, SPAN_DB),
+    "log_u1000f1024": (None, TOP_DB, SPAN_DB),
+    "log_u800": (None, TOP_DB, SPAN_DB),
 }
 
 # 법칙 → 프레임 정의. 여기 없으면 "reflect"(현행 ①)다.
 SCHEME_FRAMING = {"loginc": "inc", "loginc_q8": "inc", "loginc_q4": "inc",
                   "log_h500": "h500", "log_h500m32": "h500m32",
-                  "log_m32": "m32", "log_h400": "h400"}
+                  "log_m32": "m32", "log_h400": "h400",
+                  "log_u1000": "u1000", "log_u1000f1024": "u1000f1024",
+                  "log_u800": "u800"}
 
 
 def scheme_shape(scheme):

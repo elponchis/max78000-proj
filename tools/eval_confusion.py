@@ -275,6 +275,12 @@ CONFIGS = {
                     "SafeSoundMelH500M32"),
     "mel_m32": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelM32"),
     "mel_h400": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelH400"),
+    "mel_u1000": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelU1000"),
+    "mel_u1000f1024": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet",
+                       "SafeSoundMelU1000F1024"),
+    "mel_u800": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelU800"),
+    # ④ 폭 0.5× — 원본 파형 계열의 곡선 (공정성 보완)
+    "wave_w050": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSound"),
     # 구성 A — ①′ 로그 멜을 ④의 1D 뒷단에 (표현/구조 분리)
     "mel1d_inc": ("ai85net-safesound.py", "AI85SafeSoundNet", "SafeSoundMelInc1D"),
     "mel_inc_q4": ("ai85net-safesound-mel.py", "AI85SafeSoundMelNet", "SafeSoundMelInc"),
@@ -332,6 +338,10 @@ CONFIG_DATA = {
     "mel_h500m32": ("SafeSound", {"scheme": "log_h500m32"}),
     "mel_m32": ("SafeSound", {"scheme": "log_m32"}),
     "mel_h400": ("SafeSound", {"scheme": "log_h400"}),
+    # 2차 후보 (초저비용) — 풀링 4단 모델
+    "mel_u1000": ("SafeSound", {"scheme": "log_u1000"}),
+    "mel_u1000f1024": ("SafeSound", {"scheme": "log_u1000f1024"}),
+    "mel_u800": ("SafeSound", {"scheme": "log_u800"}),
     "mel_inc_q8": ("SafeSound", {"scheme": "loginc_q8"}),
     "mel_inc_q4": ("SafeSound", {"scheme": "loginc_q4"}),
     "wave_fb_norm2": ("SafeSound", {"norm_pow2": True}),
@@ -372,6 +382,11 @@ CONFIG_KWARGS = {
     "mel_h500m32": {"dimensions": (32, 32)},
     "mel_m32": {"dimensions": (32, 64)},
     "mel_h400": {"dimensions": (64, 40)},
+    # 2차 후보: 풀링 4단 (pool6=False)
+    "mel_u1000": {"dimensions": (32, 16), "pool6": False},
+    "mel_u1000f1024": {"dimensions": (32, 16), "pool6": False},
+    "mel_u800": {"dimensions": (32, 20), "pool6": False},
+    "wave_w050": {"width_mult": 0.5},
 }
 
 

@@ -51,6 +51,7 @@ class AI85SafeSoundMelNet(nn.Module):
             bias=False,
             width_mult=1.0,
             pool_first=False,
+            pool6=True,
             **kwargs
     ):
         super().__init__()
@@ -113,9 +114,16 @@ class AI85SafeSoundMelNet(nn.Module):
                                                  pool_stride=2, stride=1,
                                                  padding=1, bias=bias, **kwargs)
         # 128×4×4
-        self.conv6 = ai8x.FusedMaxPoolConv2dReLU(ch(128), ch(128), 1, pool_size=2,
-                                                 pool_stride=2, stride=1,
-                                                 padding=0, bias=bias, **kwargs)
+        # `pool6=False` 는 **프레임이 32개 미만인 입력**(2차 후보: 32멜 × 16·20프레임)
+        # 용이다. 풀링이 5단이면 16프레임이 16→8→4→2→1→0 으로 사라지므로 마지막
+        # 단의 풀링 하나를 뺀다 (4단). 가중치 모양은 그대로다 (1×1 conv).
+        self.conv6 = (
+            ai8x.FusedMaxPoolConv2dReLU(ch(128), ch(128), 1, pool_size=2,
+                                        pool_stride=2, stride=1,
+                                        padding=0, bias=bias, **kwargs)
+            if pool6 else
+            ai8x.FusedConv2dReLU(ch(128), ch(128), 1, stride=1,
+                                 padding=0, bias=bias, **kwargs))
         # 128×2×2 → flatten 512 (입력 64×64 일 때).
         #
         # ⚠️ flatten 길이를 **실제로 통과시켜 구한다** (2026-10-02). 입력이
@@ -166,6 +174,16 @@ def ai85safesoundmelnet(pretrained=False, **kwargs):
     """구성 ① 1× 모델 — 구성 ④와 파라미터 수를 맞춘 지점."""
     assert not pretrained
     return AI85SafeSoundMelNet(**kwargs)
+
+
+def ai85safesoundmelnet_p4(pretrained=False, **kwargs):
+    """풀링 4단 판 — 프레임이 32개 미만인 입력용 (2차 후보 u1000 / u1000f1024 / u800).
+
+    `ai85safesoundmelnet` 에서 **conv6 의 MaxPool 하나만** 뺐다. 세 후보가 같은
+    구조를 쓴다. 입력 32×16 → FC 256, 32×20 → FC 256.
+    """
+    assert not pretrained
+    return AI85SafeSoundMelNet(pool6=False, **kwargs)
 
 
 def ai85safesoundmelnet_w050(pretrained=False, **kwargs):
@@ -374,6 +392,7 @@ def ai85safesoundmelteacher(pretrained=False, **kwargs):
 
 models = [
     {'name': 'ai85safesoundmelnet', 'min_input': 1, 'dim': 2},
+    {'name': 'ai85safesoundmelnet_p4', 'min_input': 1, 'dim': 2},
     # 증류 교사 — 학습 보조 장치이고 **합성 대상이 아니다** (dim 은 학생 기준 1)
     {'name': 'ai85safesoundmelteacher', 'min_input': 1, 'dim': 1},
     {'name': 'ai85safesoundmelnet_w050', 'min_input': 1, 'dim': 2},
