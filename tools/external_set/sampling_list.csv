@@ -1,0 +1,890 @@
+segment_id,ytid,start_s,group,v1_class,real_class,in_v1,in_real,real_primary,speaker,event_start,event_end,event_dur,siren_sub,scream_sub,has_bark,has_dog,hardneg_like,labels_all
+--4gqARaEJE_0,--4gqARaEJE,0.0,def_gap,dog_bark,,1,0,0,0,3.457,4.323,0.866,,,0,1,dog_nonbark,Dog;Squeak
+-4SYC2YgzL8_30000,-4SYC2YgzL8,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+-6cTEqIcics_30000,-6cTEqIcics,30.0,siren,,siren,0,1,1,0,3.476,10.000,6.524,Civil defense siren,,0,0,,"Beep, bleep;Civil defense siren"
+-8pCMgGKZY8_12000,-8pCMgGKZY8,12.0,dog_bark,dog_bark,dog_bark,1,1,1,0,3.116,4.098,0.982,,Laughter;Music,1,1,speech;laughter,"Bark;Dog;Laughter;Male speech, man speaking;Music;Sound effect;Speech"
+-Am9MfJ6Z2o_60000,-Am9MfJ6Z2o,60.0,scream,scream,,1,0,0,0,7.183,7.808,0.625,,Shout,0,0,,"Child speech, kid speaking;Conversation;Cutlery, silverware;Female speech, woman speaking;Male speech, man speaking;Shout"
+-Sd-j0rKeKw_30000,-Sd-j0rKeKw,30.0,def_gap,scream,,1,0,0,0,0.844,2.551,1.707,,Shout,0,0,crying,"Breathing;Conversation;Crying, sobbing;Female speech, woman speaking;Hum;Shout"
+-UKH_6moRZc_180000,-UKH_6moRZc,180.0,background,,,0,0,0,0,,,,,,0,0,,"Child speech, kid speaking;Creak;Door;Male speech, man speaking;Mechanisms;Sink (filling or washing);Water tap, faucet"
+-VasGrFLqW8_110000,-VasGrFLqW8,110.0,background,,,0,0,0,0,,,,,,0,0,,"Drip;Fill (with liquid);Gurgling, bubbling"
+-Vo4CAMX26U_30000,-Vo4CAMX26U,30.0,background,,,0,0,0,0,,,,,Music,0,0,,"Chirp, tweet;Music;Wind"
+-WKYdeVL3_k_30000,-WKYdeVL3_k,30.0,scream,,scream,0,1,1,0,5.732,8.331,2.599,,Music;Screaming,0,0,,"Dental drill, dentist's drill;Finger snapping;Gasp;Male speech, man speaking;Music;Screaming;Sound effect"
+-a0drwQsrso_310000,-a0drwQsrso,310.0,scream,scream,,1,0,0,0,8.652,10.000,1.348,,Shout,0,0,,"Blender, food processor;Conversation;Male speech, man speaking;Shout"
+-adm_P3xa0s_10000,-adm_P3xa0s,10.0,background,,,0,0,0,0,,,,,,0,0,,"Car;Conversation;Male speech, man speaking;Rumble;Tap"
+-cA9HsnV1ao_30000,-cA9HsnV1ao,30.0,background,,,0,0,0,0,,,,,,0,0,,Hair dryer
+-gBOhfAyaGI_30000,-gBOhfAyaGI,30.0,background,,,0,0,0,0,,,,,,0,0,,"Beep, bleep;Mechanisms;Single-lens reflex camera;Tap"
+-nDPmlHReow_60000,-nDPmlHReow,60.0,scream,,scream,0,1,1,0,3.693,7.457,3.764,,Cheering;Clapping;Laughter;Music;Screaming;Shout;Singing,0,0,crowd;laughter,Cheering;Clapping;Laughter;Music;Screaming;Shout;Singing
+-qxw8nbLj_0_0,-qxw8nbLj_0,0.0,scream,scream,,1,0,0,0,6.351,7.002,0.651,,Shout,0,0,,Human sounds;Shout;Waterfall
+03c-hmoUfuc_30000,03c-hmoUfuc,30.0,scream,scream,,1,0,0,0,0.861,1.208,0.347,,Shout,0,0,,"Conversation;Male speech, man speaking;Shout;Telephone bell ringing"
+0AA0R8gbxcI_30000,0AA0R8gbxcI,30.0,background,,,0,0,0,0,,,,,,0,0,,"Male speech, man speaking;Unmodified field recording"
+0BCXcbaLeoA_30000,0BCXcbaLeoA,30.0,glass,glass,glass,1,1,1,1,1.961,3.346,1.385,,,0,0,,"Chirp, tweet;Female speech, woman speaking;Glass shatter;Unmodified field recording"
+0CTgEP0SIVg_10000,0CTgEP0SIVg,10.0,def_gap,dog_bark,,1,0,0,0,6.472,8.150,1.678,,,0,1,dog_nonbark,"Bird vocalization, bird call, bird song;Chewing, mastication;Cricket;Dog;Howl (wind)"
+0Cl6hXpryhY_30000,0Cl6hXpryhY,30.0,background,,,0,0,0,0,,,,,,0,0,,Gasp;Human sounds;Human voice
+0N0C0Wbe6AI_30000,0N0C0Wbe6AI,30.0,siren,siren,siren,1,1,1,0,0.000,9.520,9.520,Siren,,0,0,,Background noise;Siren
+0N9EN0BEjP0_430000,0N9EN0BEjP0,430.0,siren,siren,siren,1,1,1,1,9.551,10.000,0.449,Siren,,0,0,,"Generic impact sounds;Motor vehicle (road);Siren;Tap;Traffic noise, roadway noise"
+0NW8rsCj6xQ_30000,0NW8rsCj6xQ,30.0,def_gap,scream,,1,0,0,0,9.278,9.596,0.318,,Shout,0,0,,Bouncing;Generic impact sounds;Human voice;Noise;Shout;Tap
+0OFlTh2_Obo_30000,0OFlTh2_Obo,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,1.105,5.130,4.025,,,1,1,,"Babbling;Baby laughter;Bark;Dog;Generic impact sounds;Male speech, man speaking;Mechanisms;Tick"
+0S2mvjzH_xQ_40000,0S2mvjzH_xQ,40.0,def_gap,scream,,1,0,0,0,9.547,10.000,0.453,,Shout,0,0,,"Bird flight, flapping wings;Chirp, tweet;Environmental noise;Gunshot, gunfire;Male speech, man speaking;Shout;Water"
+0UF1FHDPM1A_30000,0UF1FHDPM1A,30.0,background,,,0,0,0,0,,,,,"Chuckle, chortle",0,0,,"Child speech, kid speaking;Chuckle, chortle;Female speech, woman speaking;Sniff;Sound effect"
+0V7-w8K3Fgw_0,0V7-w8K3Fgw,0.0,def_gap,scream,,1,0,0,0,1.295,3.339,2.044,,Shout,0,0,speech,"Background noise;Child speech, kid speaking;Clicking;Generic impact sounds;Human voice;Shout;Speech"
+0VnKeRijmM8_150000,0VnKeRijmM8,150.0,glass,glass,glass,1,1,1,0,3.956,4.397,0.441,,Laughter,0,0,laughter,"Breaking;Generic impact sounds;Glass shatter;Laughter;Male speech, man speaking;Sound effect"
+0bWZNWZ8YCI_1000,0bWZNWZ8YCI,1.0,background,,,0,0,0,0,,,,,,0,0,,Background noise;Breathing;Clicking;Mechanisms;Tap
+0foC-4n-eH0_0,0foC-4n-eH0,0.0,dog_bark,dog_bark,dog_bark,1,1,1,0,4.281,6.023,1.742,,,1,0,,Bark;Door;Sliding door;Tap
+0kY1isykrrs_30000,0kY1isykrrs,30.0,background,,,0,0,0,1,,,,,Music,0,0,,"Male singing;Male speech, man speaking;Music"
+0kqQNBR09Rc_90000,0kqQNBR09Rc,90.0,background,,,0,0,0,0,,,,,Music,0,0,,"Fusillade;Male speech, man speaking;Music;Sound effect;Tire squeal, skidding"
+0lJyHuTVMNY_490000,0lJyHuTVMNY,490.0,background,,,0,0,0,0,,,,,,0,0,,"Biting;Breathing;Crunch;Female speech, woman speaking"
+0mD4OcdidBM_0,0mD4OcdidBM,0.0,siren,,siren,0,1,1,0,0.000,10.000,10.000,Civil defense siren,,0,0,,Civil defense siren;Distortion;Surface contact;Tick
+0rbUCEM20aw_30000,0rbUCEM20aw,30.0,def_gap,scream,,1,0,0,0,2.244,5.291,3.047,,Shout,0,0,,"Male speech, man speaking;Shout;Sound effect;Whoosh, swoosh, swish"
+0sE4JvKFpMI_0,0sE4JvKFpMI,0.0,def_gap,scream,,1,0,0,0,0.328,5.927,5.599,,Shout,0,0,,Human voice;Mechanisms;Noise;Shout;Tick;Whoop
+0vg9qxNKXOw_30000,0vg9qxNKXOw,30.0,scream,scream,,1,0,0,0,4.685,5.234,0.549,,Shout,0,0,,"Generic impact sounds;Male speech, man speaking;Mechanisms;Shout;Tap"
+0xDlT_u31fg_30000,0xDlT_u31fg,30.0,siren,siren,siren,1,1,1,0,5.244,6.126,0.882,Siren,,0,0,,"Siren;Traffic noise, roadway noise"
+0zgffMTkGtU_20000,0zgffMTkGtU,20.0,scream,scream,,1,0,0,0,8.496,9.566,1.070,,Shout,0,0,,"Breathing;Conversation;Female speech, woman speaking;Male speech, man speaking;Shout"
+15RT4Q9qchM_5000,15RT4Q9qchM,5.0,glass,glass,glass,1,1,1,1,3.673,4.387,0.714,,Laughter,0,0,laughter,"Glass chink, clink;Glass shatter;Human sounds;Laughter;Sound effect"
+16TsDMjHzYU_30000,16TsDMjHzYU,30.0,background,,,0,0,0,0,,,,,Music,0,0,,"Female singing;Female speech, woman speaking;Music"
+18mS4cLPOb8_50000,18mS4cLPOb8,50.0,scream,scream,scream,1,1,1,0,7.969,8.606,0.637,,Screaming,0,0,,"Female singing;Female speech, woman speaking;Screaming;Wild animals"
+18r-Vtspi8g_30000,18r-Vtspi8g,30.0,scream,scream,,1,0,0,0,1.909,2.469,0.560,,Shout,0,0,,"Breathing;Male speech, man speaking;Shout;Splash, splatter;Water"
+1D4LxbOVn1I_30000,1D4LxbOVn1I,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,1.087,2.299,1.212,,,1,1,,"Bark;Dog;Female speech, woman speaking;Growling;Male speech, man speaking;Mechanisms;Throat clearing;Tick"
+1HOdnni3Fl4_10000,1HOdnni3Fl4,10.0,background,,,0,0,0,0,,,,,,0,0,,Idling
+1IlgE0S4t3E_270000,1IlgE0S4t3E,270.0,background,,,0,0,0,0,,,,,,0,0,,Bell;Ding;Mechanisms
+1Jtg95iZyoQ_90000,1Jtg95iZyoQ,90.0,scream,scream,,1,0,0,0,5.677,7.937,2.260,,Shout,0,0,speech,Shout;Speech;Wild animals
+1LTxZ2aNytc_30000,1LTxZ2aNytc,30.0,scream,dog_bark,scream,1,1,1,0,6.377,7.262,0.885,,Laughter;Screaming,0,1,dog_nonbark;laughter,Animal;Bleat;Dog;Human voice;Laughter;Screaming
+1Lqa2jDTnns_30000,1Lqa2jDTnns,30.0,glass,glass,glass,1,1,1,0,1.118,1.717,0.599,,Music;Shout,0,0,,"Clicking;Glass shatter;Male speech, man speaking;Music;Shout;Sound effect;Thump, thud;Whoosh, swoosh, swish"
+1NWxg_BnJ0A_30000,1NWxg_BnJ0A,30.0,glass,glass,glass,1,1,1,1,6.273,6.953,0.680,,Clapping;Crowd,0,0,crowd,"Boing;Clapping;Crowd;Glass shatter;Male speech, man speaking;Sound effect;Walk, footsteps"
+1OFDyTzUj24_30000,1OFDyTzUj24,30.0,background,,,0,0,0,0,,,,,,0,0,,"Conversation;Male speech, man speaking"
+1TP8JyI5vHI_30000,1TP8JyI5vHI,30.0,glass,glass,glass,1,1,1,0,2.491,3.096,0.605,,Music,0,0,,"Glass shatter;Mechanisms;Music;Sound effect;Speech synthesizer;Thump, thud"
+1UCNBHZQNVM_30000,1UCNBHZQNVM,30.0,scream,,scream,0,1,1,0,1.914,3.644,1.730,,Music;Screaming,0,0,,"Child speech, kid speaking;Conversation;Female speech, woman speaking;Male speech, man speaking;Music;Screaming;Sound effect;Thunder"
+1ZEzs9zmZaU_30000,1ZEzs9zmZaU,30.0,background,,,0,0,0,1,,,,,,0,0,,Whip
+1_Q80fDGLRM_10000,1_Q80fDGLRM,10.0,dog_bark,dog_bark,dog_bark,1,1,1,0,5.596,5.926,0.330,,,1,1,,"Bark;Bird vocalization, bird call, bird song;Dog;Growling;Male speech, man speaking;Motor vehicle (road);Pant (dog)"
+1hknEtsmdOc_30000,1hknEtsmdOc,30.0,glass,glass,glass,1,1,1,0,0.724,1.441,0.717,,,0,0,,"Accelerating, revving, vroom;Breaking;Glass shatter;Human voice;Male speech, man speaking;Medium engine (mid frequency);Sound effect;Speech synthesizer"
+1kUeturqXOE_26000,1kUeturqXOE,26.0,scream,,scream,0,1,1,0,4.225,5.534,1.309,,Music;Screaming;Shout,0,0,,Human sounds;Music;Screaming;Shout
+1s8ErA1OMTw_210000,1s8ErA1OMTw,210.0,background,,,0,0,0,0,,,,,,0,0,,"Female speech, woman speaking;Mechanisms;Tap;Trickle, dribble"
+1sdKPEwPtrg_200000,1sdKPEwPtrg,200.0,background,,,0,0,0,0,,,,,,0,0,,Animal;Tick;Unknown sound
+1xRv-LwycNA_170000,1xRv-LwycNA,170.0,scream,scream,,1,0,0,0,0.551,1.701,1.150,,Shout,0,0,,"Explosion;Generic impact sounds;Male speech, man speaking;Shout;Tap;Walk, footsteps"
+20Qksqlj4dc_370000,20Qksqlj4dc,370.0,scream,,scream,0,1,1,0,2.827,6.165,3.338,,Music;Screaming,0,0,,"Chirp, tweet;Music;Screaming;Sound effect;Whoosh, swoosh, swish"
+23HFFX271TU_60000,23HFFX271TU,60.0,siren,siren,siren,1,1,1,0,0.000,6.663,6.663,Siren,,0,0,,"Breathing;Chirp, tweet;Church bell;Engine;Gasp;Human voice;Siren;Squeal"
+24sg8LpJYFM_20000,24sg8LpJYFM,20.0,background,,,0,0,0,0,,,,,Laughter,0,0,laughter,"Chirp, tweet;Creak;Female speech, woman speaking;Laughter;Motor vehicle (road);Rustle;Traffic noise, roadway noise;Walk, footsteps"
+26IOFykrJrc_30000,26IOFykrJrc,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+27yuklUCZa8_4000,27yuklUCZa8,4.0,dog_bark,dog_bark,dog_bark,1,1,1,0,1.683,1.896,0.213,,Laughter,1,0,laughter,"Background noise;Bark;Human sounds;Laughter;Male speech, man speaking;Skateboard;Squeak;Tap;Yip"
+28ehZa0fzmo_28000,28ehZa0fzmo,28.0,siren,,siren,0,1,1,0,0.007,7.386,7.379,"Fire engine, fire truck (siren)",,0,0,,"Fire engine, fire truck (siren);Traffic noise, roadway noise"
+2CymVO8lDJs_140000,2CymVO8lDJs,140.0,background,,,0,0,0,0,,,,,,0,0,,"Bird vocalization, bird call, bird song;Traffic noise, roadway noise;Wind"
+2DvXfu76u7M_160000,2DvXfu76u7M,160.0,scream,scream,scream,1,1,1,1,0.000,0.833,0.833,,Screaming,0,0,,"Pour;Screaming;Snort;Sound effect;Tick;Walk, footsteps;White noise, pink noise"
+2DwZipkoEns_20000,2DwZipkoEns,20.0,siren,siren,siren,1,1,1,0,0.691,4.353,3.662,Siren,Music,0,0,,Female singing;Hum;Music;Siren
+2DyD824KPFM_10000,2DyD824KPFM,10.0,background,,,0,0,0,0,,,,,,0,0,,"Animal;Bird vocalization, bird call, bird song;Chirp, tweet;Rustle;Sound effect;Wind"
+2GOPuGmcHH0_20000,2GOPuGmcHH0,20.0,scream,scream,,1,0,0,0,7.865,10.000,2.135,,Shout,0,0,,Engine starting;Lawn mower;Shout;Sound effect;Whistling
+2K0NKi1wigk_340000,2K0NKi1wigk,340.0,scream,scream,scream,1,1,1,0,0.000,1.976,1.976,,Screaming,0,0,,"Gurgling, bubbling;Human sounds;Male speech, man speaking;Screaming;Splash, splatter;Static;Toilet flush;Water"
+2KhtV4TsZ3M_120000,2KhtV4TsZ3M,120.0,background,,,0,0,0,0,,,,,,0,0,,"Dishes, pots, and pans;Frying (food);Human voice;Tick"
+2L29e0VfplU_0,2L29e0VfplU,0.0,glass,glass,glass,1,1,1,1,3.797,4.822,1.025,,Music,0,0,,Fire;Glass;Glass shatter;Music;Sound effect;Tick
+2OI4QeokeRQ_60000,2OI4QeokeRQ,60.0,background,,,0,0,0,0,,,,,Music,0,0,,"Female singing;Female speech, woman speaking;Music"
+2OK-5YpNAEI_11000,2OK-5YpNAEI,11.0,background,,,0,0,0,0,,,,,,0,0,,Alarm clock;Generic impact sounds;Mechanisms;Tick
+2S8yOM_-P9k_0,2S8yOM_-P9k,0.0,scream,scream,,1,0,0,0,3.611,5.684,2.073,,Shout,0,0,,"Male speech, man speaking;Shout;Tick"
+2W27eT4HqtE_10000,2W27eT4HqtE,10.0,scream,,scream,0,1,1,1,1.165,3.598,2.433,,Music;Screaming,0,0,,"Chirp, tweet;Creak;Human voice;Music;Screaming;Tap"
+2dyxjGTXSpA_30000,2dyxjGTXSpA,30.0,background,,,0,0,0,1,,,,,Music,0,0,,Male singing;Music
+2rW2I6KmWhw_30000,2rW2I6KmWhw,30.0,def_gap,dog_bark,,1,0,0,0,1.795,8.953,7.158,,Music,0,1,dog_nonbark,Dog;Music
+2s5UxZuCIGk_40000,2s5UxZuCIGk,40.0,scream,scream,,1,0,0,0,0.701,1.945,1.244,,Shout,0,0,,"Breaking;Car alarm;Crack;Generic impact sounds;Human voice;Male speech, man speaking;Shout;Sound effect"
+2vYkvwD-fkc_10000,2vYkvwD-fkc,10.0,def_gap,dog_bark,,1,0,0,0,0.000,3.299,3.299,,Music,0,1,dog_nonbark,Dog;Mechanisms;Music
+2v_KyNpsyKs_30000,2v_KyNpsyKs,30.0,siren,siren,siren,1,1,0,0,0.000,10.000,10.000,Siren,,0,0,,Siren
+2vvtR9Xwzp0_40000,2vvtR9Xwzp0,40.0,background,,,0,0,0,0,,,,,,0,0,,Jet engine
+2zdYIRTUQYE_30000,2zdYIRTUQYE,30.0,glass,glass,glass,1,1,1,0,5.980,8.352,2.372,,,0,0,,"Child speech, kid speaking;Conversation;Glass shatter;Male speech, man speaking;Mechanisms"
+2zjtZYqg3Ow_30000,2zjtZYqg3Ow,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+2zwNVAyInxs_15000,2zwNVAyInxs,15.0,siren,,siren,0,1,1,0,0.000,8.824,8.824,"Fire engine, fire truck (siren)",,0,0,,"Fire engine, fire truck (siren);Tick;Traffic noise, roadway noise"
+35iZsw4c0OU_220000,35iZsw4c0OU,220.0,scream,,scream,0,1,1,0,8.821,10.000,1.179,,Music;Screaming,0,0,,"Liquid;Music;Screaming;Sound effect;Thump, thud"
+3AzacBprTzU_60000,3AzacBprTzU,60.0,dog_bark,dog_bark,dog_bark,1,1,1,0,5.394,7.394,2.000,,,1,1,,"Bark;Dog;Female speech, woman speaking;Television"
+3CZ1i2_tKn0_15000,3CZ1i2_tKn0,15.0,dog_bark,dog_bark,dog_bark,1,1,1,1,0.000,5.480,5.480,,Laughter,1,1,laughter,Bark;Dog;Generic impact sounds;Howl;Laughter;Mechanisms;Tap
+3IdazIWh2Ew_22000,3IdazIWh2Ew,22.0,dog_bark,dog_bark,dog_bark,1,1,1,0,6.586,6.831,0.245,,,1,0,,"Bark;Bird vocalization, bird call, bird song;Howl;Motor vehicle (road)"
+3JYQgXudiH8_240000,3JYQgXudiH8,240.0,background,,,0,0,0,0,,,,,Music,0,0,,Female singing;Male singing;Music
+3KwulXmBX-8_30000,3KwulXmBX-8,30.0,scream,scream,scream,1,1,1,0,0.106,4.965,4.859,,Screaming,0,0,crying,"Crying, sobbing;Human voice;Screaming;Tap"
+3LvZUtupOCs_30000,3LvZUtupOCs,30.0,dog_bark,dog_bark,dog_bark,1,1,1,1,6.425,7.299,0.874,,,1,0,,"Animal;Bark;Female speech, woman speaking;Howl;Noise"
+3NRu3vNRFxU_0,3NRu3vNRFxU,0.0,dog_bark,dog_bark,dog_bark,1,1,1,0,9.660,10.000,0.340,,Laughter,1,0,laughter,"Bark;Bird vocalization, bird call, bird song;Breathing;Laughter;Male speech, man speaking;Rustle;Tick"
+3UGFba20P5Q_330000,3UGFba20P5Q,330.0,glass,glass,glass,1,1,1,0,4.546,6.522,1.976,,Music,0,0,,Breaking;Finger snapping;Glass shatter;Male singing;Music;Sound effect
+3_A0AP3Xh9s_290000,3_A0AP3Xh9s,290.0,background,,,0,0,0,0,,,,,Clapping;Music,0,0,,Clapping;Music
+3_OLj6XChvM_30000,3_OLj6XChvM,30.0,background,,,0,0,0,0,,,,,Music,0,0,,"Beep, bleep;Car;Engine starting;Idling;Male singing;Music;Tick"
+3bGqkpfyk6k_160000,3bGqkpfyk6k,160.0,scream,scream,scream,1,1,1,1,0.000,0.590,0.590,,Screaming,0,0,,"Background noise;Bird vocalization, bird call, bird song;Sawing;Screaming;Sound effect"
+3hb1pYdEuLE_6000,3hb1pYdEuLE,6.0,dog_bark,dog_bark,dog_bark,1,1,1,0,1.897,2.110,0.213,,,1,0,,"Bark;Child speech, kid speaking;Male speech, man speaking;Mechanisms;Tap"
+3klIBnvMYhg_30000,3klIBnvMYhg,30.0,background,,,0,0,0,0,,,,,,0,0,,"Drip;Female speech, woman speaking;Male speech, man speaking;Water tap, faucet"
+3lV776A-TDk_110000,3lV776A-TDk,110.0,siren,siren,siren,1,1,0,0,2.817,4.106,1.289,Siren,Music,0,0,,Babbling;Generic impact sounds;Mechanisms;Music;Siren;Tap
+3m4ztrpmX-s_67000,3m4ztrpmX-s,67.0,dog_bark,dog_bark,dog_bark,1,1,1,1,7.372,7.799,0.427,,,1,0,,Background noise;Bark;Cricket;Ding;Sine wave
+3rn-tCQafl8_30000,3rn-tCQafl8,30.0,dog_bark,dog_bark,dog_bark,1,1,1,1,2.433,3.150,0.717,,,1,0,,Animal;Bark;Sound effect;Yip
+3xDZU7GME7E_170000,3xDZU7GME7E,170.0,background,,,0,0,0,1,,,,,,0,0,,"Fire;Firecracker;Male speech, man speaking;Tap;Unknown sound;Wind noise (microphone)"
+3xh2kScw64U_30000,3xh2kScw64U,30.0,siren,siren,siren,1,1,1,0,5.031,10.000,4.969,Siren,,0,0,,"Accelerating, revving, vroom;Car;Siren;Vehicle horn, car horn, honking, toot"
+3yCaMM8can0_100000,3yCaMM8can0,100.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+3z3WIjdV_js_50000,3z3WIjdV_js,50.0,scream,scream,,1,0,0,0,0.995,2.811,1.816,,Shout,0,0,,"Child singing;Child speech, kid speaking;Female singing;Finger snapping;Shout;Thump, thud"
+45vBbOhzS6g_50000,45vBbOhzS6g,50.0,scream,,scream,0,1,1,1,5.843,8.079,2.236,,Laughter;Screaming,0,0,laughter,"Breathing;Female speech, woman speaking;Human voice;Laughter;Screaming;Wind noise (microphone)"
+46t-4NFQ9_w_2000,46t-4NFQ9_w,2.0,background,,,0,0,0,0,,,,,Laughter;Music,0,0,laughter,"Caterwaul;Female speech, woman speaking;Generic impact sounds;Laughter;Meow;Music"
+4A5RpztQf-A_30000,4A5RpztQf-A,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,6.614,7.307,0.693,,,1,0,,Bark;Female singing;Mechanisms;Tap
+4DsPpi-2yTM_250000,4DsPpi-2yTM,250.0,scream,scream,,1,0,0,0,1.024,1.598,0.574,,Shout,0,0,,"Female speech, woman speaking;Gunshot, gunfire;Male speech, man speaking;Shout;Sound effect"
+4G92jhdrbhs_30000,4G92jhdrbhs,30.0,background,,,0,0,0,0,,,,,,0,0,,Medium engine (mid frequency)
+4H8yUkaCwvA_30000,4H8yUkaCwvA,30.0,background,,,0,0,0,1,,,,,Music,0,0,,Church bell;Music
+4Jc8UZHaqHw_19000,4Jc8UZHaqHw,19.0,dog_bark,dog_bark,dog_bark,1,1,1,1,2.466,2.741,0.275,,Laughter,1,0,laughter,Bark;Breathing;Generic impact sounds;Growling;Human sounds;Laughter;Mechanisms;Tick
+4NZkW-XaIa4_30000,4NZkW-XaIa4,30.0,background,,,0,0,0,0,,,,,,0,0,,Engine knocking;Medium engine (mid frequency)
+4U4hkMV-gGU_110000,4U4hkMV-gGU,110.0,siren,siren,siren,1,1,0,1,9.748,10.000,0.252,Siren,,0,0,,"Mains hum;Male speech, man speaking;Sine wave;Siren"
+4UnUrylORBM_19000,4UnUrylORBM,19.0,background,,,0,0,0,0,,,,,,0,0,,"Female speech, woman speaking;Male speech, man speaking;Neigh, whinny;Rustle"
+4Y0Vq_3Lfdk_180000,4Y0Vq_3Lfdk,180.0,dog_bark,dog_bark,dog_bark,1,1,1,0,9.118,9.654,0.536,,Laughter,1,0,crowd;laughter,"Bark;Conversation;Cricket;Female speech, woman speaking;Hubbub, speech noise, speech babble;Laughter;Tap"
+4mepgCDbq6A_0,4mepgCDbq6A,0.0,glass,glass,glass,1,1,1,1,0.465,2.791,2.326,,,0,0,,Explosion;Glass shatter
+4p8n4Zf-WMM_190000,4p8n4Zf-WMM,190.0,scream,scream,,1,0,0,0,4.899,5.785,0.886,,Shout,0,0,,Cricket;Explosion;Fireworks;Shout;Unmodified field recording
+4qevqi0-WYk_110000,4qevqi0-WYk,110.0,scream,,scream,0,1,1,0,5.835,6.898,1.063,,Laughter;Music;Screaming,0,0,laughter,"Breathing;Female singing;Female speech, woman speaking;Laughter;Male speech, man speaking;Music;Screaming;Walk, footsteps"
+4ynKNPBxypA_18000,4ynKNPBxypA,18.0,def_gap,dog_bark,,1,0,0,0,3.016,4.535,1.519,,,0,1,dog_nonbark,Dog;Mechanisms;Plop;Tick
+5-SzNKBcPWs_30000,5-SzNKBcPWs,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,8.827,9.087,0.260,,,1,0,,Bark;Growling;Pant;Tap
+50QEapyTPD4_480000,50QEapyTPD4,480.0,background,,,0,0,0,1,,,,,Music,0,0,,Breathing;Music;Sound effect
+59bFleb7qQA_10000,59bFleb7qQA,10.0,scream,scream,scream,1,1,1,1,6.756,10.000,3.244,,Screaming,0,0,,"Church bell;Female speech, woman speaking;Screaming"
+5AmicEkp3Oc_170000,5AmicEkp3Oc,170.0,background,,,0,0,0,0,,,,,,0,0,,"Chirp, tweet;Generic impact sounds;Male speech, man speaking;Mechanisms"
+5BLIgNC4-4w_160000,5BLIgNC4-4w,160.0,background,,,0,0,0,0,,,,,,0,0,,"Boat, Water vehicle;Ocean;Tick"
+5CnpbvcJ204_2000,5CnpbvcJ204,2.0,scream,scream,,1,0,0,0,0.391,0.829,0.438,,Shout,0,0,crowd,"Hubbub, speech noise, speech babble;Male speech, man speaking;Mechanisms;Shout;Tap;Whoosh, swoosh, swish"
+5E_8bEnP43Y_30000,5E_8bEnP43Y,30.0,scream,scream,,1,0,0,0,2.394,3.425,1.031,,Shout,0,0,,"Chirp, tweet;Clicking;Human voice;Shout;Thunk;Vehicle;Walk, footsteps;Wind noise (microphone)"
+5MeHhWGqSrw_30000,5MeHhWGqSrw,30.0,def_gap,dog_bark,,1,0,0,0,7.984,8.402,0.418,,Music,0,1,dog_nonbark,"Dog;Howl;Male speech, man speaking;Music;Television"
+5MtUPPmtR5Q_170000,5MtUPPmtR5Q,170.0,dog_bark,dog_bark,dog_bark,1,1,1,0,0.664,0.852,0.188,,Music,1,0,,"Accelerating, revving, vroom;Bark;Car;Crushing;Male speech, man speaking;Music;Rumble"
+5UUgV7-Bg3c_30000,5UUgV7-Bg3c,30.0,def_gap,dog_bark,,1,0,0,0,4.286,4.563,0.277,,,0,1,dog_nonbark,"Dog;Female speech, woman speaking;Pant;Sliding door;Tap"
+5XYhqCIk15Y_3000,5XYhqCIk15Y,3.0,dog_bark,dog_bark,dog_bark,1,1,1,0,0.000,0.206,0.206,,Music,1,0,,"Bark;Chirp, tweet;Doorbell;Insect;Music;Sigh"
+5Y86GNKYKbg_30000,5Y86GNKYKbg,30.0,def_gap,dog_bark,,1,0,0,0,0.299,0.528,0.229,,,0,1,dog_nonbark,"Child speech, kid speaking;Dog;Flap"
+5YuUjP3HODY_110000,5YuUjP3HODY,110.0,scream,scream,,1,0,0,0,9.291,10.000,0.709,,Shout,0,0,,"Air horn, truck horn;Engine;Male speech, man speaking;Shout;Tap;Unmodified field recording"
+5frU7dK3VSw_90000,5frU7dK3VSw,90.0,siren,siren,siren,1,1,0,0,0.000,2.400,2.400,Siren,Music,0,0,,"Ding-dong;Female speech, woman speaking;Music;Siren;Tick"
+5k9PJcsu8BY_100000,5k9PJcsu8BY,100.0,background,,,0,0,0,0,,,,,,0,0,,"Crunch;Female speech, woman speaking;Hiccup;Mechanisms;Telephone bell ringing"
+5rSpIXAOjgk_50000,5rSpIXAOjgk,50.0,def_gap,dog_bark,,1,0,0,0,0.724,1.094,0.370,,,0,1,dog_nonbark,"Dog;Female speech, woman speaking;Human sounds;Male speech, man speaking;Pant"
+5uOe6-ISwyw_240000,5uOe6-ISwyw,240.0,scream,,scream,0,1,1,0,6.693,10.000,3.307,,Cheering;Crowd;Music;Screaming,0,0,crowd,"Cheering;Crowd;Hubbub, speech noise, speech babble;Music;Screaming"
+5xklhqtPZho_20000,5xklhqtPZho,20.0,siren,,siren,0,1,1,0,0.000,4.181,4.181,Police car (siren),,0,0,alarm,Alarm;Clicking;Generic impact sounds;Police car (siren)
+5y4wrLFWy9Q_30000,5y4wrLFWy9Q,30.0,glass,glass,glass,1,1,1,0,7.749,9.495,1.746,,Music,0,0,,"Animal;Glass shatter;Male speech, man speaking;Music;Sound effect"
+614LdgrE13A_110000,614LdgrE13A,110.0,glass,glass,glass,1,1,1,0,1.520,2.992,1.472,,Music,0,0,,Glass shatter;Music;Rumble;Sound effect
+69AIBPnJN5E_0,69AIBPnJN5E,0.0,siren,,siren,0,1,1,0,0.521,10.000,9.479,Civil defense siren,Music,0,0,,"Civil defense siren;Gunshot, gunfire;Music"
+6DMa3Y8zhds_30000,6DMa3Y8zhds,30.0,def_gap,dog_bark,,1,0,0,0,5.353,5.757,0.404,,Music;Shout,0,1,dog_nonbark,"Child speech, kid speaking;Dog;Music;Shout;Sound effect"
+6Kn4bXCPvaA_30000,6Kn4bXCPvaA,30.0,background,,,0,0,0,0,,,,,,0,0,,Drip;Mechanisms;Meow
+6NLbCVK_YKI_30000,6NLbCVK_YKI,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,7.715,7.947,0.232,,Laughter;Shout,1,0,crowd;laughter,"Bark;Female speech, woman speaking;Hubbub, speech noise, speech babble;Laughter;Male speech, man speaking;Shout;Traffic noise, roadway noise;Whistle"
+6TDdx_ZiV5s_460000,6TDdx_ZiV5s,460.0,background,,,0,0,0,0,,,,,,0,0,,Breathing;Liquid;Rumble;Sound effect
+6VoAE-AWk28_490000,6VoAE-AWk28,490.0,glass,glass,glass,1,1,1,0,7.724,9.165,1.441,,Laughter,0,0,laughter,"Bird vocalization, bird call, bird song;Glass shatter;Laughter;Sound effect;Speech synthesizer"
+6gK8eYhRuw8_330000,6gK8eYhRuw8,330.0,def_gap,scream,,1,0,0,0,9.236,10.000,0.764,,Shout,0,0,,"Male speech, man speaking;Plop;Shout;Sound effect;Tick"
+6j7GHWM3EJQ_30000,6j7GHWM3EJQ,30.0,def_gap,dog_bark,,1,0,0,0,1.819,2.173,0.354,,,0,1,dog_nonbark,"Chirp, tweet;Dog;Mechanisms;Oink;Tap"
+6pO06krKrf8_30000,6pO06krKrf8,30.0,background,,,0,0,0,1,,,,,,0,0,,"Fixed-wing aircraft, airplane;Male speech, man speaking;Unmodified field recording;Wind noise (microphone)"
+6qtIvxTeL1c_30000,6qtIvxTeL1c,30.0,background,,,0,0,0,0,,,,,,0,0,,Car passing by;Rustle;Unmodified field recording;Wind noise (microphone)
+6ySJtrDjp8w_30000,6ySJtrDjp8w,30.0,scream,,scream,0,1,1,0,1.504,10.000,8.496,,Clapping;Crowd;Screaming,0,0,crowd,"Clapping;Crowd;Male speech, man speaking;Screaming"
+77bRcIdLuT0_30000,77bRcIdLuT0,30.0,siren,siren,siren,1,1,1,0,0.000,10.000,10.000,Siren,,0,0,,Siren
+7IB-SBLSsmA_460000,7IB-SBLSsmA,460.0,background,,,0,0,0,0,,,,,,0,0,,Scissors
+7L5ceYe0f_s_120000,7L5ceYe0f_s,120.0,background,,,0,0,0,1,,,,,,0,0,,"Mains hum;Male speech, man speaking;Whispering;Wind noise (microphone)"
+7N0_PkCVojc_580000,7N0_PkCVojc,580.0,background,,,0,0,0,1,,,,,,0,0,,"Breathing;Male speech, man speaking;Mechanisms;Stir"
+7NRXbm31TuU_270000,7NRXbm31TuU,270.0,background,,,0,0,0,0,,,,,,0,0,,"Dental drill, dentist's drill;Male speech, man speaking"
+7P7sCHtDLU8_30000,7P7sCHtDLU8,30.0,dog_bark,dog_bark,dog_bark,1,1,1,1,6.479,6.856,0.377,,,1,0,,"Bark;Female speech, woman speaking;Train;Train wheels squealing;Walk, footsteps;Wind noise (microphone)"
+7Qtr6D2TWBE_350000,7Qtr6D2TWBE,350.0,background,,,0,0,0,0,,,,,,0,0,,"Breathing;Computer keyboard;Male speech, man speaking;Tick"
+7_Sr2zv1sQc_80000,7_Sr2zv1sQc,80.0,background,,,0,0,0,0,,,,,Music,0,0,,Female singing;Music
+7gWTLcqkXqs_10000,7gWTLcqkXqs,10.0,scream,,scream,0,1,1,0,6.913,7.276,0.363,,Crowd;Music;Screaming,0,0,crowd,"Crowd;Female speech, woman speaking;Male speech, man speaking;Music;Screaming;Water"
+7h4P7aVNY4s_260000,7h4P7aVNY4s,260.0,dog_bark,dog_bark,dog_bark,1,1,1,0,6.909,7.090,0.181,,Music,1,0,,"Bark;Clicking;Conversation;Male speech, man speaking;Music"
+7lq3_nKXh0M_30000,7lq3_nKXh0M,30.0,scream,,scream,0,1,1,0,3.362,5.110,1.748,,Crowd;Music;Screaming;Yell,0,0,crowd,Crowd;Male singing;Music;Screaming;Yell
+7nQxWCn_dBg_160000,7nQxWCn_dBg,160.0,def_gap,dog_bark,,1,0,0,0,6.930,7.971,1.041,,,0,1,dog_nonbark,"Child speech, kid speaking;Dog;Female speech, woman speaking;Mechanisms;Tap;Thump, thud;Tick"
+7rVBUrdjXBg_160000,7rVBUrdjXBg,160.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+81btQM0UoLk_5000,81btQM0UoLk,5.0,glass,glass,glass,1,1,1,0,4.502,5.128,0.626,,Music,0,0,,"Glass shatter;Music;Whoosh, swoosh, swish"
+83XmpVJP-YY_1000,83XmpVJP-YY,1.0,background,,,0,0,0,0,,,,,,0,0,,"Breathing;Conversation;Female speech, woman speaking;Male speech, man speaking;Tick;Walk, footsteps;Whimper"
+84b7NrzJWiI_420000,84b7NrzJWiI,420.0,siren,,siren,0,1,1,1,0.315,3.276,2.961,Police car (siren),Music,0,0,,"Female speech, woman speaking;Music;Police car (siren)"
+8AYXpxT4jcs_90000,8AYXpxT4jcs,90.0,scream,scream,,1,0,0,0,7.403,8.178,0.775,,Shout,0,0,crowd,"Cough;Engine;Female speech, woman speaking;Hubbub, speech noise, speech babble;Male speech, man speaking;Shout"
+8Aq2DyLbUBA_30000,8Aq2DyLbUBA,30.0,siren,siren,siren,1,1,1,0,0.000,10.000,10.000,Siren,Crowd,0,0,crowd,Crowd;Siren
+8BT53kPlgCU_21000,8BT53kPlgCU,21.0,scream,,scream,0,1,1,0,5.329,6.140,0.811,,Laughter;Music;Screaming,0,0,laughter,"Clicking;Growling;Human sounds;Laughter;Male speech, man speaking;Music;Screaming;Tap;Water;Whip"
+8DHtPopFvII_80000,8DHtPopFvII,80.0,background,,,0,0,0,0,,,,,Music,0,0,,Female singing;Music
+8NfGndNYYIg_220000,8NfGndNYYIg,220.0,glass,glass,glass,1,1,1,1,5.702,7.968,2.266,,Music,0,0,,"Breaking;Clang;Glass shatter;Male singing;Male speech, man speaking;Music;Tire squeal, skidding"
+8QzudUB8SMk_0,8QzudUB8SMk,0.0,background,,,0,0,0,1,,,,,Laughter,0,0,laughter,Cough;Laughter;Sound effect
+8TWtLCjUI5I_0,8TWtLCjUI5I,0.0,dog_bark,dog_bark,dog_bark,1,1,1,1,1.541,1.854,0.313,,,1,0,,Bark;Growling;Human voice;Motor vehicle (road);Pant (dog);Wind noise (microphone)
+8YSDo1wTo3M_28000,8YSDo1wTo3M,28.0,background,,,0,0,0,0,,,,,,0,0,,"Bird vocalization, bird call, bird song;Horse;Male speech, man speaking;Motor vehicle (road);Neigh, whinny;Tick;Wind noise (microphone)"
+8_KoNRnCEPE_0,8_KoNRnCEPE,0.0,def_gap,scream,,1,0,0,0,4.846,6.198,1.352,,Shout,0,0,,"Child speech, kid speaking;Female speech, woman speaking;Generic impact sounds;Knock;Shout;Thump, thud"
+8aKhvS70_zY_40000,8aKhvS70_zY,40.0,dog_bark,dog_bark,dog_bark,1,1,1,0,0.474,0.908,0.434,,,1,0,,Animal;Bark;Breathing;Human voice;Pant
+8hmOaKlDY1Q_4000,8hmOaKlDY1Q,4.0,scream,scream,scream,1,1,1,1,4.598,4.958,0.360,,Screaming,0,0,,"Bellow;Breaking;Generic impact sounds;Human sounds;Screaming;Sound effect;Thump, thud"
+8qsCZLEoA1Q_4000,8qsCZLEoA1Q,4.0,def_gap,scream,,1,0,0,0,9.125,9.348,0.223,,Shout,0,0,crying,"Bird vocalization, bird call, bird song;Child speech, kid speaking;Crying, sobbing;Generic impact sounds;Run;Shout;Tap;Thump, thud;Wind noise (microphone)"
+8rICricPhh8_30000,8rICricPhh8,30.0,siren,siren,siren,1,1,1,0,5.283,10.000,4.717,Siren,,0,0,,"Beep, bleep;Emergency vehicle;Male speech, man speaking;Motor vehicle (road);Radio;Siren"
+9Kut4r8hswE_30000,9Kut4r8hswE,30.0,background,,,0,0,0,0,,,,,Music,0,0,,"Female singing;Motor vehicle (road);Music;Traffic noise, roadway noise"
+9OcAwC8y-eQ_30000,9OcAwC8y-eQ,30.0,background,,,0,0,0,0,,,,,,0,0,,Squeal;Truck
+9P6-DKN1XLA_320000,9P6-DKN1XLA,320.0,siren,,siren,0,1,1,0,0.937,10.000,9.063,Ambulance (siren),,0,0,,"Ambulance (siren);Conversation;Female speech, woman speaking;Male speech, man speaking;Snicker"
+9ezA12O_aOE_170000,9ezA12O_aOE,170.0,siren,siren,siren,1,1,0,1,0.000,10.000,10.000,"Fire engine, fire truck (siren);Siren",,0,0,,"Fire engine, fire truck (siren);Male speech, man speaking;Siren;Truck"
+9j_FItO0jt8_30000,9j_FItO0jt8,30.0,background,,,0,0,0,0,,,,,,0,0,,Clicking;Cricket
+9nsLTLNvOSw_150000,9nsLTLNvOSw,150.0,background,,,0,0,0,0,,,,,,0,0,,"Helicopter;Propeller, airscrew"
+9yZ1v9fFct8_28000,9yZ1v9fFct8,28.0,scream,scream,scream,1,1,1,0,3.449,4.683,1.234,,Screaming,0,0,,"Bird vocalization, bird call, bird song;Generic impact sounds;Human sounds;Male singing;Screaming;Tap"
+A-IzSI1ysmc_30000,A-IzSI1ysmc,30.0,siren,siren,siren,1,1,1,0,0.016,10.000,9.984,Siren,,0,0,,Emergency vehicle;Siren
+A9ECxUIqw6s_30000,A9ECxUIqw6s,30.0,scream,,scream,0,1,1,1,0.021,10.000,9.979,,Music;Screaming;Shout,0,0,,Female singing;Male singing;Music;Screaming;Shout
+ABUQP_h7RTI_340000,ABUQP_h7RTI,340.0,siren,siren,siren,1,1,0,0,3.716,6.117,2.401,Siren,,0,0,,"Inside, small room;Male speech, man speaking;Narration, monologue;Siren"
+ADRK_NkQ-eU_420000,ADRK_NkQ-eU,420.0,background,,,0,0,0,0,,,,,,0,0,,Drill;Engine knocking;Light engine (high frequency);Mechanisms;Medium engine (mid frequency);Vibration
+ALxn5-2bVyI_30000,ALxn5-2bVyI,30.0,def_gap,dog_bark,,1,0,0,0,4.187,4.575,0.388,,,0,1,dog_nonbark,"Bird vocalization, bird call, bird song;Bow-wow;Dog;Human voice;Non-motorized land vehicle;Tap"
+AWynHWLA31g_25000,AWynHWLA31g,25.0,glass,glass,glass,1,1,1,0,0.861,1.944,1.083,,Music,0,0,,"Glass shatter;Music;Smash, crash"
+AhcY8QVSLtM_50000,AhcY8QVSLtM,50.0,def_gap,dog_bark,,1,0,0,0,9.698,10.000,0.302,,,0,1,dog_nonbark,"Accelerating, revving, vroom;Chainsaw;Creak;Dog;Generic impact sounds;Splinter;Walk, footsteps"
+AjAg6xI6uDA_40000,AjAg6xI6uDA,40.0,siren,,siren,0,1,1,0,0.000,10.000,10.000,Civil defense siren,,0,0,,Civil defense siren
+AmhjSlnn8dc_0,AmhjSlnn8dc,0.0,siren,,siren,0,1,1,0,0.059,6.568,6.509,Civil defense siren,,0,0,,Civil defense siren;Sound effect;Tap
+Arv2C36Jhfk_60000,Arv2C36Jhfk,60.0,glass,glass,glass,1,1,1,1,4.324,5.662,1.338,,Music,0,0,,"Glass shatter;Human voice;Male speech, man speaking;Mechanisms;Music;Sound effect;Speech synthesizer"
+Auyq_491HGc_30000,Auyq_491HGc,30.0,scream,,scream,0,1,1,0,0.000,2.323,2.323,,Music;Screaming,0,0,,Female singing;Music;Screaming
+Ayr3X0IMj04_0,Ayr3X0IMj04,0.0,def_gap,scream,,1,0,0,0,3.071,3.567,0.496,,Shout,0,0,,"Car;Car passing by;Clicking;Generic impact sounds;Male speech, man speaking;Shout;Traffic noise, roadway noise"
+B9Sd9ubebhY_30000,B9Sd9ubebhY,30.0,siren,siren,siren,1,1,0,0,4.181,10.000,5.819,"Ambulance (siren);Fire engine, fire truck (siren);Police car (siren);Siren",Music,0,0,,"Ambulance (siren);Fire engine, fire truck (siren);Music;Police car (siren);Siren"
+BAD9bQj86kY_540000,BAD9bQj86kY,540.0,def_gap,scream,,1,0,0,0,9.268,9.764,0.496,,Shout,0,0,,"Fusillade;Gunshot, gunfire;Machine gun;Male speech, man speaking;Run;Shout;Walk, footsteps"
+BAcOXGA5Na8_30000,BAcOXGA5Na8,30.0,siren,siren,siren,1,1,1,1,0.008,10.000,9.992,Siren,,0,0,alarm;speech,"Alarm;Female speech, woman speaking;Fire alarm;Inside, public space;Male speech, man speaking;Siren;Speech"
+BFEeNJkKx6g_30000,BFEeNJkKx6g,30.0,def_gap,dog_bark,,1,0,0,0,0.000,10.000,10.000,,,0,1,dog_nonbark;alarm,"Alarm;Animal;Beep, bleep;Canidae, wild dogs, wolves;Dog;Domestic animals, pets;Howl"
+BFqHyCoypfM_16000,BFqHyCoypfM,16.0,scream,scream,scream,1,1,1,0,0.000,3.690,3.690,,Screaming,0,0,,Screaming
+BGD7J6MP2C8_30000,BGD7J6MP2C8,30.0,glass,glass,glass,1,1,1,0,4.598,6.110,1.512,,Music,0,0,,Boom;Explosion;Glass;Glass shatter;Music
+BHcN-KXwIsg_260000,BHcN-KXwIsg,260.0,scream,scream,scream,1,1,1,0,2.715,6.825,4.110,,Screaming;Shout,0,0,,"Breathing;Gasp;Inside, small room;Screaming;Shout"
+BSlcHuPXwiw_50000,BSlcHuPXwiw,50.0,background,,,0,0,0,1,,,,,,0,0,,"Inside, small room;Steam;Whistle"
+BWUhxRliOHg_30000,BWUhxRliOHg,30.0,glass,glass,glass,1,1,1,0,0.072,3.974,3.902,,,0,0,,"Glass;Glass shatter;Silence;Sound effect;Whoosh, swoosh, swish"
+BYCS5mUdVUg_80000,BYCS5mUdVUg,80.0,background,,,0,0,0,0,,,,,Music,0,0,,"Animal;Horse;Male singing;Music;Neigh, whinny"
+BaLGY1qltAc_410000,BaLGY1qltAc,410.0,background,,,0,0,0,0,,,,,,0,0,,"Animal;Roaring cats (lions, tigers);Wild animals"
+BbedVdUH4LA_30000,BbedVdUH4LA,30.0,background,,,0,0,0,0,,,,,,0,0,,Water
+Bco7UQu9w2E_110000,Bco7UQu9w2E,110.0,background,,,0,0,0,0,,,,,Music,0,0,,Child singing;Ding;Music
+BewKANkRYN8_30000,BewKANkRYN8,30.0,scream,scream,scream,1,1,1,1,0.127,4.865,4.738,,Screaming;Shout,0,0,crying,"Crying, sobbing;Screaming;Shout;Whimper"
+BfBGiwJfhyM_50000,BfBGiwJfhyM,50.0,background,,,0,0,0,0,,,,,,0,0,speech,"Female speech, woman speaking;Male speech, man speaking;Speech"
+BiNbPvdPthY_30000,BiNbPvdPthY,30.0,def_gap,dog_bark,,1,0,0,0,4.945,6.441,1.496,,,0,1,dog_nonbark;speech,"Animal;Dog;Male speech, man speaking;Speech;Whimper"
+BmvbfiU9ryU_90000,BmvbfiU9ryU,90.0,scream,,scream,0,1,1,0,6.189,8.220,2.031,,Crowd;Screaming;Shout,0,0,crowd,"Crowd;Gunshot, gunfire;Hubbub, speech noise, speech babble;Liquid;Machine gun;Screaming;Shout;Walk, footsteps;Water"
+BndoKfn0UaQ_30000,BndoKfn0UaQ,30.0,def_gap,dog_bark,,1,0,0,0,2.000,3.504,1.504,,,0,1,dog_nonbark,Animal;Dog
+BrtKgAjXv7g_30000,BrtKgAjXv7g,30.0,background,,,0,0,0,0,,,,,,0,0,,"Female speech, woman speaking;Inside, small room;Patter;Rodents, rats, mice;Tap"
+BtjUqPLqcIE_20000,BtjUqPLqcIE,20.0,background,,,0,0,0,0,,,,,Laughter,0,0,speech;laughter,"Female speech, woman speaking;Hiccup;Laughter;Liquid;Mechanisms;Sink (filling or washing);Sound effect;Speech;Water;Water tap, faucet"
+Bw_fNvTp6jg_30000,Bw_fNvTp6jg,30.0,background,,,0,0,0,0,,,,,,0,0,,"Accelerating, revving, vroom;Engine;Medium engine (mid frequency);Motor vehicle (road);Vibration"
+C1GNgdVq2Tk_20000,C1GNgdVq2Tk,20.0,background,,,0,0,0,0,,,,,,0,0,,Bell;Cowbell;Sound effect
+C3Jhu77uffQ_0,C3Jhu77uffQ,0.0,background,,,0,0,0,0,,,,,Music,0,0,,Music;Tools
+C4YMjmJ7tt4_90000,C4YMjmJ7tt4,90.0,scream,scream,scream,1,1,1,0,7.079,8.984,1.905,,Screaming,0,0,speech,"Conversation;Male speech, man speaking;Screaming;Speech"
+C5MhO2HM2Wg_30000,C5MhO2HM2Wg,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Female singing;Music
+C9U3UhoQHjI_30000,C9U3UhoQHjI,30.0,scream,,scream,0,1,1,0,5.315,7.331,2.016,,Cheering;Crowd;Screaming;Shout;Singing,0,0,crowd,Bellow;Cheering;Crowd;Male singing;Screaming;Shout;Singing;Throbbing
+CAbXVOWLYps_30000,CAbXVOWLYps,30.0,def_gap,dog_bark,,1,0,0,0,4.222,6.610,2.388,,,0,1,dog_nonbark,"Animal;Dog;Domestic animals, pets;Howl;Whimper (dog)"
+CE93IieQkAg_30000,CE93IieQkAg,30.0,def_gap,scream,,1,0,0,0,3.480,5.181,1.701,,Shout,0,0,,"Accelerating, revving, vroom;Engine;Lawn mower;Shout;Wind"
+CEzyxkUbG9A_30000,CEzyxkUbG9A,30.0,background,,,0,0,0,1,,,,,,0,0,speech,"Basketball bounce;Male speech, man speaking;Speech;Squeak"
+CIiA39U8UTw_30000,CIiA39U8UTw,30.0,siren,siren,siren,1,1,1,0,0.000,10.000,10.000,"Fire engine, fire truck (siren);Police car (siren);Siren",,0,0,,"Car;Cricket;Emergency vehicle;Fire engine, fire truck (siren);Heavy engine (low frequency);Motor vehicle (road);Outside, urban or manmade;Police car (siren);Siren;Traffic noise, roadway noise;Truck;Unmodified field recording;Vehicle"
+CLfbfluk7Yw_20000,CLfbfluk7Yw,20.0,scream,scream,,1,0,0,0,1.008,2.268,1.260,,Shout,0,0,,"Conversation;Fire;Male speech, man speaking;Pant;Shout;Smoke detector, smoke alarm"
+CMiEpeKMNQI_0,CMiEpeKMNQI,0.0,glass,glass,glass,1,1,1,0,1.918,2.731,0.813,,Clapping;Music;Shout;Singing,0,0,,"Clapping;Glass shatter;Gunshot, gunfire;Male speech, man speaking;Music;Shout;Singing"
+CRIFRYhiKUA_30000,CRIFRYhiKUA,30.0,glass,glass,glass,1,1,1,1,8.173,9.278,1.105,,Music,0,0,,Breaking;Glass;Glass shatter;Liquid;Music;Sound effect;Water
+CTWtiwntfgw_30000,CTWtiwntfgw,30.0,siren,siren,siren,1,1,1,1,0.000,10.000,10.000,"Fire engine, fire truck (siren);Siren",,0,0,,"Car;Emergency vehicle;Fire engine, fire truck (siren);Heavy engine (low frequency);Motor vehicle (road);Siren;Traffic noise, roadway noise;Truck;Vehicle"
+CWMLP1OHIW8_30000,CWMLP1OHIW8,30.0,scream,,scream,0,1,1,1,0.000,0.591,0.591,,Music;Screaming,0,0,,"Inside, small room;Liquid;Music;Screaming;Sound effect;Squish;Water"
+CaiH1jw4KT0_120000,CaiH1jw4KT0,120.0,glass,glass,glass,1,1,1,0,4.646,6.079,1.433,,,0,0,,"Breaking;Glass;Glass shatter;Smash, crash;Sound effect;Speech synthesizer"
+CjcczfGrDJo_30000,CjcczfGrDJo,30.0,background,,,0,0,0,0,,,,,Music,0,0,,"Breathing;Conversation;Male speech, man speaking;Music"
+CsRF3qYnSLI_30000,CsRF3qYnSLI,30.0,def_gap,dog_bark,,1,0,0,0,0.016,10.000,9.984,,Laughter,0,1,dog_nonbark;laughter,"Animal;Canidae, wild dogs, wolves;Dog;Domestic animals, pets;Laughter"
+D-A7agR6y4w_110000,D-A7agR6y4w,110.0,background,,,0,0,0,0,,,,,Music,0,0,speech,"Inside, large room or hall;Male speech, man speaking;Mechanisms;Music;Narration, monologue;Speech"
+D2o7XtW2-QA_210000,D2o7XtW2-QA,210.0,scream,,scream,0,1,1,0,5.520,9.362,3.842,,Music;Screaming,0,0,speech,"Male speech, man speaking;Music;Screaming;Speech"
+DG3jA6Fswak_29000,DG3jA6Fswak,29.0,scream,scream,scream,1,1,1,0,1.906,2.835,0.929,,Screaming,0,0,,"Child speech, kid speaking;Flap;Ocean;Sailboat, sailing ship;Screaming;Wind noise (microphone)"
+DGlOuk4wEn8_11000,DGlOuk4wEn8,11.0,background,,,0,0,0,0,,,,,,0,0,,Generic impact sounds;Medium engine (mid frequency);Tap
+DJXQV_oKyjE_30000,DJXQV_oKyjE,30.0,siren,siren,siren,1,1,0,1,0.000,10.000,10.000,Police car (siren);Siren,Clapping,0,0,alarm,Alarm;Car alarm;Clapping;Emergency vehicle;Motor vehicle (road);Police car (siren);Siren
+DK_6C29B2zs_14000,DK_6C29B2zs,14.0,siren,,siren,0,1,1,0,0.000,6.623,6.623,Police car (siren),,0,0,,"Generic impact sounds;Male speech, man speaking;Mechanisms;Police car (siren);Television;Tick"
+DNUA-JB8rik_70000,DNUA-JB8rik,70.0,siren,siren,siren,1,1,0,0,3.402,3.906,0.504,Siren,,0,0,,"Inside, small room;Mechanisms;Siren;Sliding door"
+DPNmUOnE83o_10000,DPNmUOnE83o,10.0,dog_bark,dog_bark,dog_bark,1,1,1,0,2.386,10.000,7.614,,Laughter,1,1,laughter,"Animal;Bark;Bow-wow;Dog;Domestic animals, pets;Growling;Laughter"
+DcbzE8AnLcE_30000,DcbzE8AnLcE,30.0,siren,siren,siren,1,1,1,0,0.020,10.000,9.980,Siren,,0,0,,Engine;Motor vehicle (road);Siren
+DhnNZn8JjEQ_30000,DhnNZn8JjEQ,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Music;Tick-tock
+DpLi9YH5idY_30000,DpLi9YH5idY,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,7.713,8.610,0.897,,,1,1,speech,"Animal;Bark;Bow-wow;Dog;Domestic animals, pets;Inside, small room;Male speech, man speaking;Speech"
+E4duB2A-ces_50000,E4duB2A-ces,50.0,scream,,scream,0,1,1,1,0.000,0.380,0.380,,Music;Screaming,0,0,,"Music;Screaming;Stream, river;Water;Waterfall"
+E6QQRZHrx6s_30000,E6QQRZHrx6s,30.0,def_gap,dog_bark,,1,0,0,0,4.454,5.954,1.500,,,0,1,dog_nonbark,"Animal;Dog;Domestic animals, pets;Growling;Inside, small room"
+E8UkQe9WvzA_170000,E8UkQe9WvzA,170.0,dog_bark,dog_bark,dog_bark,1,1,1,1,0.008,0.213,0.205,,Singing,1,0,speech,"Bark;Conversation;Female speech, woman speaking;Humming;Inside, small room;Mechanical fan;Singing;Speech"
+E8sYrDYcIxg_30000,E8sYrDYcIxg,30.0,background,,,0,0,0,0,,,,,,0,0,,"Aircraft;Aircraft engine;Fixed-wing aircraft, airplane;Heavy engine (low frequency);Outside, urban or manmade;Vehicle;Wind;Wind noise (microphone)"
+EGR7EIz9JQ4_30000,EGR7EIz9JQ4,30.0,siren,siren,siren,1,1,1,0,2.803,10.000,7.197,"Fire engine, fire truck (siren);Police car (siren);Siren",,0,0,,"Emergency vehicle;Fire engine, fire truck (siren);Police car (siren);Siren"
+ELjlwgKhlyc_30000,ELjlwgKhlyc,30.0,siren,siren,siren,1,1,1,0,0.000,10.000,10.000,Siren,,0,0,,Siren
+ENHpFkKiyrU_30000,ENHpFkKiyrU,30.0,siren,siren,siren,1,1,0,0,0.000,10.000,10.000,Civil defense siren;Siren,,0,0,alarm,Alarm;Civil defense siren;Siren
+ETcFKrrv53k_20000,ETcFKrrv53k,20.0,background,,,0,0,0,1,,,,,,0,0,,Liquid;Mechanisms;Water
+EUTzrMZVAAw_15000,EUTzrMZVAAw,15.0,scream,scream,,1,0,0,0,0.000,6.427,6.427,,Shout,0,0,,Background noise;Shout
+EaTdesZG5PY_260000,EaTdesZG5PY,260.0,siren,siren,siren,1,1,1,0,0.008,4.756,4.748,Siren,Laughter;Shout,0,0,laughter,"Emergency vehicle;Laughter;Male speech, man speaking;Shout;Siren"
+EeEAO0rmhE0_30000,EeEAO0rmhE0,30.0,background,,,0,0,0,1,,,,,,0,0,,"Child speech, kid speaking;Chirp, tweet;Conversation;Cricket;Insect;Male speech, man speaking;Outside, rural or natural"
+EeGWe8e_2jg_30000,EeGWe8e_2jg,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,0.086,2.557,2.471,,,1,0,,Background noise;Bark;Generic impact sounds
+EecU1KGJIt4_20000,EecU1KGJIt4,20.0,dog_bark,dog_bark,dog_bark,1,1,1,0,1.371,2.641,1.270,,,1,1,,"Animal;Bark;Dog;Domestic animals, pets;Livestock, farm animals, working animals;Oink;Pig"
+EibjrMy1TtI_30000,EibjrMy1TtI,30.0,glass,glass,glass,1,1,1,1,2.866,4.370,1.504,,,0,0,,"Breaking;Glass;Glass shatter;Hammer;Hum;Thump, thud;Unmodified field recording"
+ElJFYwRtrH4_30000,ElJFYwRtrH4,30.0,scream,scream,,1,0,0,0,1.270,2.313,1.043,,Shout,0,0,speech;crying,"Bird;Bird vocalization, bird call, bird song;Crying, sobbing;Female speech, woman speaking;Shout;Speech"
+EwoyHJllkzk_10000,EwoyHJllkzk,10.0,def_gap,dog_bark,,1,0,0,0,1.487,7.495,6.008,,Music,0,1,dog_nonbark,"Animal;Dog;Domestic animals, pets;Music"
+Ey7CIPAeqsY_30000,Ey7CIPAeqsY,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,0.008,4.457,4.449,,Laughter;Music,1,1,speech;laughter,"Animal;Bark;Dog;Domestic animals, pets;Laughter;Male speech, man speaking;Music;Speech;Whimper (dog);Yip"
+F2FjmfvmRa0_20000,F2FjmfvmRa0,20.0,dog_bark,dog_bark,dog_bark,1,1,1,1,0.000,10.000,10.000,,,1,1,,"Animal;Bark;Bow-wow;Dog;Domestic animals, pets"
+F4lfyN85-5I_360000,F4lfyN85-5I,360.0,glass,glass,glass,1,1,1,0,4.677,5.638,0.961,,,0,0,,"Breaking;Female speech, woman speaking;Glass;Glass shatter;Male speech, man speaking"
+F6IUxAJutsk_30000,F6IUxAJutsk,30.0,siren,siren,siren,1,1,0,0,0.000,10.000,10.000,"Fire engine, fire truck (siren);Siren",,0,0,,"Engine;Fire engine, fire truck (siren);Heavy engine (low frequency);Motor vehicle (road);Outside, urban or manmade;Siren;Truck;Vehicle"
+F6oEu35qy_A_25000,F6oEu35qy_A,25.0,siren,,siren,0,1,1,1,0.000,9.795,9.795,"Fire engine, fire truck (siren)",,0,0,,"Bird vocalization, bird call, bird song;Fire engine, fire truck (siren);Tick;Traffic noise, roadway noise;Wind"
+F6ugBE64WHo_400000,F6ugBE64WHo,400.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+F7JllgnefSI_30000,F7JllgnefSI,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Male singing;Music
+FBE5_Yyukr8_140000,FBE5_Yyukr8,140.0,dog_bark,dog_bark,dog_bark,1,1,1,0,0.268,1.205,0.937,,,1,1,,Bang;Bark;Boom;Breaking;Dog;Gasp;Sound effect
+FBIbveps_SQ_30000,FBIbveps_SQ,30.0,background,,,0,0,0,0,,,,,,0,0,speech;crying,"Baby cry, infant cry;Crying, sobbing;Male speech, man speaking;Speech"
+FEbU1XnqgLU_550000,FEbU1XnqgLU,550.0,scream,scream,scream,1,1,1,0,5.546,7.199,1.653,,Screaming,0,0,speech,"Boom;Explosion;Fusillade;Gunshot, gunfire;Screaming;Sound effect;Speech;Walk, footsteps"
+FK4MiC9uvWM_30000,FK4MiC9uvWM,30.0,scream,scream,,1,0,0,0,9.192,10.000,0.808,,Shout,0,0,,"Boat, Water vehicle;Female speech, woman speaking;Male speech, man speaking;Rowboat, canoe, kayak;Shout"
+FMLhPfYb-oY_30000,FMLhPfYb-oY,30.0,scream,,scream,0,1,1,0,5.748,8.764,3.016,,Music;Screaming,0,0,speech,"Animal;Child speech, kid speaking;Female singing;Music;Roar;Roaring cats (lions, tigers);Screaming;Sound effect;Speech"
+FOUnVE62og8_60000,FOUnVE62og8,60.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+FZEGoUaGBNo_150000,FZEGoUaGBNo,150.0,background,,,0,0,0,1,,,,,Music,0,0,,"Heart sounds, heartbeat;Music"
+Ff3S0vvWM1o_30000,Ff3S0vvWM1o,30.0,background,,,0,0,0,0,,,,,,0,0,,"Inside, small room;Mechanical fan;Mechanisms;Silence;Tick"
+FgV2Sllft6Q_530000,FgV2Sllft6Q,530.0,glass,glass,glass,1,1,1,0,1.094,3.016,1.922,,,0,0,,"Breaking;Glass;Glass shatter;Gush;Smash, crash;Sound effect;Water"
+FgiGqzj8Hkk_30000,FgiGqzj8Hkk,30.0,siren,siren,siren,1,1,0,0,0.000,10.000,10.000,Ambulance (siren);Siren,,0,0,,Ambulance (siren);Emergency vehicle;Motor vehicle (road);Siren;Wind;Wind noise (microphone)
+FjwCZ59rlRc_7000,FjwCZ59rlRc,7.0,background,,,0,0,0,1,,,,,Crowd;Laughter,0,0,crowd;laughter,"Background noise;Conversation;Crowd;Female speech, woman speaking;Generic impact sounds;Laughter;Sound effect;Tick"
+Fon1IZ0fRSI_30000,Fon1IZ0fRSI,30.0,def_gap,dog_bark,,1,0,0,0,1.488,10.000,8.512,,,0,1,dog_nonbark,"Animal;Dog;Domestic animals, pets;Growling;Mains hum"
+FpsBLinFYik_12000,FpsBLinFYik,12.0,siren,siren,siren,1,1,1,0,5.083,8.446,3.363,Siren,,0,0,alarm,Alarm;Car alarm;Clicking;Siren;Tick
+FxeA9blzUD8_30000,FxeA9blzUD8,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Female singing;Music
+Fy0aCDmgnxg_540000,Fy0aCDmgnxg,540.0,background,,,0,0,0,0,,,,,,0,0,speech,"Inside, large room or hall;Male speech, man speaking;Narration, monologue;Speech;Video game sound"
+Fz2VI-6exXU_30000,Fz2VI-6exXU,30.0,scream,,scream,0,1,1,0,7.749,8.332,0.583,,Laughter;Screaming,0,0,laughter,Door;Laughter;Mouse;Screaming;Tick
+GDnR4oQX_JU_16000,GDnR4oQX_JU,16.0,scream,scream,,1,0,0,0,0.000,3.293,3.293,,Shout,0,0,,"Breathing;Female speech, woman speaking;Male speech, man speaking;Mechanisms;Shout;Sound effect;Whip"
+GISQt5yiuos_30000,GISQt5yiuos,30.0,def_gap,scream,,1,0,0,0,0.076,9.210,9.134,,Shout,0,0,speech;crowd,"Hiss;Hubbub, speech noise, speech babble;Male speech, man speaking;Outside, urban or manmade;Shout;Speech;Spray"
+GIyyb98bgno_0,GIyyb98bgno,0.0,scream,scream,scream,1,1,1,0,4.772,6.418,1.646,,Screaming,0,0,,"Background noise;Child speech, kid speaking;Female speech, woman speaking;Screaming;Thump, thud"
+GNu_hiHGEp0_40000,GNu_hiHGEp0,40.0,glass,glass,glass,1,1,1,0,6.528,7.598,1.070,,Music,0,0,,"Breaking;Glass;Glass shatter;Music;Smash, crash;Sound effect;Whoosh, swoosh, swish"
+GRjdL6M63m4_60000,GRjdL6M63m4,60.0,glass,glass,glass,1,1,1,1,5.819,10.000,4.181,,,0,0,,"Breaking;Glass shatter;Male speech, man speaking;Silence"
+GT627WBr9rA_23000,GT627WBr9rA,23.0,background,,,0,0,0,0,,,,,Laughter,0,0,laughter,"Female speech, woman speaking;Laughter;Male speech, man speaking;Slap, smack;Television"
+GTIIVBHdKrM_490000,GTIIVBHdKrM,490.0,def_gap,scream,,1,0,0,0,3.701,5.173,1.472,,Shout,0,0,speech,"Female speech, woman speaking;Inside, small room;Shout;Speech"
+GX-QhoihLeI_30000,GX-QhoihLeI,30.0,scream,,scream,0,1,1,0,2.740,3.693,0.953,,Music;Screaming;Shout,0,0,,Bellow;Breathing;Chainsaw;Music;Pant;Run;Screaming;Shout
+GYXA8WsJoFw_30000,GYXA8WsJoFw,30.0,background,,,0,0,0,1,,,,,,0,0,speech,"Heavy engine (low frequency);Male speech, man speaking;Speech"
+GbIuxmaiCOk_122000,GbIuxmaiCOk,122.0,siren,siren,siren,1,1,0,0,0.000,10.000,10.000,Police car (siren);Siren,,0,0,,Emergency vehicle;Police car (siren);Siren
+Gv_3vrVGxC0_30000,Gv_3vrVGxC0,30.0,background,,,0,0,0,0,,,,,,0,0,speech,"Boiling;Inside, small room;Male speech, man speaking;Narration, monologue;Speech"
+GzGUr15P7Tk_400000,GzGUr15P7Tk,400.0,scream,scream,,1,0,0,0,8.472,10.000,1.528,,Shout,0,0,,"Male speech, man speaking;Shout"
+H4rdJlSSt5Y_30000,H4rdJlSSt5Y,30.0,background,,,0,0,0,0,,,,,Music;Singing,0,0,,Female singing;Music;Singing
+H6H3B1LLWw8_440000,H6H3B1LLWw8,440.0,siren,siren,siren,1,1,0,0,2.283,2.992,0.709,Siren,,0,0,,"Air horn, truck horn;Engine;Heavy engine (low frequency);Motor vehicle (road);Outside, urban or manmade;Siren;Traffic noise, roadway noise;Truck;Vehicle"
+H8c0X5xfV4g_350000,H8c0X5xfV4g,350.0,background,,,0,0,0,0,,,,,,0,0,speech,"Conversation;Female speech, woman speaking;Male speech, man speaking;Speech"
+HEPsmqOUGvY_170000,HEPsmqOUGvY,170.0,scream,scream,,1,0,0,0,9.808,10.000,0.192,,Shout,0,0,speech,"Breathing;Conversation;Crumpling, crinkling;Hum;Inside, small room;Male speech, man speaking;Shout;Speech"
+HHI0y--P-TE_30000,HHI0y--P-TE,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,4.079,5.661,1.582,,Music,1,0,speech,"Bark;Bow-wow;Male speech, man speaking;Music;Speech;Telephone bell ringing;Television"
+HK42ED-7Ung_30000,HK42ED-7Ung,30.0,background,,,0,0,0,0,,,,,,0,0,,"Breathing;Inside, small room;Steam"
+HLRfkRKi_Z4_380000,HLRfkRKi_Z4,380.0,siren,siren,siren,1,1,0,0,7.235,10.000,2.765,Siren,,0,0,,"Male speech, man speaking;Siren"
+HOOK6E_Hogg_30000,HOOK6E_Hogg,30.0,siren,siren,siren,1,1,1,1,0.000,10.000,10.000,Siren,,0,0,alarm,Alarm;Siren
+HPbn90vimTU_30000,HPbn90vimTU,30.0,def_gap,dog_bark,,1,0,0,0,5.583,7.795,2.212,,,0,1,dog_nonbark,"Ding-dong;Dog;Doorbell;Howl;Inside, large room or hall"
+HacKJ1P6VlM_170000,HacKJ1P6VlM,170.0,siren,siren,siren,1,1,0,0,0.000,10.000,10.000,Civil defense siren;Siren,,0,0,alarm,"Alarm;Civil defense siren;Male speech, man speaking;Siren"
+HgWQkH38LL4_230000,HgWQkH38LL4,230.0,scream,scream,,1,0,0,0,9.685,10.000,0.315,,Shout,0,0,,"Child speech, kid speaking;Conversation;Female speech, woman speaking;Shout;Water;Wind;Wind noise (microphone)"
+HskqNJlIp-Y_200000,HskqNJlIp-Y,200.0,def_gap,scream,,1,0,0,0,0.567,1.189,0.622,,Shout,0,0,,"Bird;Bird vocalization, bird call, bird song;Chirp, tweet;Shout"
+I1BVlu4tCOU_210000,I1BVlu4tCOU,210.0,glass,glass,glass,1,1,1,1,1.339,3.126,1.787,,,0,0,,Breaking;Glass;Glass shatter;Silence
+IEfHtxeR2S0_30000,IEfHtxeR2S0,30.0,dog_bark,dog_bark,dog_bark,1,1,1,1,7.827,10.000,2.173,,,1,0,speech,"Air brake;Bark;Bow-wow;Engine;Heavy engine (low frequency);Male speech, man speaking;Speech;Truck;Vehicle"
+IPIS6TUVpSM_30000,IPIS6TUVpSM,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,4.992,7.016,2.024,,,1,1,,"Bark;Bow-wow;Dog;Domestic animals, pets;Inside, small room;Mechanisms;Power tool;Vacuum cleaner"
+IUdIAuoqEbM_0,IUdIAuoqEbM,0.0,def_gap,dog_bark,,1,0,0,0,4.708,6.362,1.654,,,0,1,dog_nonbark,"Animal;Breathing;Child speech, kid speaking;Dog;Domestic animals, pets;Engine;Pant;Silence;Walk, footsteps"
+IVjCUVLnhFs_30000,IVjCUVLnhFs,30.0,siren,siren,siren,1,1,1,0,0.000,10.000,10.000,Civil defense siren;Siren,,0,0,alarm,Alarm;Civil defense siren;Siren
+IX21ecgta50_100000,IX21ecgta50,100.0,background,,,0,0,0,0,,,,,"Chuckle, chortle",0,0,speech,"Bird;Bird vocalization, bird call, bird song;Chuckle, chortle;Crow;Female speech, woman speaking;Male speech, man speaking;Speech"
+Ia6C4k0o2hc_20000,Ia6C4k0o2hc,20.0,siren,siren,siren,1,1,0,0,0.000,10.000,10.000,"Fire engine, fire truck (siren);Siren",,0,0,,"Emergency vehicle;Fire engine, fire truck (siren);Motor vehicle (road);Siren;Truck"
+IcHFJykCIro_30000,IcHFJykCIro,30.0,def_gap,dog_bark,,1,0,0,0,0.000,10.000,10.000,,,0,1,dog_nonbark,"Animal;Cough;Dog;Howl;Inside, small room"
+IfoVNe1IcAA_110000,IfoVNe1IcAA,110.0,background,,,0,0,0,0,,,,,,0,0,speech,"Cupboard open or close;Door;Inside, small room;Male speech, man speaking;Rub;Speech"
+IiNZnbSHnBk_100000,IiNZnbSHnBk,100.0,glass,glass,glass,1,1,1,1,6.992,10.000,3.008,,,0,0,,Breaking;Glass;Glass shatter;Unmodified field recording
+Iigfz_GeXVs_30000,Iigfz_GeXVs,30.0,background,,,0,0,0,0,,,,,,0,0,,Unmodified field recording
+IsrJ4OWorAU_430000,IsrJ4OWorAU,430.0,dog_bark,dog_bark,dog_bark,1,1,1,0,3.299,3.921,0.622,,,1,0,,"Arrow;Bark;Outside, rural or natural;Wind noise (microphone)"
+IzKed528MCk_70000,IzKed528MCk,70.0,siren,siren,siren,1,1,0,0,4.787,10.000,5.213,"Fire engine, fire truck (siren);Siren",,0,0,,"Air horn, truck horn;Emergency vehicle;Fire engine, fire truck (siren);Outside, urban or manmade;Siren;Traffic noise, roadway noise;Truck;Vehicle horn, car horn, honking, toot;Wind;Wind noise (microphone)"
+J2nDnAerah0_30000,J2nDnAerah0,30.0,background,,,0,0,0,0,,,,,,0,0,speech,"Aircraft;Heavy engine (low frequency);Helicopter;Male speech, man speaking;Radio;Speech;Unmodified field recording;Vehicle"
+JErx-AImWqk_0,JErx-AImWqk,0.0,dog_bark,dog_bark,dog_bark,1,1,1,0,4.504,5.953,1.449,,,1,1,,"Animal;Bark;Bird vocalization, bird call, bird song;Bow-wow;Chirp, tweet;Dog;Domestic animals, pets"
+JIr5cdoE9d8_390000,JIr5cdoE9d8,390.0,background,,,0,0,0,0,,,,,,0,0,,Power tool;Sanding
+JJFbs0sC8Hk_540000,JJFbs0sC8Hk,540.0,background,,,0,0,0,0,,,,,,0,0,,"Outside, rural or natural;Stream, river;Water"
+JPdsi_w4CoU_15000,JPdsi_w4CoU,15.0,scream,,scream,0,1,1,0,0.484,3.542,3.058,,Laughter;Screaming;Shout,0,0,laughter,"Accelerating, revving, vroom;Background noise;Female speech, woman speaking;Laughter;Light engine (high frequency);Screaming;Shout;Tap"
+JQwirnKysXI_30000,JQwirnKysXI,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,8.535,9.173,0.638,,,1,1,speech,"Animal;Bark;Dog;Domestic animals, pets;Female speech, woman speaking;Inside, small room;Male speech, man speaking;Speech;Television"
+JWAQjlS2OEY_10000,JWAQjlS2OEY,10.0,scream,,scream,0,1,1,0,5.945,10.000,4.055,,Clapping;Laughter;Screaming;Shout,0,0,speech;laughter,"Clapping;Female speech, woman speaking;Laughter;Male speech, man speaking;Screaming;Shout;Speech;Wind"
+JWd6vF4yfG8_30000,JWd6vF4yfG8,30.0,siren,siren,siren,1,1,1,0,5.071,10.000,4.929,"Fire engine, fire truck (siren);Siren",,0,0,,"Emergency vehicle;Female speech, woman speaking;Fire engine, fire truck (siren);Heavy engine (low frequency);Motor vehicle (road);Siren;Vehicle"
+JXmpEFLhr9E_30000,JXmpEFLhr9E,30.0,def_gap,scream,,1,0,0,0,4.016,4.992,0.976,,Shout,0,0,speech,"Firecracker;Fireworks;Male speech, man speaking;Shout;Silence;Speech"
+JpDX-n13xpY_23000,JpDX-n13xpY,23.0,scream,scream,scream,1,1,1,0,7.192,9.369,2.177,,Screaming,0,0,,"Breathing;Child speech, kid speaking;Female speech, woman speaking;Screaming"
+JubrxZZlIJE_0,JubrxZZlIJE,0.0,scream,,scream,0,1,1,0,5.732,7.268,1.536,,Laughter;Music;Screaming;Shout,0,0,speech;laughter,"Laughter;Male speech, man speaking;Music;Screaming;Shout;Speech;Television"
+K1DHGdAOBH8_150000,K1DHGdAOBH8,150.0,background,,,0,0,0,0,,,,,"Chuckle, chortle;Laughter;Music",0,0,speech;laughter,"Child speech, kid speaking;Chuckle, chortle;Laughter;Male speech, man speaking;Music;Speech"
+K5aJwQ2X2Sc_260000,K5aJwQ2X2Sc,260.0,dog_bark,dog_bark,dog_bark,1,1,1,0,7.135,7.604,0.469,,Laughter,1,0,speech;laughter,"Bark;Child speech, kid speaking;Children playing;Female speech, woman speaking;Inside, large room or hall;Laughter;Male speech, man speaking;Speech"
+KS2aTlLJPo8_90000,KS2aTlLJPo8,90.0,def_gap,dog_bark,,1,0,0,0,0.007,0.754,0.747,,,0,1,dog_nonbark,"Animal;Dog;Domestic animals, pets"
+KaNFEbvJ_kU_30000,KaNFEbvJ_kU,30.0,def_gap,scream,,1,0,0,0,9.425,10.000,0.575,,Shout,0,0,,"Boom;Eruption;Explosion;Male speech, man speaking;Shout;Sound effect"
+Ke1oAMn5aXE_60000,Ke1oAMn5aXE,60.0,background,,,0,0,0,1,,,,,Crowd,0,0,speech;crowd,"Child speech, kid speaking;Crowd;Female speech, woman speaking;Hubbub, speech noise, speech babble;Male speech, man speaking;Ocean;Speech;Water;Waves, surf"
+KhxVbkznUNI_30000,KhxVbkznUNI,30.0,siren,siren,siren,1,1,0,0,0.000,10.000,10.000,Siren,,0,0,,"Air horn, truck horn;Emergency vehicle;Heavy engine (low frequency);Male speech, man speaking;Motor vehicle (road);Siren;Truck"
+KkGTB8ESMCM_0,KkGTB8ESMCM,0.0,scream,scream,scream,1,1,1,0,2.110,3.433,1.323,,Screaming;Shout,0,0,,"Animal;Bird;Bird vocalization, bird call, bird song;Chirp, tweet;Screaming;Shout;Unmodified field recording;Wind noise (microphone)"
+Kwj9hb-2We0_30000,Kwj9hb-2We0,30.0,background,,,0,0,0,1,,,,,,0,0,,"Boat, Water vehicle;Male speech, man speaking;Motorboat, speedboat;Vehicle;Water;Wind"
+Kwpn3utYEHM_30000,Kwpn3utYEHM,30.0,background,,,0,0,0,0,,,,,,0,0,,Motor vehicle (road)
+KxzuJRh9GaQ_30000,KxzuJRh9GaQ,30.0,background,,,0,0,0,1,,,,,,0,0,speech;crowd,"Female speech, woman speaking;Hoot;Hubbub, speech noise, speech babble;Owl;Speech"
+L28CnhmeAD4_30000,L28CnhmeAD4,30.0,def_gap,dog_bark,,1,0,0,0,0.014,10.000,9.986,,,0,1,dog_nonbark,"Animal;Bird;Canidae, wild dogs, wolves;Dog;Howl"
+L4Z7XkS6CtA_30000,L4Z7XkS6CtA,30.0,def_gap,dog_bark,,1,0,0,0,7.094,8.449,1.355,,,0,1,dog_nonbark;speech,"Animal;Dog;Domestic animals, pets;Female speech, woman speaking;Male speech, man speaking;Speech"
+L5ohzqF0ZHQ_20000,L5ohzqF0ZHQ,20.0,siren,siren,siren,1,1,1,0,0.000,5.543,5.543,Police car (siren);Siren,,0,0,alarm,Alarm;Police car (siren);Siren
+LEn3f97acaw_30000,LEn3f97acaw,30.0,background,,,0,0,0,0,,,,,Applause;Clapping,0,0,speech;crowd,"Applause;Clapping;Male speech, man speaking;Speech"
+LHkkJM-LjHs_0,LHkkJM-LjHs,0.0,glass,glass,glass,1,1,1,1,0.142,10.000,9.858,,,0,0,,"Glass chink, clink;Glass shatter"
+LNQ7fzfdLiY_150000,LNQ7fzfdLiY,150.0,siren,,siren,0,1,1,0,0.016,10.000,9.984,Police car (siren),,0,0,,Police car (siren)
+LPKmafH-gqI_0,LPKmafH-gqI,0.0,background,,,0,0,0,0,,,,,,0,0,,"Inside, small room;Mechanisms;Water"
+LQdCy79W9Vw_20000,LQdCy79W9Vw,20.0,def_gap,dog_bark,,1,0,0,0,0.000,0.535,0.535,,,0,1,dog_nonbark;speech,"Animal;Dog;Domestic animals, pets;Female speech, woman speaking;Noise;Speech;Whimper (dog);Wind;Wind noise (microphone)"
+La56WBAJ2xk_30000,La56WBAJ2xk,30.0,siren,siren,siren,1,1,1,1,0.008,10.000,9.992,Civil defense siren;Siren,,0,0,,"Civil defense siren;Male speech, man speaking;Siren;Wind;Wind noise (microphone)"
+LhpzNXhZ44c_30000,LhpzNXhZ44c,30.0,scream,scream,,1,0,0,0,8.008,8.630,0.622,,Shout,0,0,,"Child speech, kid speaking;Children playing;Children shouting;Female speech, woman speaking;Male speech, man speaking;Motorboat, speedboat;Outside, urban or manmade;Shout;Water"
+LnDrVrfDVvw_40000,LnDrVrfDVvw,40.0,scream,,scream,0,1,1,0,7.276,8.874,1.598,,Music;Screaming;Shout,0,0,speech,"Female speech, woman speaking;Music;Screaming;Shout;Speech"
+LspJN_1R27Q_30000,LspJN_1R27Q,30.0,def_gap,dog_bark,,1,0,0,0,0.354,6.882,6.528,,,0,1,dog_nonbark,"Dog;Female speech, woman speaking;Male speech, man speaking;Sneeze;Sniff"
+LweDKxCcXAI_90000,LweDKxCcXAI,90.0,glass,glass,glass,1,1,1,1,7.101,8.140,1.039,,Music,0,0,speech,"Breaking;Glass;Glass shatter;Male speech, man speaking;Music;Speech"
+M2WVhHYQvTM_30000,M2WVhHYQvTM,30.0,def_gap,dog_bark,,1,0,0,0,3.432,3.752,0.320,,Laughter;Shout,0,1,dog_nonbark;speech;laughter,"Dog;Female speech, woman speaking;Inside, small room;Laughter;Shout;Speech"
+M7GSBDc6s_w_340000,M7GSBDc6s_w,340.0,background,,,0,0,0,0,,,,,Music;Singing,0,0,,Male singing;Music;Singing
+M8p6a6qH3wU_30000,M8p6a6qH3wU,30.0,scream,,scream,0,1,1,0,5.654,6.173,0.519,,Laughter;Screaming,0,0,speech;laughter,"Female speech, woman speaking;Laughter;Screaming;Speech;Splash, splatter;Water"
+MA9rigt5MiI_30000,MA9rigt5MiI,30.0,glass,glass,glass,1,1,1,0,4.087,7.535,3.448,,Music,0,0,,"Glass;Glass shatter;Music;Smash, crash;Sound effect"
+MAhYAMZ50VI_100000,MAhYAMZ50VI,100.0,def_gap,dog_bark,,1,0,0,0,4.488,6.102,1.614,,Music,0,1,dog_nonbark;speech,"Animal;Dog;Domestic animals, pets;Male speech, man speaking;Music;Speech;Whoosh, swoosh, swish"
+MEUcv-QM0cQ_30000,MEUcv-QM0cQ,30.0,siren,,siren,0,1,1,1,0.000,10.000,10.000,"Fire engine, fire truck (siren)",,0,0,,"Fire engine, fire truck (siren)"
+MEwWupHkfPM_130000,MEwWupHkfPM,130.0,glass,glass,glass,1,1,1,0,3.459,4.262,0.803,,,0,0,speech,"Breaking;Child speech, kid speaking;Glass;Glass shatter;Silence;Sound effect;Speech;Speech synthesizer"
+MQ0YasvMcuQ_1000,MQ0YasvMcuQ,1.0,scream,scream,scream,1,1,1,1,4.137,6.589,2.452,,Screaming,0,0,,Generic impact sounds;Mechanisms;Screaming;Tick
+MSY3Z4yTgXU_10000,MSY3Z4yTgXU,10.0,dog_bark,dog_bark,dog_bark,1,1,1,0,3.147,4.864,1.717,,,1,1,speech,"Bark;Bow-wow;Dog;Male speech, man speaking;Outside, rural or natural;Speech"
+MVM5RlkTh6E_30000,MVM5RlkTh6E,30.0,siren,siren,siren,1,1,1,1,0.000,10.000,10.000,"Ambulance (siren);Fire engine, fire truck (siren);Siren",,0,0,,"Ambulance (siren);Emergency vehicle;Fire;Fire engine, fire truck (siren);Medium engine (mid frequency);Motor vehicle (road);Siren;Vehicle;Wind"
+MW0ZTvRCS1o_220000,MW0ZTvRCS1o,220.0,background,,,0,0,0,0,,,,,,0,0,speech,"Breathing;Conversation;Female speech, woman speaking;Grunt;Male speech, man speaking;Silence;Speech"
+MZ1Yh6mRC-E_30000,MZ1Yh6mRC-E,30.0,siren,siren,siren,1,1,1,0,0.000,10.000,10.000,Civil defense siren;Siren,,0,0,alarm,"Alarm;Beep, bleep;Civil defense siren;Siren"
+Ma0Ye2xMqXA_30000,Ma0Ye2xMqXA,30.0,background,,,0,0,0,1,,,,,,0,0,speech,"Breathing;Male speech, man speaking;Outside, rural or natural;Speech;Wind;Wind noise (microphone)"
+MaKRejCh2ag_30000,MaKRejCh2ag,30.0,background,,,0,0,0,0,,,,,,0,0,,Engine;Idling;Medium engine (mid frequency);Vehicle
+MgD5JedaXGs_20000,MgD5JedaXGs,20.0,dog_bark,dog_bark,dog_bark,1,1,1,0,3.268,4.992,1.724,,,1,1,,"Animal;Bark;Bow-wow;Dog;Domestic animals, pets;Inside, small room;Squeak"
+MiQZ0dGQuIA_170000,MiQZ0dGQuIA,170.0,scream,,scream,0,1,1,0,3.362,5.094,1.732,,Music;Screaming,0,0,speech;crying,"Baby cry, infant cry;Crying, sobbing;Male speech, man speaking;Music;Run;Screaming;Sound effect;Speech;Speech synthesizer;Thump, thud"
+MplEgknxafE_0,MplEgknxafE,0.0,scream,,scream,0,1,1,0,5.165,10.000,4.835,,Cheering;Crowd;Music;Screaming;Shout,0,0,speech;crowd,"Bellow;Cheering;Crowd;Male speech, man speaking;Music;Screaming;Shout;Silence;Speech"
+Mr2kGT6i7e4_20000,Mr2kGT6i7e4,20.0,def_gap,dog_bark,,1,0,0,0,8.969,10.000,1.031,,Music,0,1,dog_nonbark;speech,"Animal;Canidae, wild dogs, wolves;Dog;Domestic animals, pets;Howl;Male singing;Male speech, man speaking;Music;Speech;Television"
+MuSozMIsi7g_30000,MuSozMIsi7g,30.0,background,,,0,0,0,0,,,,,,0,0,,Unmodified field recording
+MwK9HYjeeN0_30000,MwK9HYjeeN0,30.0,background,,,0,0,0,0,,,,,Music;Singing,0,0,,Choir;Female singing;Male singing;Music;Singing
+N-6HKjQwPTo_30000,N-6HKjQwPTo,30.0,siren,siren,siren,1,1,1,0,2.031,3.606,1.575,Ambulance (siren);Siren,Laughter,0,0,laughter,"Ambulance (siren);Emergency vehicle;Laughter;Male speech, man speaking;Siren"
+N-_m-dYt6NA_30000,N-_m-dYt6NA,30.0,background,,,0,0,0,1,,,,,,0,0,,"Chop;Male speech, man speaking;Mechanisms;Outside, urban or manmade"
+N1Mxns_JJTk_30000,N1Mxns_JJTk,30.0,glass,glass,glass,1,1,1,0,3.472,5.803,2.331,,Music,0,0,,"Breaking;Glass;Glass shatter;Male singing;Music;Silence;Smash, crash"
+N6e5C5sXdBI_0,N6e5C5sXdBI,0.0,def_gap,dog_bark,,1,0,0,0,0.000,0.921,0.921,,,0,1,dog_nonbark,"Animal;Dog;Domestic animals, pets;Howl;Yip"
+NBWFWIkb02c_15000,NBWFWIkb02c,15.0,background,,,0,0,0,1,,,,,Music,0,0,alarm,"Alarm;Female speech, woman speaking;Music;Tick"
+NE_DQerjrVU_20000,NE_DQerjrVU,20.0,background,,,0,0,0,0,,,,,Music,0,0,speech,"Conversation;Male speech, man speaking;Music;Silence;Speech"
+NF1lwZ24RYI_30000,NF1lwZ24RYI,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,4.881,10.000,5.119,,,1,1,,Animal;Bark;Dog
+NM-54_fq4Ng_90000,NM-54_fq4Ng,90.0,glass,glass,glass,1,1,1,0,5.197,7.961,2.764,,,0,0,,"Breaking;Generic impact sounds;Glass;Glass shatter;Smash, crash;Thump, thud"
+NMgz6MCWFx4_30000,NMgz6MCWFx4,30.0,glass,glass,glass,1,1,1,0,4.693,5.354,0.661,,Music,0,0,speech,"Beep, bleep;Breaking;Glass;Glass shatter;Male speech, man speaking;Music;Smash, crash;Speech;Speech synthesizer;Tick-tock"
+NQChT7upxKU_80000,NQChT7upxKU,80.0,background,,,0,0,0,0,,,,,,0,0,,Whip
+NRa8ZJfoPl8_60000,NRa8ZJfoPl8,60.0,scream,,scream,0,1,1,1,0.024,3.189,3.165,,Music;Screaming;Shout,0,0,speech,"Female speech, woman speaking;Gunshot, gunfire;Music;Screaming;Shout;Sound effect;Speech;Television"
+NU0MF8pwktg_80000,NU0MF8pwktg,80.0,background,,,0,0,0,0,,,,,Music;Singing,0,0,,Male singing;Music;Singing
+NXZS5FiPhA4_210000,NXZS5FiPhA4,210.0,background,,,0,0,0,0,,,,,Music,0,0,,"Baby cry, infant cry;Breathing;Clicking;Female speech, woman speaking;Generic impact sounds;Music;Tap;Tick"
+N_bWjtccFg0_20000,N_bWjtccFg0,20.0,dog_bark,dog_bark,dog_bark,1,1,1,0,1.394,4.969,3.575,,,1,1,,"Animal;Bark;Bow-wow;Dog;Domestic animals, pets;Growling"
+NhVkzcCL0SA_30000,NhVkzcCL0SA,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Male singing;Music
+NjS0d-qyOSM_0,NjS0d-qyOSM,0.0,background,,,0,0,0,0,,,,,,0,0,,"Bird;Bird vocalization, bird call, bird song;Breathing;Chirp, tweet;Inside, small room;Wheeze"
+NrR1wmCpqAk_12000,NrR1wmCpqAk,12.0,dog_bark,dog_bark,dog_bark,1,1,1,0,9.457,10.000,0.543,,,1,0,,"Bark;Bicycle, tricycle;Outside, urban or manmade;Unmodified field recording;Vehicle"
+Ntn6YvZM3kA_0,Ntn6YvZM3kA,0.0,scream,,scream,0,1,1,0,8.812,9.775,0.963,,Music;Screaming,0,0,,Human voice;Music;Screaming;Sound effect;Television
+Ntwizki4GIs_70000,Ntwizki4GIs,70.0,scream,scream,scream,1,1,1,0,3.323,4.000,0.677,,Screaming,0,0,,"Boing;Plop;Screaming;Silence;Sound effect;Wail, moan"
+NuD6d2B3QvA_550000,NuD6d2B3QvA,550.0,dog_bark,dog_bark,dog_bark,1,1,1,0,6.931,10.000,3.069,,,1,1,,"Animal;Bark;Bow-wow;Canidae, wild dogs, wolves;Dog;Domestic animals, pets;Growling;Inside, small room"
+NxHHCNeQCX8_0,NxHHCNeQCX8,0.0,siren,siren,siren,1,1,1,0,5.344,10.000,4.656,Civil defense siren;Siren,,0,0,,"Bird vocalization, bird call, bird song;Civil defense siren;Motor vehicle (road);Outside, urban or manmade;Siren"
+O1eqJkmBLrU_12000,O1eqJkmBLrU,12.0,def_gap,dog_bark,,1,0,0,0,1.745,2.125,0.380,,,0,1,dog_nonbark,Dog;Generic impact sounds;Mechanisms
+OEjgIDubFbg_350000,OEjgIDubFbg,350.0,background,,,0,0,0,0,,,,,Music,0,0,,Female singing;Music
+OI7S7vaBT4I_60000,OI7S7vaBT4I,60.0,background,,,0,0,0,1,,,,,Music,0,0,,Male singing;Music
+OJv_tuqni6g_90000,OJv_tuqni6g,90.0,def_gap,scream,,1,0,0,0,9.280,10.000,0.720,,Shout,0,0,speech,"Breathing;Female speech, woman speaking;Inside, small room;Shout;Silence;Speech"
+OLy3C8YpMsY_30000,OLy3C8YpMsY,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Female singing;Music
+OM3gunQ-H34_20000,OM3gunQ-H34,20.0,glass,glass,glass,1,1,1,0,0.000,0.726,0.726,,,0,0,speech,"Accelerating, revving, vroom;Breaking;Glass;Glass shatter;Male speech, man speaking;Sound effect;Speech;Whoosh, swoosh, swish"
+OMxgo6zoAIM_70000,OMxgo6zoAIM,70.0,glass,glass,glass,1,1,1,0,7.339,10.000,2.661,,Music,0,0,,Breaking;Glass;Glass shatter;Music;Sound effect
+Oa-ACBXO5NQ_0,Oa-ACBXO5NQ,0.0,background,,,0,0,0,0,,,,,,0,0,speech,"Inside, small room;Male speech, man speaking;Speech;Telephone;Whoosh, swoosh, swish"
+OrYHuCwfvb4_0,OrYHuCwfvb4,0.0,background,,,0,0,0,1,,,,,Music,0,0,,Male singing;Music;Silence
+OruXpELHHkA_30000,OruXpELHHkA,30.0,scream,,scream,0,1,1,0,0.699,2.261,1.562,,"Chuckle, chortle;Laughter;Screaming;Shout",0,0,speech;laughter,"Bellow;Boom;Chuckle, chortle;Conversation;Explosion;Laughter;Male speech, man speaking;Screaming;Shout;Snicker;Speech"
+OwkOp5fVJK4_470000,OwkOp5fVJK4,470.0,siren,siren,siren,1,1,1,0,4.793,8.792,3.999,Siren,,0,0,,"Engine;Fire;Heavy engine (low frequency);Male speech, man speaking;Motor vehicle (road);Outside, urban or manmade;Siren"
+P15JhIEHVHg_30000,P15JhIEHVHg,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,0.000,10.000,10.000,,,1,1,speech,"Animal;Bark;Bow-wow;Canidae, wild dogs, wolves;Dog;Domestic animals, pets;Female speech, woman speaking;Speech"
+P9fh7rOIKcM_270000,P9fh7rOIKcM,270.0,glass,glass,glass,1,1,1,1,4.087,5.213,1.126,,Cheering;Crowd;Laughter;Music,0,0,crowd;laughter,"Breaking;Cheering;Crowd;Glass;Glass shatter;Laughter;Male speech, man speaking;Music;Smash, crash;Sound effect;Whoosh, swoosh, swish"
+PA3y_gyX3m8_4000,PA3y_gyX3m8,4.0,background,,,0,0,0,0,,,,,,0,0,,"Male speech, man speaking;Mechanisms;Motorboat, speedboat"
+PBFRk6VOWXs_40000,PBFRk6VOWXs,40.0,scream,scream,,1,0,0,0,3.748,4.803,1.055,,Shout,0,0,,Breathing;Groan;Shout
+PN3Lx8RutmI_30000,PN3Lx8RutmI,30.0,background,,,0,0,0,0,,,,,Clapping;Music;Singing,0,0,,"Clapping;Female speech, woman speaking;Male singing;Music;Singing"
+PNCwMnNW-jw_0,PNCwMnNW-jw,0.0,glass,glass,glass,1,1,1,1,7.858,9.346,1.488,,Music,0,0,speech,"Breaking;Conversation;Ding;Glass;Glass shatter;Male speech, man speaking;Music;Ping;Plop;Sound effect;Speech;Whoosh, swoosh, swish"
+PRU9zAtcQDs_0,PRU9zAtcQDs,0.0,def_gap,dog_bark,,1,0,0,0,0.150,10.000,9.850,,,0,1,dog_nonbark,"Animal;Canidae, wild dogs, wolves;Dog;Growling;Howl"
+PXtqK-mwyW0_30000,PXtqK-mwyW0,30.0,siren,siren,siren,1,1,1,0,0.000,10.000,10.000,Civil defense siren;Siren,,0,0,,Civil defense siren;Siren
+PbQ4JNpXPTY_21000,PbQ4JNpXPTY,21.0,glass,glass,glass,1,1,1,0,6.885,7.705,0.820,,Music,0,0,,"Glass;Glass shatter;Male speech, man speaking;Mechanisms;Music"
+PgLT9HSWxEk_330000,PgLT9HSWxEk,330.0,background,,,0,0,0,0,,,,,,0,0,,"Child speech, kid speaking;Outside, rural or natural;Stream, river;Water"
+PiVcdJd0uAo_25000,PiVcdJd0uAo,25.0,scream,scream,,1,0,0,0,0.728,3.033,2.305,,Shout,0,0,,"Generic impact sounds;Male speech, man speaking;Mechanisms;Shout;Sound effect;Tick"
+PlMt7NoIYDU_220000,PlMt7NoIYDU,220.0,glass,glass,glass,1,1,1,0,4.677,5.638,0.961,,Music,0,0,speech,"Breaking;Child speech, kid speaking;Glass;Glass shatter;Mechanisms;Music;Smash, crash;Speech;Whir;Wild animals"
+PoD9gVdeIS4_10000,PoD9gVdeIS4,10.0,dog_bark,dog_bark,dog_bark,1,1,1,1,0.827,1.591,0.764,,Music,1,0,,Bark;Music
+Pob5do5I9-A_120000,Pob5do5I9-A,120.0,scream,,scream,0,1,1,1,7.039,8.701,1.662,,Laughter;Music;Screaming,0,0,speech;laughter,"Female speech, woman speaking;Laughter;Music;Noise;Radio;Screaming;Speech"
+PrAm5YVvXx8_10000,PrAm5YVvXx8,10.0,def_gap,dog_bark,,1,0,0,0,0.000,1.315,1.315,,,0,1,dog_nonbark,"Animal;Dog;Domestic animals, pets;Whimper (dog)"
+PwC9_vE_rqk_120000,PwC9_vE_rqk,120.0,def_gap,dog_bark,,1,0,0,0,0.007,4.983,4.976,,,0,1,dog_nonbark,"Animal;Dog;Domestic animals, pets;Growling"
+PxsS4fCVYpY_90000,PxsS4fCVYpY,90.0,def_gap,scream,,1,0,0,0,2.047,3.587,1.540,,Shout,0,0,,"Accelerating, revving, vroom;Car;Car passing by;Engine;Male speech, man speaking;Medium engine (mid frequency);Motor vehicle (road);Outside, urban or manmade;Shout;Vehicle"
+Q19VErS2iH4_20000,Q19VErS2iH4,20.0,def_gap,scream,,1,0,0,0,8.099,9.484,1.385,,Shout,0,0,speech,"Basketball bounce;Inside, large room or hall;Male speech, man speaking;Shout;Speech"
+Q4FjA3C0UAI_30000,Q4FjA3C0UAI,30.0,background,,,0,0,0,1,,,,,Music,0,0,speech,"Male speech, man speaking;Music;Silence;Speech"
+Q6CqAFnP2Fg_10000,Q6CqAFnP2Fg,10.0,siren,siren,siren,1,1,1,0,0.000,10.000,10.000,"Fire engine, fire truck (siren);Siren",,0,0,,"Fire engine, fire truck (siren);Siren"
+QDW_uCMnMMU_0,QDW_uCMnMMU,0.0,scream,scream,scream,1,1,1,0,1.341,3.159,1.818,,Screaming,0,0,,Screaming
+QEDrleSvamI_30000,QEDrleSvamI,30.0,siren,siren,siren,1,1,0,0,0.000,10.000,10.000,Civil defense siren;Siren,,0,0,,Civil defense siren;Siren
+QMoRiBjRLKc_30000,QMoRiBjRLKc,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Chorus effect;Music
+QNATmv1gQBU_110000,QNATmv1gQBU,110.0,dog_bark,dog_bark,dog_bark,1,1,1,0,7.961,10.000,2.039,,,1,0,,"Animal;Bark;Bird vocalization, bird call, bird song;Chirp, tweet"
+QSKtHdTnvkE_170000,QSKtHdTnvkE,170.0,glass,glass,glass,1,1,1,1,9.512,10.000,0.488,,Music,0,0,speech,"Breaking;Glass;Glass shatter;Male speech, man speaking;Music;Sound effect;Speech"
+QXnFAcMyAHA_30000,QXnFAcMyAHA,30.0,background,,,0,0,0,0,,,,,Music,0,0,,"Female singing;Inside, large room or hall;Music"
+QZKH9-7cpq8_470000,QZKH9-7cpq8,470.0,siren,siren,siren,1,1,0,0,3.339,5.504,2.165,Siren,Music,0,0,alarm,"Alarm;Emergency vehicle;Machine gun;Male speech, man speaking;Motor vehicle (road);Music;Siren"
+Q_yoAT1Z3Yw_22000,Q_yoAT1Z3Yw,22.0,siren,siren,siren,1,1,1,0,0.000,10.000,10.000,"Fire engine, fire truck (siren);Siren",,0,0,alarm,"Alarm;Emergency vehicle;Fire engine, fire truck (siren);Motor vehicle (road);Outside, urban or manmade;Siren;Truck;Vehicle"
+Qd5qSAXSLN4_10000,Qd5qSAXSLN4,10.0,siren,siren,siren,1,1,0,0,6.425,10.000,3.575,Siren,,0,0,,Buzzer;Car alarm;Siren
+QeUxAl-USck_230000,QeUxAl-USck,230.0,background,,,0,0,0,0,,,,,Music,0,0,speech,"Male speech, man speaking;Music;Silence;Speech"
+QejVyYvjrrs_10000,QejVyYvjrrs,10.0,dog_bark,dog_bark,dog_bark,1,1,1,0,2.646,3.252,0.606,,,1,1,speech,"Animal;Bark;Dog;Domestic animals, pets;Female speech, woman speaking;Speech"
+QoKi7hobTDQ_30000,QoKi7hobTDQ,30.0,siren,siren,siren,1,1,0,0,0.000,10.000,10.000,Siren,,0,0,,Siren
+QtEtP5Vb_3o_340000,QtEtP5Vb_3o,340.0,dog_bark,dog_bark,dog_bark,1,1,1,1,9.063,9.669,0.606,,,1,0,,"Animal;Bark;Bird;Bird flight, flapping wings;Bird vocalization, bird call, bird song;Chirp, tweet;Coo;Outside, rural or natural;Pigeon, dove;Wild animals"
+R5FhPTwWpm8_140000,R5FhPTwWpm8,140.0,scream,scream,,1,0,0,0,8.282,9.205,0.923,,Shout,0,0,crowd,"Accelerating, revving, vroom;Car;Car passing by;Hubbub, speech noise, speech babble;Motor vehicle (road);Race car, auto racing;Shout;Tire squeal, skidding;Vehicle"
+R5Voi53JHJE_20000,R5Voi53JHJE,20.0,siren,siren,siren,1,1,1,0,0.000,10.000,10.000,Siren,,0,0,,"Chirp, tweet;Siren"
+R5np0eUAWUU_0,R5np0eUAWUU,0.0,scream,scream,,1,0,0,0,6.788,7.261,0.473,,Shout,0,0,,"Basketball bounce;Breathing;Creak;Male speech, man speaking;Shout;Tap;Tick;Wind"
+RAB0TWMYQHI_0,RAB0TWMYQHI,0.0,siren,siren,siren,1,1,0,0,4.705,10.000,5.295,Siren,,0,0,,"Gunshot, gunfire;Mechanisms;Silence;Siren"
+RMWnU7O-UiY_22000,RMWnU7O-UiY,22.0,siren,siren,siren,1,1,1,0,0.000,9.247,9.247,Siren,,0,0,,"Air horn, truck horn;Ice cream truck, ice cream van;Siren"
+RRyiYofOuPs_30000,RRyiYofOuPs,30.0,scream,scream,,1,0,0,0,2.124,3.021,0.897,,Shout,0,0,,"Male speech, man speaking;Shout"
+RmdvTlx9C0k_30000,RmdvTlx9C0k,30.0,background,,,0,0,0,0,,,,,Music,0,0,speech,"Inside, small room;Male speech, man speaking;Music;Shuffle;Speech"
+Rqj5RZY-AK4_380000,Rqj5RZY-AK4,380.0,background,,,0,0,0,0,,,,,,0,0,,Mechanisms;Sound effect
+RsSDcYmp8eQ_30000,RsSDcYmp8eQ,30.0,background,,,0,0,0,1,,,,,,0,0,,"Inside, small room;Scissors"
+Rwt8j_USbWI_30000,Rwt8j_USbWI,30.0,background,,,0,0,0,1,,,,,Music,0,0,,Human voice;Liquid;Music;Slosh;Water
+RxpZA27a2Do_30000,RxpZA27a2Do,30.0,background,,,0,0,0,0,,,,,,0,0,,"Chirp, tweet;Chop;Hammer;Outside, rural or natural;Wind"
+S-wg0-sh5V8_160000,S-wg0-sh5V8,160.0,background,,,0,0,0,0,,,,,,0,0,,"Chirp, tweet;Crushing;Engine;Heavy engine (low frequency);Mechanisms;Outside, urban or manmade;Vehicle"
+S1RwxsoyACg_60000,S1RwxsoyACg,60.0,glass,glass,glass,1,1,1,1,8.187,9.158,0.971,,"Chuckle, chortle;Laughter",0,0,speech;laughter,"Breaking;Chuckle, chortle;Conversation;Glass;Glass shatter;Laughter;Male speech, man speaking;Silence;Sound effect;Speech;Unmodified field recording"
+S3PjLldhdWI_120000,S3PjLldhdWI,120.0,background,,,0,0,0,0,,,,,,0,0,alarm;speech,"Alarm;Beep, bleep;Male speech, man speaking;Smoke detector, smoke alarm;Speech;Walk, footsteps"
+S8-rwpMWmug_420000,S8-rwpMWmug,420.0,glass,glass,glass,1,1,1,0,5.709,10.000,4.291,,,0,0,,"Breaking;Glass;Glass shatter;Smash, crash;Sound effect"
+SAo1pKNOPM4_380000,SAo1pKNOPM4,380.0,siren,siren,siren,1,1,1,0,0.000,4.378,4.378,Siren,Music,0,0,speech,"Burst, pop;Gunshot, gunfire;Male speech, man speaking;Music;Siren;Speech;Walk, footsteps"
+SC9jczwzY-k_30000,SC9jczwzY-k,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,4.299,6.181,1.882,,,1,1,,"Animal;Bark;Bow-wow;Dog;Domestic animals, pets;Growling;Yip"
+SGFYFPs3Fic_550000,SGFYFPs3Fic,550.0,siren,siren,siren,1,1,1,0,9.240,10.000,0.760,Siren,Music,0,0,,Aircraft;Aircraft engine;Helicopter;Music;Siren;Vehicle
+SGYGEZOHOzQ_120000,SGYGEZOHOzQ,120.0,scream,,scream,0,1,1,1,4.971,6.676,1.705,,Laughter;Music;Screaming,0,0,speech;laughter,"Beep, bleep;Child speech, kid speaking;Laughter;Male singing;Music;Screaming;Silence;Speech"
+SLdVSirZMSI_30000,SLdVSirZMSI,30.0,background,,,0,0,0,1,,,,,Music;Singing,0,0,,"Inside, small room;Male singing;Music;Singing"
+SRjsxeOWFnw_30000,SRjsxeOWFnw,30.0,background,,,0,0,0,0,,,,,,0,0,,"Accelerating, revving, vroom;Boat, Water vehicle;Male speech, man speaking;Motorboat, speedboat;Vehicle;Wind;Wind noise (microphone)"
+SVQ_3JHjJ8w_560000,SVQ_3JHjJ8w,560.0,background,,,0,0,0,0,,,,,,0,0,,"Accelerating, revving, vroom;Car;Car passing by;Motor vehicle (road);Vehicle"
+SW0qQMAZKfo_30000,SW0qQMAZKfo,30.0,def_gap,dog_bark,,1,0,0,0,4.000,6.346,2.346,,,0,1,dog_nonbark,"Animal;Dog;Domestic animals, pets;Growling;Howl"
+SYRLMsvEHJc_9000,SYRLMsvEHJc,9.0,glass,glass,glass,1,1,1,0,6.481,7.192,0.711,,,0,0,,"Background noise;Glass shatter;Sound effect;Squeal;Tap;Vehicle horn, car horn, honking, toot"
+SeA3T6WvW1E_160000,SeA3T6WvW1E,160.0,def_gap,scream,,1,0,0,0,8.157,10.000,1.843,,Shout,0,0,speech,"Beep, bleep;Female speech, woman speaking;Male speech, man speaking;Shout;Speech"
+ShXr3ciUNXU_3000,ShXr3ciUNXU,3.0,glass,glass,glass,1,1,1,0,0.000,3.101,3.101,,,0,0,,Glass shatter
+Sj9_5H1nqfo_200000,Sj9_5H1nqfo,200.0,siren,siren,siren,1,1,1,1,0.000,10.000,10.000,Siren,,0,0,,Emergency vehicle;Motor vehicle (road);Siren;Vehicle
+SkFx45lxlvA_60000,SkFx45lxlvA,60.0,dog_bark,dog_bark,dog_bark,1,1,1,0,0.366,0.568,0.202,,,1,0,,Bark;Clicking;Roar
+Sqpkv9fnxqw_210000,Sqpkv9fnxqw,210.0,siren,siren,siren,1,1,1,0,2.386,10.000,7.614,Siren,,0,0,alarm,Alarm;Siren;Sound effect
+SuCNLfY7b8U_60000,SuCNLfY7b8U,60.0,glass,glass,glass,1,1,1,0,3.707,5.452,1.745,,Music,0,0,,Breaking;Glass;Glass shatter;Music;Water
+SwosBhJ0eYo_0,SwosBhJ0eYo,0.0,siren,siren,siren,1,1,1,0,2.047,10.000,7.953,Civil defense siren;Siren,,0,0,,Civil defense siren;Siren;Wind noise (microphone)
+SxI3Lnzzmkw_110000,SxI3Lnzzmkw,110.0,scream,,scream,0,1,1,0,0.000,10.000,10.000,,Music;Screaming,0,0,,Music;Rain;Screaming;Thunder
+T5Nk8hPJYZY_12000,T5Nk8hPJYZY,12.0,def_gap,scream,,1,0,0,0,6.929,9.076,2.147,,Shout,0,0,,"Background noise;Gargling;Male speech, man speaking;Shout"
+T5YZwhC7Br8_220000,T5YZwhC7Br8,220.0,scream,,scream,0,1,1,0,9.283,10.000,0.717,,Music;Screaming,0,0,,"Inside, small room;Knock;Music;Screaming"
+T8jK1bELCfs_30000,T8jK1bELCfs,30.0,scream,scream,scream,1,1,1,0,7.866,8.835,0.969,,Screaming,0,0,,Screaming;Snicker;Squeal;Tap
+T9wuwv7j-KE_30000,T9wuwv7j-KE,30.0,siren,siren,siren,1,1,1,0,0.000,10.000,10.000,Civil defense siren;Siren,,0,0,,Civil defense siren;Siren
+TXPlKJEqh4Y_30000,TXPlKJEqh4Y,30.0,background,,,0,0,0,0,,,,,,0,0,,"Animal;Growling;Ringtone;Roar;Roaring cats (lions, tigers);Tap;Wild animals"
+TZl2cGkWZL4_30000,TZl2cGkWZL4,30.0,def_gap,dog_bark,,1,0,0,0,2.295,3.133,0.838,,,0,1,dog_nonbark,"Animal;Dog;Domestic animals, pets;Silence;Yip"
+T_FZMsRHzLc_30000,T_FZMsRHzLc,30.0,siren,siren,siren,1,1,1,0,4.969,7.110,2.141,Siren,,0,0,alarm,"Alarm;Inside, small room;Siren"
+Tb2KyzcQoJE_0,Tb2KyzcQoJE,0.0,background,,,0,0,0,0,,,,,,0,0,,"Chirp, tweet;Door;Rustle;Tap;Wind noise (microphone)"
+Tc9sb71px5I_30000,Tc9sb71px5I,30.0,background,,,0,0,0,0,,,,,,0,0,,"Artillery fire;Male speech, man speaking;Mechanisms"
+Ti1RLV975hs_70000,Ti1RLV975hs,70.0,scream,scream,,1,0,0,0,1.543,3.945,2.402,,Shout;Yell,0,0,,"Shout;Sound effect;Splash, splatter;Whack, thwack;Yell"
+Tq7r8e3pw9E_40000,Tq7r8e3pw9E,40.0,background,,,0,0,0,0,,,,,,0,0,,Arrow;Bird;Generic impact sounds
+Twx_pPiQwfc_80000,Twx_pPiQwfc,80.0,def_gap,scream,,1,0,0,0,5.260,6.071,0.811,,Shout,0,0,,Shout;Silence;Sound effect
+U-Qe9aNkrdE_30000,U-Qe9aNkrdE,30.0,def_gap,scream,,1,0,0,0,9.449,9.906,0.457,,Shout,0,0,,"Female speech, woman speaking;Hum;Noise;Shout;Snicker"
+U3GSS_7W2d8_1000,U3GSS_7W2d8,1.0,glass,glass,glass,1,1,1,1,6.997,9.031,2.034,,,0,0,,Explosion;Glass shatter;Hiss;Tap
+UBAlsmLwYn8_8000,UBAlsmLwYn8,8.0,glass,glass,glass,1,1,1,0,2.629,3.468,0.839,,,0,0,,"Explosion;Female speech, woman speaking;Generic impact sounds;Glass;Glass shatter;Male speech, man speaking;Static;Tap;Television"
+UCycMYxXIw4_0,UCycMYxXIw4,0.0,scream,,scream,0,1,1,0,7.220,10.000,2.780,,Cheering;Crowd;Screaming;Shout;Yell,0,0,crowd,"Cheering;Crowd;Female speech, woman speaking;Narration, monologue;Screaming;Shout;Whoop;Yell"
+UUjPZPtqG5k_0,UUjPZPtqG5k,0.0,background,,,0,0,0,0,,,,,,0,0,,"Animal;Bird;Bird vocalization, bird call, bird song;Chicken, rooster;Chirp, tweet;Crowing, cock-a-doodle-doo;Fowl;Livestock, farm animals, working animals"
+UfMr4FFsS28_21000,UfMr4FFsS28,21.0,dog_bark,dog_bark,dog_bark,1,1,1,0,8.630,9.827,1.197,,Music,1,1,,Bark;Dog;Mechanisms;Meow;Music;Tap
+Uj-OBIGK240_440000,Uj-OBIGK240,440.0,scream,scream,scream,1,1,1,0,0.646,2.016,1.370,,Screaming;Shout,0,0,speech;crying,"Child speech, kid speaking;Crying, sobbing;Liquid;Male speech, man speaking;Screaming;Shout;Speech;Splash, splatter;Water"
+UoRitfnYmKU_30000,UoRitfnYmKU,30.0,background,,,0,0,0,1,,,,,Music,0,0,speech,"Male speech, man speaking;Music;Narration, monologue;Speech"
+UyCfhj3LXVk_2000,UyCfhj3LXVk,2.0,background,,,0,0,0,0,,,,,,0,0,,Bleat;Surface contact
+UynKj68K0VU_30000,UynKj68K0VU,30.0,scream,,scream,0,1,1,1,1.032,1.562,0.530,,"Applause;Chuckle, chortle;Clapping;Laughter;Music;Screaming",0,0,speech;crowd;laughter,"Applause;Chuckle, chortle;Clapping;Inside, large room or hall;Laughter;Male speech, man speaking;Music;Screaming;Speech"
+V3Vvp5HS90k_20000,V3Vvp5HS90k,20.0,background,,,0,0,0,1,,,,,Music;Singing,0,0,,Music;Singing
+V3qChNAYuCQ_130000,V3qChNAYuCQ,130.0,siren,,siren,0,1,1,0,4.260,10.000,5.740,"Fire engine, fire truck (siren)",,0,0,,"Fire;Fire engine, fire truck (siren)"
+V3zM2JFHN3Q_40000,V3zM2JFHN3Q,40.0,def_gap,dog_bark,,1,0,0,0,4.260,10.000,5.740,,,0,1,dog_nonbark,"Animal;Dog;Domestic animals, pets;Inside, small room;Pant"
+V61KigsA8BQ_80000,V61KigsA8BQ,80.0,glass,glass,glass,1,1,1,0,3.433,4.535,1.102,,Music,0,0,,"Breaking;Conversation;Female speech, woman speaking;Glass;Glass shatter;Music"
+VCERs0v1OoI_40000,VCERs0v1OoI,40.0,background,,,0,0,0,0,,,,,Laughter,0,0,laughter,"Bird;Bird vocalization, bird call, bird song;Conversation;Laughter;Male speech, man speaking;Ping;Tuning fork"
+VKGWfdNBq3M_130000,VKGWfdNBq3M,130.0,background,,,0,0,0,0,,,,,,0,0,crowd,"Child speech, kid speaking;Cutlery, silverware;Dishes, pots, and pans;Female speech, woman speaking;Hubbub, speech noise, speech babble;Male speech, man speaking"
+VQvPEYqbz5Y_30000,VQvPEYqbz5Y,30.0,def_gap,scream,,1,0,0,0,3.504,4.622,1.118,,Shout,0,0,,"Male speech, man speaking;Medium engine (mid frequency);Outside, urban or manmade;Shout;Truck"
+VZRQd3d6jjA_50000,VZRQd3d6jjA,50.0,def_gap,dog_bark,,1,0,0,0,4.898,6.457,1.559,,,0,1,dog_nonbark,"Animal;Bird;Bird flight, flapping wings;Dog;Male speech, man speaking"
+Vh9sA7U71qY_30000,Vh9sA7U71qY,30.0,background,,,0,0,0,0,,,,,,0,0,,"Chewing, mastication;Whispering"
+VjjS4B1FMNM_180000,VjjS4B1FMNM,180.0,glass,glass,glass,1,1,1,1,2.843,3.465,0.622,,,0,0,,"Beep, bleep;Glass shatter;Male speech, man speaking;Silence;Sound effect"
+VwHHMU4tT9s_0,VwHHMU4tT9s,0.0,def_gap,scream,,1,0,0,0,2.062,3.402,1.340,,Shout,0,0,crying,"Baby cry, infant cry;Beep, bleep;Crying, sobbing;Female speech, woman speaking;Male speech, man speaking;Shout;Sound effect"
+VznQbtQdaEw_80000,VznQbtQdaEw,80.0,background,,,0,0,0,0,,,,,,0,0,,"Child speech, kid speaking;Male speech, man speaking;Sound effect;Speech synthesizer;Telephone bell ringing"
+W-daow-LojM_0,W-daow-LojM,0.0,scream,scream,,1,0,0,0,1.137,1.625,0.488,,Shout,0,0,,"Clicking;Male speech, man speaking;Noise;Shout;Wind noise (microphone)"
+W9SbZRsnjeI_440000,W9SbZRsnjeI,440.0,scream,scream,,1,0,0,0,0.000,1.449,1.449,,Shout,0,0,,"Background noise;Breathing;Clicking;Plop;Shout;Wail, moan"
+WFJ96PH4rvo_20000,WFJ96PH4rvo,20.0,def_gap,dog_bark,,1,0,0,0,0.000,6.811,6.811,,,0,1,dog_nonbark,"Animal;Breathing;Dog;Domestic animals, pets;Whimper (dog)"
+WGuc_McKm_4_30000,WGuc_McKm_4,30.0,background,,,0,0,0,0,,,,,"Chuckle, chortle",0,0,,"Baby laughter;Chuckle, chortle"
+WJV6Ey6hXEw_30000,WJV6Ey6hXEw,30.0,dog_bark,dog_bark,dog_bark,1,1,1,1,8.850,9.551,0.701,,,1,0,,"Bark;Growling;Inside, small room"
+WMbdMQ7rdFs_30000,WMbdMQ7rdFs,30.0,background,,,0,0,0,0,,,,,,0,0,,"Beep, bleep;Door;Keys jangling;Male speech, man speaking"
+WXsTHg_DiYA_30000,WXsTHg_DiYA,30.0,siren,siren,siren,1,1,0,1,0.000,10.000,10.000,Siren,,0,0,,"Bird vocalization, bird call, bird song;Siren"
+W_1zSnubvSM_100000,W_1zSnubvSM,100.0,background,,,0,0,0,0,,,,,Music,0,0,,Music;Steam whistle
+WcPOGKf6RE8_110000,WcPOGKf6RE8,110.0,dog_bark,dog_bark,dog_bark,1,1,1,0,6.583,7.000,0.417,,,1,0,,"Animal;Babbling;Baby laughter;Bark;Female speech, woman speaking;Inside, small room"
+WsKJwVVs-MY_0,WsKJwVVs-MY,0.0,background,,,0,0,0,1,,,,,,0,0,,"Conversation;Engine knocking;Engine starting;Male speech, man speaking;Medium engine (mid frequency);Silence"
+Wxiwqieqy2Y_30000,Wxiwqieqy2Y,30.0,siren,siren,siren,1,1,1,1,0.000,10.000,10.000,Ambulance (siren);Police car (siren);Siren,,0,0,,"Ambulance (siren);Emergency vehicle;Motor vehicle (road);Outside, urban or manmade;Police car (siren);Siren;Traffic noise, roadway noise;Wind"
+X0LgBnGmy1w_150000,X0LgBnGmy1w,150.0,scream,scream,,1,0,0,0,0.407,1.942,1.535,,Shout,0,0,,"Boat, Water vehicle;Male speech, man speaking;Ocean;Shout;Water;Wind"
+X2MlmcY8UZU_30000,X2MlmcY8UZU,30.0,siren,siren,siren,1,1,1,1,0.000,9.742,9.742,Siren,,0,0,,"Male speech, man speaking;Siren;Tick"
+X7DsTXBf2aM_20000,X7DsTXBf2aM,20.0,scream,,scream,0,1,1,0,7.866,10.000,2.134,,Cheering;Crowd;Screaming,0,0,crowd,"Cheering;Crowd;Hubbub, speech noise, speech babble;Inside, large room or hall;Screaming;Whoop"
+XG5BD4iHty8_60000,XG5BD4iHty8,60.0,background,,,0,0,0,0,,,,,,0,0,,"Inside, small room;Scissors;Silence"
+XHC8k_NzQOc_30000,XHC8k_NzQOc,30.0,def_gap,dog_bark,,1,0,0,0,2.354,3.827,1.473,,,0,1,dog_nonbark,"Bell;Bird vocalization, bird call, bird song;Breathing;Chirp, tweet;Dog"
+XMWJOIT5xRc_120000,XMWJOIT5xRc,120.0,background,,,0,0,0,0,,,,,Music,0,0,speech,"Conversation;Female speech, woman speaking;Male speech, man speaking;Music;Sine wave;Speech;Throat clearing"
+XTHazFZil1A_110000,XTHazFZil1A,110.0,background,,,0,0,0,0,,,,,,0,0,,"Arrow;Bell;Cap gun;Chirp, tweet;Generic impact sounds;Mains hum;Mechanisms"
+XTZaiHKwmGI_30000,XTZaiHKwmGI,30.0,background,,,0,0,0,0,,,,,Laughter;Music,0,0,laughter,"Child speech, kid speaking;Children playing;Female speech, woman speaking;Laughter;Music"
+XTfez06Ovtc_1000,XTfez06Ovtc,1.0,background,,,0,0,0,0,,,,,Laughter,0,0,laughter,"Background noise;Breathing;Human sounds;Laughter;Male speech, man speaking;Stomach rumble;Tap;Tick"
+XYLDjkXAuec_380000,XYLDjkXAuec,380.0,siren,siren,siren,1,1,0,0,0.000,10.000,10.000,"Fire engine, fire truck (siren);Siren",,0,0,,"Emergency vehicle;Fire engine, fire truck (siren);Siren"
+XjoRxeEyjz4_30000,XjoRxeEyjz4,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+XwTzgkH2j_s_30000,XwTzgkH2j_s,30.0,dog_bark,dog_bark,dog_bark,1,1,1,1,0.150,0.425,0.275,,Applause;Cheering;Music,1,0,crowd,"Applause;Bark;Cheering;Child singing;Female speech, woman speaking;Liquid;Male speech, man speaking;Music;Whoosh, swoosh, swish"
+XyCjByHuDIk_260000,XyCjByHuDIk,260.0,background,,,0,0,0,0,,,,,,0,0,,"Accelerating, revving, vroom;Medium engine (mid frequency);Outside, urban or manmade;Race car, auto racing;Tire squeal, skidding"
+Y-En0Z6Iabo_0,Y-En0Z6Iabo,0.0,glass,glass,glass,1,1,1,0,3.164,4.386,1.222,,,0,0,,"Breaking;Glass shatter;Inside, small room;Male speech, man speaking;Silence;Whack, thwack;Whoosh, swoosh, swish"
+Y-Ysf3BK5zs_560000,Y-Ysf3BK5zs,560.0,scream,,scream,0,1,1,1,2.457,3.795,1.338,,Music;Screaming,0,0,,"Male speech, man speaking;Music;Screaming;Silence;Whistle"
+Y7SoAXBFUew_30000,Y7SoAXBFUew,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+YLfIkpwMRWQ_60000,YLfIkpwMRWQ,60.0,glass,glass,glass,1,1,1,0,4.417,5.795,1.378,,,0,0,,Breaking;Ding;Glass shatter;Grunt;Hammer
+YM27M-R0kIA_0,YM27M-R0kIA,0.0,background,,,0,0,0,0,,,,,,0,0,,"Clip-clop;Male speech, man speaking;Mechanisms;Neigh, whinny"
+YVeURlpM-ZA_200000,YVeURlpM-ZA,200.0,background,,,0,0,0,0,,,,,,0,0,,"Female speech, woman speaking;Inside, small room;Liquid;Mechanisms"
+YWUxMuhSol0_160000,YWUxMuhSol0,160.0,background,,,0,0,0,0,,,,,,0,0,,"Engine knocking;Male speech, man speaking;Medium engine (mid frequency)"
+YcWJUHWt-64_0,YcWJUHWt-64,0.0,background,,,0,0,0,0,,,,,Music,0,0,,Male singing;Music;Silence
+YeaeMe9B8YM_21000,YeaeMe9B8YM,21.0,background,,,0,0,0,0,,,,,,0,0,,Chirp tone;Mechanisms;Tick
+YlMLkS8NNqY_21000,YlMLkS8NNqY,21.0,background,,,0,0,0,0,,,,,,0,0,crowd,"Background noise;Breathing;Hubbub, speech noise, speech babble;Male speech, man speaking;Narration, monologue"
+YrH0TXyYSNM_10000,YrH0TXyYSNM,10.0,dog_bark,dog_bark,dog_bark,1,1,1,0,6.942,7.150,0.208,,,1,0,,"Bark;Chirp, tweet;Inside, small room;Male speech, man speaking;Mechanisms;Rodents, rats, mice;Television"
+YweMTt5aAVY_70000,YweMTt5aAVY,70.0,scream,,scream,0,1,1,0,5.732,9.638,3.906,,Laughter;Screaming;Shout,0,0,laughter,"Female speech, woman speaking;Laughter;Male speech, man speaking;Screaming;Shout;Splash, splatter"
+Z5X0bIh2Up8_160000,Z5X0bIh2Up8,160.0,dog_bark,dog_bark,dog_bark,1,1,1,0,0.591,1.228,0.637,,,1,1,,Bark;Dog;Engine;Engine starting;Mechanisms
+ZANp2W2q0XA_30000,ZANp2W2q0XA,30.0,siren,,siren,0,1,1,1,0.000,5.223,5.223,"Fire engine, fire truck (siren)",,0,0,,"Accelerating, revving, vroom;Car;Fire engine, fire truck (siren);Medium engine (mid frequency);Studio recording"
+ZECeW7EAQtM_10000,ZECeW7EAQtM,10.0,background,,,0,0,0,0,,,,,,0,0,,"Accelerating, revving, vroom;Bus;Engine;Outside, urban or manmade;Vehicle"
+ZJHBBH9gh2Y_0,ZJHBBH9gh2Y,0.0,background,,,0,0,0,0,,,,,Music,0,0,,Music;Silence
+ZJXryqSFl3E_390000,ZJXryqSFl3E,390.0,background,,,0,0,0,0,,,,,,0,0,,"Cricket;Male speech, man speaking;Outside, urban or manmade;Power windows, electric windows;Silence"
+ZNwjZbifv-s_530000,ZNwjZbifv-s,530.0,scream,scream,scream,1,1,1,1,6.717,7.118,0.401,,Screaming,0,0,,"Burst, pop;Chirp, tweet;Female speech, woman speaking;Screaming;Water"
+ZPHQk8b_JBo_380000,ZPHQk8b_JBo,380.0,background,,,0,0,0,0,,,,,,0,0,,"Boat, Water vehicle;Male speech, man speaking;Pulleys;Splash, splatter;Surface contact;Wind noise (microphone)"
+ZPoXYOSyQ98_13000,ZPoXYOSyQ98,13.0,glass,glass,glass,1,1,1,0,4.865,6.611,1.746,,,0,0,,Breaking;Glass shatter
+ZffKAdpfa5c_70000,ZffKAdpfa5c,70.0,background,,,0,0,0,1,,,,,,0,0,,"Clicking;Human sounds;Male speech, man speaking"
+ZhafwFYgltI_60000,ZhafwFYgltI,60.0,scream,,scream,0,1,1,0,9.669,10.000,0.331,,Music;Screaming;Shout,0,0,,Clip-clop;Music;Screaming;Shout
+ZkQk_9V-1FU_500000,ZkQk_9V-1FU,500.0,scream,scream,,1,0,0,0,0.000,1.693,1.693,,Shout,0,0,,"Engine;Human voice;Male singing;Male speech, man speaking;Shout"
+ZmWqMtY4Qa0_140000,ZmWqMtY4Qa0,140.0,def_gap,scream,,1,0,0,0,6.775,7.509,0.734,,Shout,0,0,,"Groan;Male speech, man speaking;Shout;Silence;Sound effect;Whistle"
+ZrXzyIDgBOQ_1000,ZrXzyIDgBOQ,1.0,background,,,0,0,0,1,,,,,,0,0,,Mechanisms;Squeal
+ZtxAGRDyw-I_60000,ZtxAGRDyw-I,60.0,siren,,siren,0,1,1,0,0.000,10.000,10.000,"Fire engine, fire truck (siren)",,0,0,,"Fire engine, fire truck (siren);Outside, urban or manmade;Wind noise (microphone)"
+ZvG5aSIrYAw_190000,ZvG5aSIrYAw,190.0,def_gap,scream,,1,0,0,0,2.150,2.827,0.677,,Shout,0,0,,"Computer keyboard;Inside, small room;Male speech, man speaking;Shout;Typing"
+ZvcqyRbXyls_30000,ZvcqyRbXyls,30.0,siren,,siren,0,1,1,0,0.000,10.000,10.000,Police car (siren),,0,0,,Police car (siren);Sound effect
+ZyiDGq0qh2s_30000,ZyiDGq0qh2s,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,7.291,8.268,0.977,,,1,1,speech,"Bark;Cough;Dog;Domestic animals, pets;Female speech, woman speaking;Gasp;Speech"
+_-_U21mzk40_30000,_-_U21mzk40,30.0,background,,,0,0,0,0,,,,,Laughter,0,0,laughter,"Child speech, kid speaking;Female speech, woman speaking;Laughter;Male speech, man speaking;Slap, smack;Snicker"
+_BjPeIQBJUQ_30000,_BjPeIQBJUQ,30.0,background,,,0,0,0,1,,,,,,0,0,,"Accelerating, revving, vroom;Motorcycle"
+_CVXWoVr9OU_30000,_CVXWoVr9OU,30.0,siren,,siren,0,1,1,0,0.000,10.000,10.000,Civil defense siren,,0,0,,Civil defense siren
+_IkLUOsNHAA_0,_IkLUOsNHAA,0.0,background,,,0,0,0,1,,,,,Music,0,0,,Music
+_Kqp53S6kuA_60000,_Kqp53S6kuA,60.0,siren,,siren,0,1,1,0,0.000,10.000,10.000,Civil defense siren,,0,0,,Civil defense siren
+_NxuW7UpFco_510000,_NxuW7UpFco,510.0,scream,scream,,1,0,0,0,0.000,0.436,0.436,,Shout,0,0,,"Male speech, man speaking;Shout;Sound effect"
+_WJFzZwYgoQ_0,_WJFzZwYgoQ,0.0,dog_bark,dog_bark,dog_bark,1,1,1,0,4.882,5.425,0.543,,,1,0,,"Bark;Crowing, cock-a-doodle-doo"
+_ZvISbLj0Rg_30000,_ZvISbLj0Rg,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,4.055,5.110,1.055,,Laughter;Music,1,0,laughter,"Bark;Female speech, woman speaking;Human voice;Laughter;Male speech, man speaking;Music;Television"
+_fTONy_pqik_30000,_fTONy_pqik,30.0,dog_bark,dog_bark,dog_bark,1,1,1,1,9.814,10.000,0.186,,Laughter,1,0,laughter,"Bark;Female speech, woman speaking;Laughter;Male speech, man speaking;Pant;Snoring;Walk, footsteps"
+_m-N4i-ge28_30000,_m-N4i-ge28,30.0,background,,,0,0,0,1,,,,,Music,0,0,,Distortion;Male singing;Music
+_oeM7Osk7DI_370000,_oeM7Osk7DI,370.0,background,,,0,0,0,0,,,,,,0,0,,"Door;Engine;Slam;Walk, footsteps"
+_pb27DWQPww_10000,_pb27DWQPww,10.0,def_gap,scream,,1,0,0,0,7.975,10.000,2.025,,Shout,0,0,,"Female speech, woman speaking;Male speech, man speaking;Shout;Tap;Telephone dialing, DTMF"
+_pxnSaDou3I_0,_pxnSaDou3I,0.0,background,,,0,0,0,0,,,,,,0,0,,"Breathing;Male speech, man speaking;White noise, pink noise"
+_w7IRavHAIA_70000,_w7IRavHAIA,70.0,def_gap,dog_bark,,1,0,0,0,8.803,9.417,0.614,,,0,1,dog_nonbark,"Coin (dropping);Dog;Male speech, man speaking"
+_xuq9rBndUE_0,_xuq9rBndUE,0.0,scream,scream,scream,1,1,1,0,8.488,9.661,1.173,,Screaming,0,0,,"Conversation;Female speech, woman speaking;Screaming;Speech synthesizer;Tap;Telephone bell ringing"
+_z5KQY02rYI_2000,_z5KQY02rYI,2.0,siren,,siren,0,1,1,1,0.000,9.053,9.053,Ambulance (siren),,0,0,,Ambulance (siren);Tick
+a3UQ9Je4xQM_20000,a3UQ9Je4xQM,20.0,def_gap,dog_bark,,1,0,0,0,0.886,1.983,1.097,,,0,1,dog_nonbark,"Animal;Dog;Domestic animals, pets;Female speech, woman speaking;Growling;Inside, small room;Silence;Sneeze"
+a59ivTlYoNk_310000,a59ivTlYoNk,310.0,scream,scream,scream,1,1,1,0,2.756,4.394,1.638,,Screaming,0,0,,"Child speech, kid speaking;Inside, small room;Male speech, man speaking;Screaming;Television"
+aNkOcOCm32s_10000,aNkOcOCm32s,10.0,dog_bark,dog_bark,dog_bark,1,1,1,0,5.898,7.906,2.008,,,1,1,,"Bark;Dog;Howl;Mains hum;Male speech, man speaking"
+aSJKZRwMsxE_50000,aSJKZRwMsxE,50.0,background,,,0,0,0,0,,,,,,0,0,,"Female singing;Inside, small room;Male singing"
+ablBCBK9ZHM_30000,ablBCBK9ZHM,30.0,siren,siren,siren,1,1,0,0,1.307,3.657,2.350,Siren,,0,0,,"Mechanisms;Siren;Thump, thud;Tick"
+acoqKEVczug_10000,acoqKEVczug,10.0,background,,,0,0,0,0,,,,,,0,0,,"Smoke detector, smoke alarm"
+aiyBTv4PKcM_60000,aiyBTv4PKcM,60.0,background,,,0,0,0,0,,,,,,0,0,,"Inside, small room;Male speech, man speaking;Scissors"
+auC_LgwFF8g_30000,auC_LgwFF8g,30.0,scream,,scream,0,1,1,1,6.661,7.291,0.630,,"Chuckle, chortle;Screaming",0,0,,"Chuckle, chortle;Coin (dropping);Conversation;Female speech, woman speaking;Inside, small room;Male speech, man speaking;Screaming;Sound effect"
+av-1Ih0S82s_30000,av-1Ih0S82s,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Music;Silence
+avbuNGJveEQ_21000,avbuNGJveEQ,21.0,def_gap,scream,,1,0,0,0,3.546,3.919,0.373,,Shout,0,0,,"Machine gun;Male speech, man speaking;Shout;Sound effect;Throbbing;Water"
+axBqV0ccuHI_30000,axBqV0ccuHI,30.0,background,,,0,0,0,0,,,,,,0,0,,"Boom;Male speech, man speaking;Run;Wind noise (microphone)"
+b0KSxH37gVE_100000,b0KSxH37gVE,100.0,dog_bark,dog_bark,dog_bark,1,1,1,1,4.614,5.706,1.092,,Laughter,1,1,laughter,"Animal;Bark;Dog;Female speech, woman speaking;Generic impact sounds;Laughter;Male speech, man speaking"
+bA8idGxNUkQ_26000,bA8idGxNUkQ,26.0,def_gap,dog_bark,,1,0,0,0,8.735,8.955,0.220,,Music,0,1,dog_nonbark,Dog;Female singing;Growling;Music
+bA8mt0JI0Ko_30000,bA8mt0JI0Ko,30.0,siren,siren,siren,1,1,1,0,2.220,10.000,7.780,Siren,,0,0,alarm,Alarm;Siren;Wind noise (microphone)
+bAu5ONLjR5Q_30000,bAu5ONLjR5Q,30.0,background,,,0,0,0,0,,,,,,0,0,,Gears;Whir
+bCfXb8jtAsg_200000,bCfXb8jtAsg,200.0,def_gap,scream,,1,0,0,0,7.701,8.819,1.118,,Shout,0,0,,"Breathing;Child speech, kid speaking;Male speech, man speaking;Shout;Silence"
+bD5MT2FoOJg_30000,bD5MT2FoOJg,30.0,background,,,0,0,0,1,,,,,,0,0,,Hair dryer
+bDpowdWB7lk_21000,bDpowdWB7lk,21.0,def_gap,dog_bark,,1,0,0,0,5.953,8.787,2.834,,,0,1,dog_nonbark,"Dog;Inside, small room"
+bI6hI2WEopM_30000,bI6hI2WEopM,30.0,siren,,siren,0,1,1,1,0.000,10.000,10.000,Civil defense siren,,0,0,,Civil defense siren
+bIZLpmU0JfU_30000,bIZLpmU0JfU,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,7.283,7.551,0.268,,Music,1,0,,Bark;Music
+bIkffoNUKkk_70000,bIkffoNUKkk,70.0,def_gap,scream,,1,0,0,0,4.205,5.024,0.819,,Shout,0,0,,"Liquid;Male speech, man speaking;Shout"
+bNbSAUZyBow_550000,bNbSAUZyBow,550.0,scream,scream,,1,0,0,0,8.653,9.936,1.283,,Shout,0,0,,"Shout;Thump, thud"
+bVPLdRReUZ8_13000,bVPLdRReUZ8,13.0,def_gap,scream,,1,0,0,0,0.000,0.918,0.918,,Shout,0,0,,"Artillery fire;Boom;Human voice;Male speech, man speaking;Mechanisms;Shout;Tap;Tick"
+ba43-gH05H4_40000,ba43-gH05H4,40.0,background,,,0,0,0,1,,,,,,0,0,,"Beep, bleep;Male speech, man speaking;Motorboat, speedboat;Water"
+baJrAVUZtvs_30000,baJrAVUZtvs,30.0,background,,,0,0,0,0,,,,,,0,0,,"Accelerating, revving, vroom;Clicking;Computer keyboard;Hiccup;Vehicle"
+bciLCctZfjE_200000,bciLCctZfjE,200.0,background,,,0,0,0,0,,,,,,0,0,,Generic impact sounds;Mechanisms
+bh0K0uAGYRI_280000,bh0K0uAGYRI,280.0,background,,,0,0,0,0,,,,,,0,0,,"Beep, bleep;Car;Generic impact sounds;Male speech, man speaking;Vehicle horn, car horn, honking, toot"
+bvuUz9Z4BaE_6000,bvuUz9Z4BaE,6.0,scream,scream,,1,0,0,0,2.517,3.294,0.777,,Shout,0,0,,"Groan;Male speech, man speaking;Shout;Tap;Thump, thud;Walk, footsteps;Whack, thwack"
+c33tVGlM0Z8_30000,c33tVGlM0Z8,30.0,background,,,0,0,0,1,,,,,,0,0,,Background noise;Tick;Train whistle
+c7YGJfuV_2Q_140000,c7YGJfuV_2Q,140.0,siren,,siren,0,1,1,0,0.046,6.265,6.219,Police car (siren),,0,0,,Clicking;Police car (siren);Tap;Tick
+cHm1cYBAXMI_30000,cHm1cYBAXMI,30.0,siren,,siren,0,1,1,0,0.000,3.535,3.535,Police car (siren),Music,0,0,,Motor vehicle (road);Music;Police car (siren)
+cIS8PcMk0Uw_30000,cIS8PcMk0Uw,30.0,dog_bark,dog_bark,dog_bark,1,1,1,1,0.619,0.850,0.231,,Laughter,1,0,laughter,"Bark;Female speech, woman speaking;Laughter;Male speech, man speaking;Waterfall"
+cVgw01vB-yQ_0,cVgw01vB-yQ,0.0,glass,glass,glass,1,1,1,0,7.460,9.214,1.754,,Laughter;Shout,0,0,laughter,"Beep, bleep;Glass shatter;Gunshot, gunfire;Laughter;Male speech, man speaking;Shout;Thump, thud;Whoosh, swoosh, swish;Wind"
+cXpawpxoSq0_30000,cXpawpxoSq0,30.0,siren,siren,siren,1,1,1,0,0.000,8.868,8.868,Siren,,0,0,,"Heavy engine (low frequency);Male speech, man speaking;Mechanisms;Siren;Tap;Tick"
+cv901tRE0rQ_30000,cv901tRE0rQ,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,2.220,3.315,1.095,,,1,0,,Animal;Bark;Generic impact sounds;Growling;Hum
+cxw91PSTRq8_120000,cxw91PSTRq8,120.0,scream,scream,,1,0,0,0,5.947,6.611,0.664,,Shout,0,0,,"Groan;Machine gun;Male speech, man speaking;Shout;Sound effect;Thunk"
+d6AioJ8CkTc_30000,d6AioJ8CkTc,30.0,background,,,0,0,0,0,,,,,,0,0,,"Accelerating, revving, vroom;Generic impact sounds;Medium engine (mid frequency)"
+d6xZX6qMt10_130000,d6xZX6qMt10,130.0,def_gap,scream,,1,0,0,0,9.469,10.000,0.531,,Shout,0,0,,"Breathing;Human voice;Male speech, man speaking;Shout;Sound effect;Whack, thwack"
+dDa0dwx1XXg_20000,dDa0dwx1XXg,20.0,dog_bark,dog_bark,dog_bark,1,1,1,0,6.315,6.568,0.253,,Clapping;Crowd;Shout,1,0,crowd,"Background noise;Bark;Clapping;Crowd;Human voice;Male speech, man speaking;Shout;Yodeling"
+dDiJVPw5hAY_30000,dDiJVPw5hAY,30.0,glass,glass,glass,1,1,1,1,8.260,9.559,1.299,,,0,0,,"Finger snapping;Glass shatter;Groan;Mechanisms;Sound effect;Whoosh, swoosh, swish"
+dIgNwyFB0Tg_250000,dIgNwyFB0Tg,250.0,background,,,0,0,0,0,,,,,,0,0,crying,"Background noise;Conversation;Crying, sobbing;Dial tone;Male speech, man speaking;Walk, footsteps;Wind noise (microphone)"
+dPcw4R5lczw_500000,dPcw4R5lczw,500.0,siren,siren,siren,1,1,1,0,0.000,2.921,2.921,Siren,,0,0,,"Busy signal;Clicking;Female speech, woman speaking;Rumble;Siren;Traffic noise, roadway noise"
+dVYjJc2KdnY_90000,dVYjJc2KdnY,90.0,dog_bark,dog_bark,dog_bark,1,1,1,0,2.210,2.395,0.185,,,1,0,,"Bark;Cricket;Croak;Hiss;Male speech, man speaking;Tick"
+d_Hdkt1_ivo_30000,d_Hdkt1_ivo,30.0,background,,,0,0,0,0,,,,,,0,0,,"Male speech, man speaking;Motorboat, speedboat;Water;Wind noise (microphone)"
+darQBSIlol8_30000,darQBSIlol8,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Music;Water
+db7z5uroxsA_30000,db7z5uroxsA,30.0,glass,glass,glass,1,1,1,0,3.979,5.225,1.246,,,0,0,,Background noise;Glass shatter;Hammer
+dfsvT5xImNg_80000,dfsvT5xImNg,80.0,scream,scream,scream,1,1,1,0,6.000,7.087,1.087,,Screaming;Shout,0,0,,"Breathing;Female speech, woman speaking;Male speech, man speaking;Mechanisms;Screaming;Shout;Thump, thud"
+dkk1-nJesKs_590000,dkk1-nJesKs,590.0,dog_bark,dog_bark,dog_bark,1,1,1,1,7.481,8.039,0.558,,Laughter,1,0,laughter,"Background noise;Bark;Generic impact sounds;Human sounds;Laughter;Male speech, man speaking"
+dmaMs7gUxyU_230000,dmaMs7gUxyU,230.0,siren,,siren,0,1,1,0,0.000,10.000,10.000,Civil defense siren,,0,0,,Civil defense siren;Wind noise (microphone)
+dtYo287OEJ8_50000,dtYo287OEJ8,50.0,siren,siren,siren,1,1,0,0,0.000,10.000,10.000,Siren,,0,0,,Siren
+dvzwRooVGJI_140000,dvzwRooVGJI,140.0,dog_bark,dog_bark,dog_bark,1,1,1,0,1.915,2.716,0.801,,,1,0,,"Animal;Bark;Dishes, pots, and pans;Squeak;Water tap, faucet"
+eFikrMyPpcE_10000,eFikrMyPpcE,10.0,scream,,scream,0,1,1,1,3.047,4.299,1.252,,Laughter;Screaming;Shout,0,0,crowd;laughter,"Child speech, kid speaking;Conversation;Female speech, woman speaking;Hubbub, speech noise, speech babble;Human sounds;Laughter;Male speech, man speaking;Screaming;Shout;Thump, thud;Wail, moan"
+eIMjkADTWzA_60000,eIMjkADTWzA,60.0,siren,siren,siren,1,1,1,0,0.000,10.000,10.000,Siren,,0,0,speech,Siren;Speech;Tap;Tick
+eMpg3l9nI2s_30000,eMpg3l9nI2s,30.0,dog_bark,dog_bark,dog_bark,1,1,1,1,5.929,6.409,0.480,,,1,0,,"Bark;Female speech, woman speaking;Tick;Whimper (dog)"
+eOrV9yNuT3o_30000,eOrV9yNuT3o,30.0,scream,,scream,0,1,1,1,3.664,4.500,0.836,,Music;Screaming;Shout,0,0,,"Bird;Female speech, woman speaking;Music;Screaming;Shout;Sound effect;Surface contact;Thump, thud"
+eSMCZfnJ5gI_30000,eSMCZfnJ5gI,30.0,dog_bark,dog_bark,dog_bark,1,1,1,1,1.283,1.606,0.323,,,1,1,,"Bark;Dog;Male speech, man speaking;Silence;Whimper (dog)"
+eWsnTX9zkHI_530000,eWsnTX9zkHI,530.0,background,,,0,0,0,1,,,,,Music,0,0,,"Breathing;Male speech, man speaking;Music"
+eXWBC3XfiXY_30000,eXWBC3XfiXY,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Breathing;Male singing;Music
+eb8SGIofp5w_30000,eb8SGIofp5w,30.0,scream,scream,,1,0,0,0,1.315,4.008,2.693,,Shout,0,0,,"Background noise;Breathing;Fart;Female speech, woman speaking;Generic impact sounds;Shout;Tap"
+eeifHAPRK9Q_20000,eeifHAPRK9Q,20.0,background,,,0,0,0,0,,,,,,0,0,,Static
+ejKuCODenK8_30000,ejKuCODenK8,30.0,dog_bark,dog_bark,dog_bark,1,1,1,1,1.520,1.740,0.220,,,1,0,,"Bark;Male speech, man speaking;Medium engine (mid frequency);Tap"
+ereEhTuBlwA_0,ereEhTuBlwA,0.0,scream,scream,,1,0,0,0,6.667,7.248,0.581,,Shout,0,0,,"Chainsaw;Clicking;Shout;Thump, thud"
+eyFPHlybqDg_30000,eyFPHlybqDg,30.0,background,,,0,0,0,0,,,,,,0,0,,"Accelerating, revving, vroom;Car;Clicking;Tap;Tick"
+ezayBI_xOVk_30000,ezayBI_xOVk,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Chorus effect;Music
+f-78YLWvNxA_20000,f-78YLWvNxA,20.0,dog_bark,dog_bark,dog_bark,1,1,1,0,2.850,3.165,0.315,,Music,1,0,,Background noise;Bark;Music;Tap
+f23UN5G2N8s_70000,f23UN5G2N8s,70.0,glass,glass,glass,1,1,1,0,6.937,8.236,1.299,,,0,0,,Baby laughter;Glass shatter;Plop;Silence;Squeak
+f9Of0Hp4hjM_0,f9Of0Hp4hjM,0.0,scream,scream,scream,1,1,1,1,2.780,7.252,4.472,,Screaming;Shout,0,0,,"Male speech, man speaking;Screaming;Shout"
+fF2TlMx46UY_170000,fF2TlMx46UY,170.0,dog_bark,dog_bark,dog_bark,1,1,1,0,2.010,2.654,0.644,,,1,0,,"Bark;Bleat;Caw;Crumpling, crinkling;Male speech, man speaking;Mechanisms;Tick"
+fNwMYAP3NmI_19000,fNwMYAP3NmI,19.0,scream,scream,scream,1,1,1,0,0.000,0.406,0.406,,Screaming,0,0,,Screaming;Sound effect;Video game sound
+fWwV7o4VjEQ_30000,fWwV7o4VjEQ,30.0,background,,,0,0,0,1,,,,,Music,0,0,,Male singing;Music
+flXMshHSJIE_20000,flXMshHSJIE,20.0,background,,,0,0,0,0,,,,,,0,0,,Rub;Scissors;Surface contact;Tap
+fumA4irXnyQ_30000,fumA4irXnyQ,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,5.333,5.669,0.336,,,1,0,,"Bark;Crumpling, crinkling;Tap;Wind noise (microphone)"
+g-YnLgYVKGc_30000,g-YnLgYVKGc,30.0,background,,,0,0,0,0,,,,,Laughter,0,0,laughter,"Breathing;Camera;Child speech, kid speaking;Clicking;Conversation;Crumpling, crinkling;Female speech, woman speaking;Laughter;Male speech, man speaking;Mechanisms;Television"
+g3kkGbxwSLQ_30000,g3kkGbxwSLQ,30.0,background,,,0,0,0,0,,,,,,0,0,,Breathing;Computer keyboard
+g4xhZgKwiNo_30000,g4xhZgKwiNo,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Breathing;Male singing;Music
+g9Qah25_yH0_14000,g9Qah25_yH0,14.0,scream,scream,,1,0,0,0,2.144,3.086,0.942,,Shout,0,0,,"Baby cry, infant cry;Background noise;Male speech, man speaking;Shout"
+g9hV548gd2I_10000,g9hV548gd2I,10.0,background,,,0,0,0,0,,,,,,0,0,,"Breathing;Child singing;Generic impact sounds;Male speech, man speaking"
+gF5gfblw13c_370000,gF5gfblw13c,370.0,def_gap,scream,,1,0,0,0,4.532,6.295,1.763,,Shout,0,0,,"Babbling;Breathing;Female speech, woman speaking;Generic impact sounds;Hiccup;Shout;Tap"
+gKcq3s0xtzo_360000,gKcq3s0xtzo,360.0,def_gap,dog_bark,,1,0,0,0,1.094,1.740,0.646,,,0,1,dog_nonbark,Breathing;Clicking;Dog
+gRSJoFczYEo_30000,gRSJoFczYEo,30.0,background,,,0,0,0,0,,,,,,0,0,crowd,"Hubbub, speech noise, speech babble;Male speech, man speaking;Thump, thud"
+gUtJJIA-tTo_70000,gUtJJIA-tTo,70.0,siren,siren,siren,1,1,0,0,7.795,10.000,2.205,Siren,Music;Shout,0,0,,Clang;Music;Shout;Siren;Train;Train horn;Wind noise (microphone)
+gWClkWgWVkQ_30000,gWClkWgWVkQ,30.0,background,,,0,0,0,0,,,,,,0,0,,"Breathing;Electric toothbrush;Male speech, man speaking;Mechanisms;Tick"
+g_DBLppDZAs_30000,g_DBLppDZAs,30.0,siren,,siren,0,1,1,0,0.700,10.000,9.300,Police car (siren),Clapping,0,0,,"Accelerating, revving, vroom;Clapping;Police car (siren);Tire squeal, skidding"
+gfVNNXPbkW8_30000,gfVNNXPbkW8,30.0,def_gap,scream,,1,0,0,0,1.890,2.386,0.496,,Shout,0,0,,"Bird flight, flapping wings;Ducks, geese, waterfowl;Generic impact sounds;Gunshot, gunfire;Human voice;Shout;Tick"
+gjlo4evwjlE_30000,gjlo4evwjlE,30.0,siren,siren,siren,1,1,1,1,0.005,10.000,9.995,Siren,,0,0,,Generic impact sounds;Siren
+guoU_cuR8EE_30000,guoU_cuR8EE,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,0.961,1.315,0.354,,,1,0,,"Bark;Clicking;Human voice;Mains hum;Male speech, man speaking;Sound effect"
+h3P2Si6bC6Y_560000,h3P2Si6bC6Y,560.0,background,,,0,0,0,0,,,,,,0,0,speech,"Crack;Male speech, man speaking;Motor vehicle (road);Speech;Tap"
+h7aDUFAAwFE_560000,h7aDUFAAwFE,560.0,scream,scream,,1,0,0,0,7.890,8.567,0.677,,Shout,0,0,,"Conversation;Male speech, man speaking;Rain on surface;Shout;Thunderstorm"
+hFKmJx0_Fkg_30000,hFKmJx0_Fkg,30.0,siren,siren,siren,1,1,1,1,0.000,10.000,10.000,Siren,,0,0,,Church bell;Siren
+hMTj17ezEuI_130000,hMTj17ezEuI,130.0,background,,,0,0,0,0,,,,,,0,0,,"Drill;Filing (rasp);Hammer;Inside, small room;Wood"
+hPjTkT0766M_70000,hPjTkT0766M,70.0,siren,siren,siren,1,1,1,0,0.000,4.693,4.693,Siren,Music,0,0,speech,Music;Siren;Speech
+hRdkmwuv13s_220000,hRdkmwuv13s,220.0,siren,siren,siren,1,1,1,0,7.299,10.000,2.701,Siren,,0,0,,"Boing;Child speech, kid speaking;Female speech, woman speaking;Gasp;Male speech, man speaking;Siren"
+hSAVR0LcQp8_280000,hSAVR0LcQp8,280.0,siren,siren,siren,1,1,0,0,0.000,4.752,4.752,Siren,Music,0,0,,Helicopter;Music;Siren
+hTNKYJ6suII_80000,hTNKYJ6suII,80.0,background,,,0,0,0,0,,,,,Music,0,0,,Bleat;Female singing;Music
+h_MVI_0kIkI_30000,h_MVI_0kIkI,30.0,scream,scream,,1,0,0,0,6.063,7.292,1.229,,Shout,0,0,,"Fart;Human voice;Male speech, man speaking;Mechanisms;Shout;Tap;Thump, thud"
+hjkOPfScQw0_90000,hjkOPfScQw0,90.0,siren,siren,siren,1,1,0,0,4.102,10.000,5.898,Siren,,0,0,,"Air horn, truck horn;Echo;Siren;Sound effect"
+hk1WQuXt0FY_0,hk1WQuXt0FY,0.0,background,,,0,0,0,0,,,,,Music,0,0,,"Music;Plop;Sound effect;Squish;Whoosh, swoosh, swish;Zipper (clothing)"
+hlquKjPgxmY_30000,hlquKjPgxmY,30.0,background,,,0,0,0,1,,,,,Music,0,0,,Female singing;Music;Rumble;Telephone
+hmP89V05OaA_130000,hmP89V05OaA,130.0,background,,,0,0,0,0,,,,,,0,0,,"Female speech, woman speaking;Squeal;Tap;Trickle, dribble"
+hvQMOTh-fSM_30000,hvQMOTh-fSM,30.0,scream,scream,,1,0,0,0,9.746,10.000,0.254,,Shout,0,0,,"Generic impact sounds;Groan;Gunshot, gunfire;Machine gun;Shout;Sound effect;Walk, footsteps"
+i2A_qUIWTmE_60000,i2A_qUIWTmE,60.0,def_gap,scream,,1,0,0,0,6.435,7.238,0.803,,Shout,0,0,,"Breathing;Child speech, kid speaking;Male singing;Male speech, man speaking;Mechanisms;Shout"
+i99_Kgi0WIU_30000,i99_Kgi0WIU,30.0,background,,,0,0,0,0,,,,,,0,0,,"Breathing;Clicking;Female speech, woman speaking;Human sounds;Mechanisms"
+iAdo_SrzDR4_260000,iAdo_SrzDR4,260.0,scream,scream,,1,0,0,0,8.616,10.000,1.384,,Shout,0,0,,"Brief tone;Clicking;Conversation;Generic impact sounds;Grunt;Male speech, man speaking;Shout;Thump, thud"
+iCHskFoUvbw_130000,iCHskFoUvbw,130.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+iGsI9ikWgvs_170000,iGsI9ikWgvs,170.0,background,,,0,0,0,0,,,,,,0,0,,"Chirp, tweet;Male speech, man speaking;Waves, surf"
+iYp3boUJ9j8_550000,iYp3boUJ9j8,550.0,background,,,0,0,0,0,,,,,Laughter;Music,0,0,laughter,"Bird;Laughter;Male singing;Male speech, man speaking;Music"
+ieiLKWXm-iw_20000,ieiLKWXm-iw,20.0,scream,scream,scream,1,1,1,0,3.449,5.433,1.984,,Screaming,0,0,,"Bell;Male speech, man speaking;Screaming;Sound effect;Telephone bell ringing;Walk, footsteps"
+ihcAiSvZOyU_30000,ihcAiSvZOyU,30.0,background,,,0,0,0,0,,,,,Applause;Crowd;Laughter,0,0,crowd;laughter,"Applause;Buzzer;Conversation;Crowd;Female speech, woman speaking;Laughter;Male speech, man speaking"
+ijc6Ma6c4O0_90000,ijc6Ma6c4O0,90.0,glass,glass,glass,1,1,1,0,8.433,9.528,1.095,,,0,0,,"Glass shatter;Hammer;Human voice;Male speech, man speaking;Unmodified field recording"
+ioBOW6ynH28_10000,ioBOW6ynH28,10.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+ioj6AP00MaM_310000,ioj6AP00MaM,310.0,siren,,siren,0,1,1,0,6.717,10.000,3.283,Police car (siren),,0,0,,"Conversation;Female speech, woman speaking;Human voice;Knock;Male speech, man speaking;Police car (siren);Rumble"
+iySbjNcysts_240000,iySbjNcysts,240.0,scream,scream,scream,1,1,1,0,7.898,8.339,0.441,,Screaming,0,0,,"Boom;Gunshot, gunfire;Male speech, man speaking;Radio;Screaming"
+j0CcOZJLBDg_20000,j0CcOZJLBDg,20.0,siren,,siren,0,1,1,0,0.000,10.000,10.000,Ambulance (siren),,0,0,,Ambulance (siren)
+j2JoL0Bmx4M_10000,j2JoL0Bmx4M,10.0,background,,,0,0,0,1,,,,,Laughter,0,0,laughter,"Child speech, kid speaking;Generic impact sounds;Laughter;Male speech, man speaking;Sniff;Tick"
+jNjUU01quLs_100000,jNjUU01quLs,100.0,scream,,scream,0,1,1,0,7.937,10.000,2.063,,Music;Screaming,0,0,,"Boiling;Boing;Chirp, tweet;Male speech, man speaking;Music;Screaming;Sound effect"
+jVrzDZJKAq4_410000,jVrzDZJKAq4,410.0,def_gap,scream,,1,0,0,0,8.110,8.488,0.378,,Shout,0,0,,"Male speech, man speaking;Shout;Sound effect;Whack, thwack;Whoosh, swoosh, swish"
+jXSblZUHZ-8_17000,jXSblZUHZ-8,17.0,background,,,0,0,0,0,,,,,,0,0,,"Breathing;Domestic animals, pets;Whimper (dog)"
+jZzj77SLCqk_70000,jZzj77SLCqk,70.0,background,,,0,0,0,0,,,,,Laughter,0,0,laughter,Choir;Laughter;Sound effect
+jeu-pldGAdw_30000,jeu-pldGAdw,30.0,background,,,0,0,0,0,,,,,,0,0,,"Computer keyboard;Human sounds;Male speech, man speaking"
+jh0nGY4dzHg_280000,jh0nGY4dzHg,280.0,dog_bark,dog_bark,dog_bark,1,1,1,1,2.265,2.443,0.178,,,1,0,,"Bark;Buzz;Chirp, tweet;Clicking;Generic impact sounds;Surface contact;Tick"
+jjg0TCq3wbY_30000,jjg0TCq3wbY,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Breathing;Female singing;Music
+jkvXuu8XltI_80000,jkvXuu8XltI,80.0,background,,,0,0,0,1,,,,,,0,0,,Helicopter
+k2a30--j37Q_460000,k2a30--j37Q,460.0,siren,siren,siren,1,1,1,0,0.000,10.000,10.000,Siren,,0,0,,Siren
+k3AYfr6PIgs_19000,k3AYfr6PIgs,19.0,dog_bark,dog_bark,dog_bark,1,1,1,0,8.243,9.630,1.387,,,1,1,,"Bark;Dog;Male speech, man speaking;Unknown sound;Wind"
+kAW1MRkWtws_30000,kAW1MRkWtws,30.0,background,,,0,0,0,0,,,,,,0,0,,"Accelerating, revving, vroom;Chirp, tweet;Medium engine (mid frequency)"
+kDgSVZJ1mjc_60000,kDgSVZJ1mjc,60.0,background,,,0,0,0,0,,,,,Clapping,0,0,,"Child speech, kid speaking;Clapping;Female speech, woman speaking;Finger snapping;Growling;Surface contact"
+kIm3fUlBIGE_30000,kIm3fUlBIGE,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+kW_dSjvD3fg_3000,kW_dSjvD3fg,3.0,dog_bark,dog_bark,dog_bark,1,1,1,0,3.094,3.359,0.265,,,1,0,,"Bark;Bow-wow;Female speech, woman speaking;Male speech, man speaking;Shuffle"
+kZAwXjidHmM_1000,kZAwXjidHmM,1.0,def_gap,dog_bark,,1,0,0,0,3.945,5.157,1.212,,,0,1,dog_nonbark,"Breathing;Dog;Female speech, woman speaking;Male speech, man speaking;Mechanisms"
+kb3tfk8dxvU_30000,kb3tfk8dxvU,30.0,def_gap,scream,,1,0,0,0,0.000,1.331,1.331,,Shout,0,0,,"Artillery fire;Clicking;Male speech, man speaking;Shout"
+kjcXM60HrRA_30000,kjcXM60HrRA,30.0,scream,,scream,0,1,1,1,3.047,4.748,1.701,,Cheering;Music;Screaming,0,0,crowd,Cheering;Male singing;Music;Screaming
+kp2VoQKDuig_30000,kp2VoQKDuig,30.0,background,,,0,0,0,0,,,,,,0,0,,"Mechanisms;Spray;Vehicle horn, car horn, honking, toot"
+kr8ssbrDDMY_30000,kr8ssbrDDMY,30.0,siren,siren,siren,1,1,1,1,0.000,10.000,10.000,Siren,,0,0,,Siren
+ksImihlU3qM_30000,ksImihlU3qM,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,7.420,7.712,0.292,,Music,1,0,,"Animal;Bark;Bird vocalization, bird call, bird song;Bleat;Chicken, rooster;Cluck;Growling;Meow;Music"
+l-X2AGDhO5w_12000,l-X2AGDhO5w,12.0,scream,scream,,1,0,0,0,4.552,4.995,0.443,,Shout,0,0,,Generic impact sounds;Howl (wind);Noise;Shout;Sound effect;Speech synthesizer
+l-iIfi3SNpw_120000,l-iIfi3SNpw,120.0,scream,scream,scream,1,1,1,0,0.000,5.811,5.811,,Screaming;Shout,0,0,,"Bang;Motor vehicle (road);Screaming;Shout;Tap;Thump, thud;Tire squeal, skidding;Vehicle horn, car horn, honking, toot"
+l26vF_pPsdw_0,l26vF_pPsdw,0.0,background,,,0,0,0,0,,,,,,0,0,,Bell;Mechanisms
+l3TG1ABEVek_60000,l3TG1ABEVek,60.0,scream,,scream,0,1,1,0,2.383,3.931,1.548,,Music;Screaming;Shout,0,0,,"Bang;Bow-wow;Burst, pop;Groan;Human voice;Music;Screaming;Shout;Video game sound;Whack, thwack;Whoosh, swoosh, swish"
+l6OMx4LQIok_16000,l6OMx4LQIok,16.0,background,,,0,0,0,1,,,,,Applause;Cheering;Crowd,0,0,crowd,"Applause;Cheering;Chop;Crowd;Male speech, man speaking"
+l70yarlcd-I_29000,l70yarlcd-I,29.0,siren,siren,siren,1,1,1,0,0.000,3.307,3.307,Siren,Laughter,0,0,laughter,"Conversation;Laughter;Male speech, man speaking;Siren;Truck"
+lGJ2l2Zk-LA_20000,lGJ2l2Zk-LA,20.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+lRrv5m9Xu4k_30000,lRrv5m9Xu4k,30.0,scream,scream,,1,0,0,0,7.549,8.260,0.711,,Shout,0,0,,"Accelerating, revving, vroom;Male speech, man speaking;Motor vehicle (road);Shout"
+lUp1NDysG0M_20000,lUp1NDysG0M,20.0,background,,,0,0,0,0,,,,,,0,0,,"Breathing;Clicking;Female speech, woman speaking;Human sounds;Liquid;Thump, thud;Water;Wind noise (microphone)"
+laVgKAcv8XA_30000,laVgKAcv8XA,30.0,siren,,siren,0,1,1,0,0.136,8.623,8.487,Police car (siren),Music,0,0,,Music;Police car (siren)
+ltBX_AhuaWc_210000,ltBX_AhuaWc,210.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+ltoAkpHXB8o_120000,ltoAkpHXB8o,120.0,dog_bark,dog_bark,dog_bark,1,1,1,1,3.081,5.928,2.847,,,1,0,,"Bark;Male speech, man speaking"
+lxJ0z9P0avc_160000,lxJ0z9P0avc,160.0,glass,glass,glass,1,1,1,0,3.244,4.504,1.260,,Clapping;Music,0,0,,"Child speech, kid speaking;Clapping;Female speech, woman speaking;Glass chink, clink;Glass shatter;Mechanisms;Music;Tap"
+m-2-HsrBkak_30000,m-2-HsrBkak,30.0,siren,,siren,0,1,1,1,0.000,10.000,10.000,"Fire engine, fire truck (siren)",,0,0,,"Fire engine, fire truck (siren);Truck"
+m-WxDQs7hpc_490000,m-WxDQs7hpc,490.0,dog_bark,dog_bark,dog_bark,1,1,1,1,8.378,8.591,0.213,,Music,1,0,,"Bark;Female speech, woman speaking;Generic impact sounds;Music;Tap;Thunk;Walk, footsteps"
+m1GaYAKcH9g_50000,m1GaYAKcH9g,50.0,siren,,siren,0,1,1,0,1.352,3.984,2.632,Police car (siren),Music,0,0,,"Male speech, man speaking;Music;Police car (siren)"
+m4LZQbH5tsc_360000,m4LZQbH5tsc,360.0,glass,glass,glass,1,1,1,1,3.827,4.551,0.724,,,0,0,,Breaking;Fusillade;Generic impact sounds;Glass shatter;Machine gun
+m9jDl571rHU_10000,m9jDl571rHU,10.0,background,,,0,0,0,1,,,,,Music,0,0,,Clang;Music
+mCJ0aqIygWE_24000,mCJ0aqIygWE,24.0,background,,,0,0,0,0,,,,,,0,0,,"Beep, bleep;Conversation;Engine;Generic impact sounds;Male speech, man speaking"
+mCaniZpghFE_310000,mCaniZpghFE,310.0,background,,,0,0,0,0,,,,,Music,0,0,,Background noise;Music
+mLWo3IFQaik_60000,mLWo3IFQaik,60.0,scream,,scream,0,1,1,0,3.717,5.795,2.078,,Laughter;Music;Screaming,0,0,laughter,"Cricket;Female speech, woman speaking;Human voice;Laughter;Male speech, man speaking;Music;Screaming"
+mP_lRJbX9RI_40000,mP_lRJbX9RI,40.0,glass,glass,glass,1,1,1,0,2.844,4.723,1.879,,,0,0,,Crushing;Glass shatter;Mechanisms;Unmodified field recording
+mSLgj6uy-yE_80000,mSLgj6uy-yE,80.0,glass,glass,glass,1,1,1,1,8.929,10.000,1.071,,Music,0,0,,"Breaking;Glass shatter;Hammer;Male speech, man speaking;Music;Thump, thud"
+mT-f0lGk-JM_30000,mT-f0lGk-JM,30.0,scream,scream,scream,1,1,1,1,4.283,5.827,1.544,,Screaming,0,0,,"Beep, bleep;Female speech, woman speaking;Generic impact sounds;Mechanisms;Respiratory sounds;Screaming;Tick"
+meFnrQ6ZMr4_10000,meFnrQ6ZMr4,10.0,glass,glass,glass,1,1,1,0,4.450,6.492,2.042,,,0,0,,"Clicking;Generic impact sounds;Glass shatter;Hammer;Male speech, man speaking;Sliding door"
+mnil0yiYDjM_30000,mnil0yiYDjM,30.0,glass,glass,glass,1,1,1,0,3.126,3.693,0.567,,Music,0,0,,"Glass shatter;Gunshot, gunfire;Music;Sound effect;Video game sound;Whoosh, swoosh, swish"
+msBGRm6S2gY_18000,msBGRm6S2gY,18.0,siren,siren,siren,1,1,0,0,4.219,6.941,2.722,Siren,,0,0,,"Beep, bleep;Clicking;Mechanisms;Siren"
+n615BjoN7fI_50000,n615BjoN7fI,50.0,siren,siren,siren,1,1,0,0,5.100,10.000,4.900,Siren,Music,0,0,,Breathing;Female singing;Music;Siren
+nCwLfofMoZM_40000,nCwLfofMoZM,40.0,siren,siren,siren,1,1,0,0,0.000,2.872,2.872,Siren,Music,0,0,,Music;Siren
+nEACVhXcHsQ_160000,nEACVhXcHsQ,160.0,scream,,scream,0,1,1,1,2.827,3.858,1.031,,Laughter;Screaming,0,0,laughter,"Child speech, kid speaking;Female speech, woman speaking;Human voice;Laughter;Male speech, man speaking;Screaming;Walk, footsteps"
+nFIJFxBVi4I_20000,nFIJFxBVi4I,20.0,scream,,scream,0,1,1,0,3.307,4.197,0.890,,Music;Screaming,0,0,,"Explosion;Male speech, man speaking;Music;Screaming;Whoosh, swoosh, swish"
+nG_fip-JlWs_80000,nG_fip-JlWs,80.0,siren,siren,siren,1,1,0,0,0.008,0.906,0.898,Siren,,0,0,alarm,Alarm;Clicking;Human voice;Siren
+nGqzNDdhGrk_30000,nGqzNDdhGrk,30.0,background,,,0,0,0,1,,,,,,0,0,,Clicking;Train;Train horn
+nLzSz0qDT68_10000,nLzSz0qDT68,10.0,siren,siren,siren,1,1,0,0,0.000,10.000,10.000,Siren,,0,0,,Siren
+nSbse_o1XHY_70000,nSbse_o1XHY,70.0,scream,scream,,1,0,0,0,1.984,2.661,0.677,,Shout,0,0,speech,"Alarm clock;Male speech, man speaking;Shout;Slap, smack;Speech"
+nVf6lDcm_Z4_100000,nVf6lDcm_Z4,100.0,dog_bark,dog_bark,dog_bark,1,1,1,0,4.512,6.890,2.378,,,1,0,,Bark;Mechanisms;Whimper (dog)
+naZE-MvNpaI_90000,naZE-MvNpaI,90.0,scream,,scream,0,1,1,0,4.559,5.994,1.435,,Music;Screaming,0,0,,Female singing;Music;Screaming
+njFM8DvmPVU_50000,njFM8DvmPVU,50.0,background,,,0,0,0,0,,,,,Music,0,0,,Male singing;Music
+noN35nW5gl4_0,noN35nW5gl4,0.0,background,,,0,0,0,0,,,,,,0,0,speech,"Child speech, kid speaking;Chirp, tweet;Generic impact sounds;Moo;Rustle;Speech;Wind noise (microphone)"
+ntfyeC178Tg_30000,ntfyeC178Tg,30.0,background,,,0,0,0,1,,,,,Music,0,0,,Music
+ntpgJ82ccB0_370000,ntpgJ82ccB0,370.0,scream,scream,scream,1,1,1,1,4.766,5.424,0.658,,Screaming;Shout,0,0,,"Coin (dropping);Gunshot, gunfire;Male speech, man speaking;Radio;Screaming;Shout;Sound effect;Speech synthesizer"
+o3F3tUpmVaw_30000,o3F3tUpmVaw,30.0,siren,siren,siren,1,1,0,1,0.000,7.677,7.677,Siren,Laughter,0,0,laughter,"Laughter;Light engine (high frequency);Male speech, man speaking;Siren"
+o6viFWviE5g_20000,o6viFWviE5g,20.0,background,,,0,0,0,0,,,,,,0,0,,"Beep, bleep;Generic impact sounds;Mechanisms;Surface contact;Tap;Thump, thud;Tick"
+oLOPOU1CUfc_0,oLOPOU1CUfc,0.0,def_gap,scream,,1,0,0,0,0.533,3.028,2.495,,Shout,0,0,,"Artillery fire;Male speech, man speaking;Shout;Sound effect"
+oVd-PG3vmQo_13000,oVd-PG3vmQo,13.0,siren,siren,siren,1,1,1,1,0.000,9.036,9.036,Siren,,0,0,,"Generic impact sounds;Siren;Traffic noise, roadway noise;Wind noise (microphone)"
+oYEzy8gH6q8_30000,oYEzy8gH6q8,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Effects unit;Music
+oYeql9xE19k_30000,oYeql9xE19k,30.0,siren,,siren,0,1,1,1,0.000,10.000,10.000,Civil defense siren,,0,0,,Civil defense siren
+oZoJ26C6LrU_100000,oZoJ26C6LrU,100.0,siren,siren,siren,1,1,0,0,3.787,8.118,4.331,Siren,Music,0,0,,"Female singing;Music;Siren;Tap;Tire squeal, skidding;Walk, footsteps"
+of8wYhwtS-w_30000,of8wYhwtS-w,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,2.033,2.239,0.206,,Music,1,0,crowd,"Bark;Hubbub, speech noise, speech babble;Music;Whoop"
+opDCIytwapw_0,opDCIytwapw,0.0,glass,glass,glass,1,1,1,0,3.764,5.299,1.535,,,0,0,,Glass shatter;Noise
+oqOyiPlZVDw_20000,oqOyiPlZVDw,20.0,def_gap,scream,,1,0,0,0,7.488,8.044,0.556,,Shout,0,0,,Babbling;Baby laughter;Breathing;Human voice;Mechanisms;Shout;Tick
+p2NPfU5QARc_0,p2NPfU5QARc,0.0,background,,,0,0,0,0,,,,,Music,0,0,,Music;Noise
+p85b0fQ7r48_6000,p85b0fQ7r48,6.0,scream,,scream,0,1,1,1,0.729,1.150,0.421,,Laughter;Screaming,0,0,speech;laughter,"Background noise;Beep, bleep;Laughter;Male speech, man speaking;Screaming;Speech;Tap"
+pC3DIX8-Xoo_30000,pC3DIX8-Xoo,30.0,def_gap,dog_bark,,1,0,0,0,4.638,6.913,2.275,,,0,1,dog_nonbark,Breathing;Clicking;Dog;Human sounds;Mechanisms;Tap
+pGKTuyBDkt4_50000,pGKTuyBDkt4,50.0,scream,scream,,1,0,0,0,0.000,1.039,1.039,,Shout,0,0,,"Fusillade;Gunshot, gunfire;Machine gun;Shout;Sound effect;Tick"
+pNlrM-GhFZU_90000,pNlrM-GhFZU,90.0,scream,,scream,0,1,1,0,7.055,8.512,1.457,,Music;Screaming;Shout,0,0,,Male singing;Music;Screaming;Shout
+pNrnDUg0dng_30000,pNrnDUg0dng,30.0,siren,,siren,0,1,1,0,0.000,10.000,10.000,Ambulance (siren),,0,0,,Ambulance (siren)
+pWjfnwWIXQ4_150000,pWjfnwWIXQ4,150.0,dog_bark,dog_bark,dog_bark,1,1,1,1,7.957,8.527,0.570,,,1,0,,"Background noise;Bark;Bird flight, flapping wings;Chirp, tweet;Conversation;Male speech, man speaking"
+pXX6cK4xtiY_11000,pXX6cK4xtiY,11.0,scream,scream,,1,0,0,0,3.226,3.436,0.210,,Shout,0,0,,"Breathing;Car alarm;Male speech, man speaking;Shout;Tap;Vehicle horn, car horn, honking, toot"
+paHnOxkG3UY_10000,paHnOxkG3UY,10.0,background,,,0,0,0,1,,,,,Music,0,0,,Music;Sound effect;Whoop
+pizFsY0yjss_30000,pizFsY0yjss,30.0,def_gap,scream,,1,0,0,0,7.220,8.622,1.402,,Shout,0,0,,"Explosion;Male speech, man speaking;Mechanisms;Shout"
+pldcfQAiPK0_350000,pldcfQAiPK0,350.0,def_gap,scream,,1,0,0,0,0.575,1.630,1.055,,Shout,0,0,,"Breathing;Male speech, man speaking;Pant;Shout;Splash, splatter;Tap;Water;Wind noise (microphone)"
+pq7iVIuoHTs_50000,pq7iVIuoHTs,50.0,glass,glass,glass,1,1,1,1,6.780,7.520,0.740,,Music,0,0,,"Bang;Conversation;Glass shatter;Male speech, man speaking;Music;Sound effect;Squish"
+pwV5A_VVYmU_10000,pwV5A_VVYmU,10.0,background,,,0,0,0,0,,,,,Clapping;Music,0,0,,Clapping;Male singing;Music
+q1gQRZ3Hi1I_30000,q1gQRZ3Hi1I,30.0,background,,,0,0,0,0,,,,,,0,0,,"Accelerating, revving, vroom;Race car, auto racing;Unmodified field recording;Wind noise (microphone)"
+q2O1F-WOIFI_0,q2O1F-WOIFI,0.0,scream,scream,,1,0,0,0,4.205,4.783,0.578,,Shout,0,0,,"Background noise;Male speech, man speaking;Shout;Slap, smack;Tick;Walk, footsteps"
+qDiTICmdUQg_30000,qDiTICmdUQg,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Male singing;Music
+qUF8raImRZM_440000,qUF8raImRZM,440.0,scream,scream,,1,0,0,0,5.848,10.000,4.152,,Shout,0,0,crowd,"Accelerating, revving, vroom;Car;Female speech, woman speaking;Hubbub, speech noise, speech babble;Male speech, man speaking;Shout"
+qVgVh9t_7ac_50000,qVgVh9t_7ac,50.0,background,,,0,0,0,1,,,,,,0,0,,"Background noise;Ice cream truck, ice cream van"
+qaCD3TSTn2k_0,qaCD3TSTn2k,0.0,def_gap,scream,,1,0,0,0,6.779,7.410,0.631,,Shout,0,0,,"Dishes, pots, and pans;Heart sounds, heartbeat;Male singing;Male speech, man speaking;Shout;Sound effect;Throat clearing;Whoosh, swoosh, swish"
+qfClIKHj7wc_20000,qfClIKHj7wc,20.0,background,,,0,0,0,0,,,,,Music,0,0,,"Human voice;Male speech, man speaking;Music"
+qhD-PcvjtcI_30000,qhD-PcvjtcI,30.0,siren,siren,siren,1,1,1,0,0.000,2.811,2.811,Siren,,0,0,,Aircraft;Clicking;Siren
+qhOLpvMMmEc_30000,qhOLpvMMmEc,30.0,siren,siren,siren,1,1,1,0,1.205,6.299,5.094,Siren,Clapping;Music,0,0,,"Clapping;Female speech, woman speaking;Male speech, man speaking;Music;Siren;Waves, surf"
+qhyrLOJ7LcQ_440000,qhyrLOJ7LcQ,440.0,siren,,siren,0,1,1,0,0.000,10.000,10.000,"Fire engine, fire truck (siren)",,0,0,,"Fire engine, fire truck (siren);Traffic noise, roadway noise;Wind noise (microphone)"
+qkvIEmIRP4g_30000,qkvIEmIRP4g,30.0,siren,,siren,0,1,1,1,0.000,10.000,10.000,"Fire engine, fire truck (siren)",,0,0,,"Fire engine, fire truck (siren);Heavy engine (low frequency)"
+qnLV0lmRwpw_180000,qnLV0lmRwpw,180.0,def_gap,scream,,1,0,0,0,8.214,9.013,0.799,,Shout,0,0,,"Breathing;Male speech, man speaking;Shout;Tap;Water"
+qpNx57h9Ngw_60000,qpNx57h9Ngw,60.0,dog_bark,dog_bark,dog_bark,1,1,1,1,4.053,9.382,5.329,,Laughter,1,1,laughter,Bark;Dog;Laughter;Sneeze
+qqql0_ZyusM_290000,qqql0_ZyusM,290.0,glass,glass,glass,1,1,1,0,8.018,9.279,1.261,,,0,0,,"Child speech, kid speaking;Glass shatter;Human sounds;Plop;Sound effect"
+r06tmeUDgc8_3000,r06tmeUDgc8,3.0,scream,,scream,0,1,1,0,3.085,3.611,0.526,,Laughter;Screaming,0,0,laughter,"Bicycle, tricycle;Breathing;Environmental noise;Female speech, woman speaking;Laughter;Medium engine (mid frequency);Screaming;Tap;Thump, thud"
+r5gjO6WFFzU_30000,r5gjO6WFFzU,30.0,glass,glass,glass,1,1,1,0,0.000,1.304,1.304,,Music,0,0,,"Glass shatter;Human voice;Music;Sound effect;Tap;Thump, thud;Walk, footsteps;Whoosh, swoosh, swish"
+r8B3-yBc-4U_30000,r8B3-yBc-4U,30.0,background,,,0,0,0,1,,,,,Crowd;Music,0,0,crowd,"Crowd;Female speech, woman speaking;Hubbub, speech noise, speech babble;Male singing;Music"
+rCQykaL8Hy4_30000,rCQykaL8Hy4,30.0,siren,siren,siren,1,1,0,0,4.922,10.000,5.078,Siren,,0,0,,Siren
+rW1nuTy0qTU_0,rW1nuTy0qTU,0.0,glass,glass,glass,1,1,1,1,0.479,1.871,1.392,,,0,0,,Glass shatter;Sound effect
+rcaxwyTo-E4_150000,rcaxwyTo-E4,150.0,dog_bark,dog_bark,dog_bark,1,1,1,0,1.480,2.157,0.677,,,1,0,,"Bark;Female speech, woman speaking;Growling;Rattle;Yip"
+rpgEtXAoF0o_60000,rpgEtXAoF0o,60.0,siren,,siren,0,1,1,1,5.354,10.000,4.646,Police car (siren),,0,0,,Car alarm;Police car (siren);Tap
+rx3fg5zGSxg_350000,rx3fg5zGSxg,350.0,siren,,siren,0,1,1,0,5.305,10.000,4.695,"Fire engine, fire truck (siren)",Music,0,0,,"Clicking;Fire engine, fire truck (siren);Music;Wind"
+ry-Ycs7oBik_80000,ry-Ycs7oBik,80.0,scream,,scream,0,1,1,1,4.819,6.874,2.055,,Cheering;Music;Screaming,0,0,crowd,Cheering;Male singing;Music;Noise;Screaming
+ryqrfRxqYfo_60000,ryqrfRxqYfo,60.0,scream,,scream,0,1,1,0,0.000,1.272,1.272,,"Chuckle, chortle;Screaming",0,0,,"Chuckle, chortle;Generic impact sounds;Hiccup;Male speech, man speaking;Screaming"
+sAxnpDejTlQ_210000,sAxnpDejTlQ,210.0,background,,,0,0,0,0,,,,,,0,0,,"Beep, bleep;Chirp, tweet;Clicking;Drill;Mechanisms;Tap"
+sGAYO93RR5Q_30000,sGAYO93RR5Q,30.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+sH_nDqYVq5E_270000,sH_nDqYVq5E,270.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+sIZVEUekgfA_70000,sIZVEUekgfA,70.0,scream,,scream,0,1,1,1,2.811,5.811,3.000,,Music;Screaming;Shout,0,0,,"Human sounds;Music;Screaming;Shout;Television;Thump, thud;Unknown sound"
+sIvDDObKvoI_130000,sIvDDObKvoI,130.0,scream,scream,,1,0,0,0,3.626,4.858,1.232,,Shout,0,0,,"Clicking;Female speech, woman speaking;Shout;Splash, splatter;Water;Whistle"
+sXfgQsiJ1Rk_70000,sXfgQsiJ1Rk,70.0,siren,,siren,0,1,1,1,0.000,10.000,10.000,Civil defense siren,,0,0,,Civil defense siren
+sfdSPW-cwgM_560000,sfdSPW-cwgM,560.0,background,,,0,0,0,0,,,,,Music,0,0,,"Breathing;Child speech, kid speaking;Female speech, woman speaking;Male singing;Male speech, man speaking;Music"
+sfxQfmtrKDg_4000,sfxQfmtrKDg,4.0,background,,,0,0,0,0,,,,,,0,0,,Breathing;Clicking;Cough;Generic impact sounds;Mechanisms;Tap;Tick
+smL9D39D2EQ_70000,smL9D39D2EQ,70.0,background,,,0,0,0,1,,,,,,0,0,,"Male speech, man speaking;Mechanisms;Scrape;Tap"
+svzPm8lT36o_10000,svzPm8lT36o,10.0,background,,,0,0,0,0,,,,,,0,0,,"Background noise;Bird vocalization, bird call, bird song;Generic impact sounds;Male speech, man speaking;Tap;Tick;Typewriter"
+sxMYFYDNF_g_140000,sxMYFYDNF_g,140.0,background,,,0,0,0,0,,,,,Music,0,0,,"Explosion;Male speech, man speaking;Music;Radio;Sound effect"
+tCttI6i3fHg_30000,tCttI6i3fHg,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,8.596,8.886,0.290,,,1,0,,Bark;Cricket
+tJ7tqVXa-PQ_16000,tJ7tqVXa-PQ,16.0,background,,,0,0,0,0,,,,,Laughter,0,0,laughter,"Background noise;Breaking;Generic impact sounds;Human voice;Laughter;Shuffle;Static;Surface contact;Thump, thud;Walk, footsteps"
+tLMbu8y8xAE_110000,tLMbu8y8xAE,110.0,glass,glass,glass,1,1,1,1,1.165,2.740,1.575,,,0,0,,"Breaking;Conversation;Glass shatter;Male speech, man speaking;Surface contact;Tap;Walk, footsteps"
+tSX2jYLgPng_30000,tSX2jYLgPng,30.0,dog_bark,dog_bark,dog_bark,1,1,1,1,9.050,10.000,0.950,,,1,0,,"Bark;Caw;Human voice;Male speech, man speaking"
+tYzEA52iKGg_80000,tYzEA52iKGg,80.0,glass,glass,glass,1,1,1,1,1.087,3.181,2.094,,Music;Shout,0,0,,"Background noise;Conversation;Glass shatter;Male speech, man speaking;Music;Shout;Sound effect;Walk, footsteps"
+tZG5oY0A-uw_70000,tZG5oY0A-uw,70.0,background,,,0,0,0,0,,,,,,0,0,,Mechanisms;Water
+td4T1Yl0lB0_50000,td4T1Yl0lB0,50.0,dog_bark,dog_bark,dog_bark,1,1,1,0,1.150,1.417,0.267,,Laughter,1,0,laughter,"Bark;Child speech, kid speaking;Conversation;Female speech, woman speaking;Gurgling, bubbling;Laughter;Male speech, man speaking;Motorboat, speedboat;Splash, splatter;Water"
+tgqSbhlQntE_0,tgqSbhlQntE,0.0,glass,glass,glass,1,1,1,0,2.919,5.466,2.547,,,0,0,,Glass shatter;Sound effect
+tj696-Av65U_10000,tj696-Av65U,10.0,scream,,scream,0,1,1,1,0.000,5.417,5.417,,Crowd;Music;Screaming;Shout,0,0,crowd,"Crowd;Female speech, woman speaking;Human voice;Male speech, man speaking;Music;Screaming;Shout"
+tnr3diicTLI_230000,tnr3diicTLI,230.0,scream,scream,scream,1,1,1,0,0.254,1.489,1.235,,Screaming,0,0,,"Creak;Mosquito;Screaming;Squeal;Tap;Thump, thud"
+txLCmaBJsl0_370000,txLCmaBJsl0,370.0,glass,glass,glass,1,1,1,0,7.283,8.346,1.063,,,0,0,,"Breaking;Glass shatter;Groan;Sound effect;Whack, thwack"
+txuBsNcWF4s_30000,txuBsNcWF4s,30.0,background,,,0,0,0,1,,,,,Music,0,0,,Music
+u4X11MnUWX8_180000,u4X11MnUWX8,180.0,scream,scream,scream,1,1,1,0,2.142,3.260,1.118,,Screaming;Shout,0,0,,"Child speech, kid speaking;Children playing;Female speech, woman speaking;Human voice;Male speech, man speaking;Mechanisms;Screaming;Shout;Single-lens reflex camera;Tap;Unknown sound"
+u6tgeRXOxnU_30000,u6tgeRXOxnU,30.0,background,,,0,0,0,1,,,,,Music,0,0,,Male singing;Music;Rapping
+uANNSilmVI0_30000,uANNSilmVI0,30.0,def_gap,scream,,1,0,0,0,5.183,6.516,1.333,,Shout,0,0,,"Bird vocalization, bird call, bird song;Caw;Child speech, kid speaking;Drip;Mechanisms;Shout;Sniff;Surface contact"
+uDqVzJtaxOc_20000,uDqVzJtaxOc,20.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+uZqdJgBwHDs_0,uZqdJgBwHDs,0.0,siren,siren,siren,1,1,1,0,4.134,7.205,3.071,Siren,Music,0,0,,"Male speech, man speaking;Music;Siren"
+ubuhm_JjGBo_20000,ubuhm_JjGBo,20.0,scream,scream,,1,0,0,0,7.520,8.110,0.590,,Shout,0,0,,Baby laughter;Breathing;Gasp;Human voice;Mains hum;Shout;Tap
+unzShNHS_Ag_420000,unzShNHS_Ag,420.0,def_gap,scream,,1,0,0,0,8.236,9.228,0.992,,Shout,0,0,,"Breathing;Male speech, man speaking;Shout"
+uyElGwaWFnI_17000,uyElGwaWFnI,17.0,background,,,0,0,0,0,,,,,,0,0,crying,"Breathing;Crying, sobbing;Human voice;Mechanisms;Speech synthesizer"
+vCsS20WJfBI_30000,vCsS20WJfBI,30.0,siren,siren,siren,1,1,1,0,0.000,4.257,4.257,Siren,,0,0,,Generic impact sounds;Siren;Tools
+vFNH1OvkL4M_120000,vFNH1OvkL4M,120.0,dog_bark,dog_bark,dog_bark,1,1,1,1,1.079,1.409,0.330,,,1,0,,"Bark;Boing;Child speech, kid speaking;Female singing;Tap;Tick;Unknown sound"
+vHESVUsvJ88_80000,vHESVUsvJ88,80.0,siren,,siren,0,1,1,0,0.000,10.000,10.000,Civil defense siren,,0,0,,Civil defense siren
+vS5PjIjOHAY_20000,vS5PjIjOHAY,20.0,scream,,scream,0,1,1,0,0.000,2.154,2.154,,Music;Screaming;Shout,0,0,,Generic impact sounds;Male singing;Music;Screaming;Shout;Sound effect
+vSRcGsh9Z4I_580000,vSRcGsh9Z4I,580.0,scream,scream,,1,0,0,0,8.219,8.589,0.370,,Shout,0,0,glass_nonshatter,"Crackle;Explosion;Glass chink, clink;Male speech, man speaking;Shout;Sound effect"
+vVCnBdAK678_10000,vVCnBdAK678,10.0,glass,glass,glass,1,1,1,0,4.384,6.015,1.631,,Music,0,0,,"Glass shatter;Male speech, man speaking;Music;Vehicle"
+v_xcsRP-K-Y_450000,v_xcsRP-K-Y,450.0,scream,,scream,0,1,1,1,8.339,10.000,1.661,,Music;Screaming,0,0,,"Animal;Machine gun;Male speech, man speaking;Music;Screaming;Sound effect"
+vaRAux7Nnz8_410000,vaRAux7Nnz8,410.0,background,,,0,0,0,0,,,,,,0,0,,Breathing;Crackle;Whispering
+vrLRX93H-wA_360000,vrLRX93H-wA,360.0,glass,glass,glass,1,1,1,0,1.091,7.872,6.781,,,0,0,,"Bang;Conversation;Glass shatter;Human sounds;Male speech, man speaking;Walk, footsteps"
+w1Q0f1HbzgI_4000,w1Q0f1HbzgI,4.0,dog_bark,dog_bark,dog_bark,1,1,1,1,1.874,2.545,0.671,,,1,0,,"Bark;Female speech, woman speaking;Tick;Unknown sound;Wind noise (microphone)"
+wL3X6QZLcFs_30000,wL3X6QZLcFs,30.0,background,,,0,0,0,1,,,,,Music,0,0,glass_nonshatter,"Female singing;Glass chink, clink;Music"
+wLnVXv4-cVg_30000,wLnVXv4-cVg,30.0,background,,,0,0,0,0,,,,,,0,0,,"Beep, bleep;Breathing;Female speech, woman speaking;Human voice;Male speech, man speaking;Mechanisms;Tap"
+wT8xI4PEU8c_110000,wT8xI4PEU8c,110.0,glass,glass,glass,1,1,1,1,1.488,4.591,3.103,,Music,0,0,,Glass shatter;Music
+wbWidsYzp8Y_30000,wbWidsYzp8Y,30.0,def_gap,scream,,1,0,0,0,3.100,4.737,1.637,,Shout,0,0,,"Male speech, man speaking;Shout;Sound effect;Television;Whack, thwack"
+weVz-cPX_Ik_30000,weVz-cPX_Ik,30.0,siren,siren,siren,1,1,0,1,0.000,10.000,10.000,Siren,,0,0,,Siren
+wraN7rWUsfI_30000,wraN7rWUsfI,30.0,scream,scream,,1,0,0,0,7.441,8.276,0.835,,Shout,0,0,,Generic impact sounds;Human voice;Mechanisms;Shout;Surface contact;Tick
+wrmkj1fQmiU_370000,wrmkj1fQmiU,370.0,background,,,0,0,0,0,,,,,Music,0,0,,"Buzz;Female speech, woman speaking;Mechanisms;Music"
+wteHhgRgZDQ_160000,wteHhgRgZDQ,160.0,background,,,0,0,0,0,,,,,,0,0,,Breathing;Filing (rasp);Mechanisms;Power tool;Tap
+x08pzuGeBFg_170000,x08pzuGeBFg,170.0,scream,scream,scream,1,1,1,0,2.638,3.409,0.771,,Screaming,0,0,crowd,"Background noise;Generic impact sounds;Hubbub, speech noise, speech babble;Human voice;Male speech, man speaking;Run;Screaming;Tick;Wind noise (microphone)"
+x0fI4QXOz9M_30000,x0fI4QXOz9M,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,9.702,10.000,0.298,,Music,1,0,,"Bark;Male speech, man speaking;Mechanisms;Music"
+x3NgArwHRYY_30000,x3NgArwHRYY,30.0,dog_bark,dog_bark,dog_bark,1,1,1,0,8.861,9.728,0.867,,,1,1,,Bark;Dog;Tap
+x6vuWsdeS3s_30000,x6vuWsdeS3s,30.0,siren,siren,siren,1,1,1,0,0.000,10.000,10.000,Siren,,0,0,,"Cough;Female speech, woman speaking;Heavy engine (low frequency);Siren;Tap"
+xB7R8Uu94pI_30000,xB7R8Uu94pI,30.0,background,,,0,0,0,0,,,,,Music,0,0,,"Child speech, kid speaking;Human voice;Male speech, man speaking;Music;Oink;Tick"
+xFdFAEY7eTc_0,xFdFAEY7eTc,0.0,glass,glass,glass,1,1,1,0,4.352,6.107,1.755,,,0,0,,Glass shatter;Sound effect
+xLQF7S41XLE_20000,xLQF7S41XLE,20.0,glass,glass,glass,1,1,1,0,0.000,5.971,5.971,,Music,0,0,,Glass shatter;Music
+xNRCwF4TStY_110000,xNRCwF4TStY,110.0,scream,scream,,1,0,0,0,0.220,0.488,0.268,,Shout,0,0,speech,"Human voice;Shout;Speech;Stream, river;Water"
+xaWC7ZxOpg8_110000,xaWC7ZxOpg8,110.0,background,,,0,0,0,0,,,,,Laughter,0,0,laughter,Animal;Breathing;Hum;Human sounds;Human voice;Laughter;Tap;Unknown sound
+xgLvHAKJJF0_20000,xgLvHAKJJF0,20.0,dog_bark,dog_bark,dog_bark,1,1,1,0,8.913,9.189,0.276,,,1,0,,"Bark;Chirp, tweet;Run;Wind"
+xlEcffvTWak_90000,xlEcffvTWak,90.0,glass,glass,glass,1,1,1,1,7.126,7.724,0.598,,,0,0,,"Bird;Glass shatter;Male speech, man speaking;Unknown sound;Whack, thwack"
+xn8mcrlrbHM_0,xn8mcrlrbHM,0.0,background,,,0,0,0,0,,,,,,0,0,,"Male speech, man speaking;Sound effect"
+xv90qbJ-Zcc_40000,xv90qbJ-Zcc,40.0,background,,,0,0,0,0,,,,,,0,0,,"Background noise;Breathing;Clicking;Conversation;Male speech, man speaking;Rodents, rats, mice;Tap;Whistle"
+y3NZZETzVws_10000,y3NZZETzVws,10.0,background,,,0,0,0,0,,,,,,0,0,,"Bird;Chicken, rooster;Cluck;Mechanisms;Wind noise (microphone)"
+yBHqTHFwnAw_580000,yBHqTHFwnAw,580.0,background,,,0,0,0,0,,,,,Music,0,0,,Breathing;Music
+yHon93I4E0s_200000,yHon93I4E0s,200.0,background,,,0,0,0,1,,,,,,0,0,,"Groan;Gunshot, gunfire;Male speech, man speaking;Splash, splatter"
+yMPaueo_kx4_30000,yMPaueo_kx4,30.0,background,,,0,0,0,1,,,,,Clapping;Music,0,0,,Choir;Clapping;Male singing;Music
+yTM1pk07lTA_30000,yTM1pk07lTA,30.0,scream,scream,,1,0,0,0,7.764,9.480,1.716,,Shout,0,0,,"Bouncing;Breathing;Conversation;Male speech, man speaking;Mechanisms;Shout;Tap"
+yi2vLeGwPgc_30000,yi2vLeGwPgc,30.0,background,,,0,0,0,0,,,,,Music,0,0,,"Breathing;Human voice;Male singing;Male speech, man speaking;Music;Rapping"
+ymXOLL3rVts_0,ymXOLL3rVts,0.0,def_gap,scream,,1,0,0,0,1.191,2.279,1.088,,Shout,0,0,,Door;Shout;Speech synthesizer
+yrpBzVXqs8g_590000,yrpBzVXqs8g,590.0,dog_bark,dog_bark,dog_bark,1,1,1,1,0.935,1.774,0.839,,Laughter,1,0,laughter,Bark;Breathing;Howl;Laughter
+ysxtvbhEyaQ_60000,ysxtvbhEyaQ,60.0,background,,,0,0,0,0,,,,,Music,0,0,speech,"Male speech, man speaking;Music;Speech;Tick;Whoop"
+yzT9nsHslAk_30000,yzT9nsHslAk,30.0,background,,,0,0,0,1,,,,,Music,0,0,,Female singing;Music;Sound effect;Tick
+z-PhNB64zoU_50000,z-PhNB64zoU,50.0,siren,,siren,0,1,1,0,3.945,10.000,6.055,"Fire engine, fire truck (siren)",,0,0,,"Fire engine, fire truck (siren);Truck;Wind noise (microphone)"
+z9kyyJH3WFM_0,z9kyyJH3WFM,0.0,siren,,siren,0,1,1,0,5.654,10.000,4.346,Civil defense siren,,0,0,,Civil defense siren
+zHBXNHtuoiU_70000,zHBXNHtuoiU,70.0,glass,glass,glass,1,1,1,1,6.795,7.906,1.111,,Music,0,0,,"Beep, bleep;Female speech, woman speaking;Glass shatter;Male speech, man speaking;Music;Whack, thwack"
+zICAuYzrUQ0_2000,zICAuYzrUQ0,2.0,siren,siren,siren,1,1,0,0,0.144,9.146,9.002,Siren,,0,0,,Noise;Siren
+zLKynsdwW3Q_230000,zLKynsdwW3Q,230.0,background,,,0,0,0,0,,,,,,0,0,,"Bird vocalization, bird call, bird song;Cricket;Hiss;Tap"
+zM-nWQl3W6Y_170000,zM-nWQl3W6Y,170.0,dog_bark,dog_bark,dog_bark,1,1,1,0,2.866,3.205,0.339,,,1,0,,Bark;Cowbell;Wind noise (microphone)
+zOfThlg_c7M_300000,zOfThlg_c7M,300.0,scream,scream,,1,0,0,0,1.866,2.724,0.858,,Shout,0,0,,"Breathing;Child speech, kid speaking;Human sounds;Human voice;Mechanisms;Shout;Speech synthesizer;Tap;Thump, thud"
+zQ0qzadBzLY_11000,zQ0qzadBzLY,11.0,glass,glass,glass,1,1,1,0,3.371,7.041,3.670,,,0,0,,"Background noise;Glass shatter;Surface contact;Tap;Walk, footsteps"
+zUrY7Iqu3zs_10000,zUrY7Iqu3zs,10.0,background,,,0,0,0,0,,,,,,0,0,,"Background noise;Chirp, tweet;Clicking;Medium engine (mid frequency);Tap"
+zeXxbH_u1Hc_20000,zeXxbH_u1Hc,20.0,background,,,0,0,0,0,,,,,Music,0,0,,Music
+zlQAjeDttgk_30000,zlQAjeDttgk,30.0,scream,scream,,1,0,0,0,0.748,1.134,0.386,,Shout,0,0,,"Accelerating, revving, vroom;Human voice;Medium engine (mid frequency);Shout;Tire squeal, skidding"
+zyF8TGSRvns_150000,zyF8TGSRvns,150.0,background,,,0,0,0,0,,,,,Music,0,0,,Music;Surface contact
+zz35Va7tYmA_30000,zz35Va7tYmA,30.0,background,,,0,0,0,1,,,,,Music,0,0,,"Accelerating, revving, vroom;Car;Male singing;Music;Unmodified field recording"
