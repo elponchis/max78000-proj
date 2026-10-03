@@ -118,8 +118,8 @@ int main(void)
                MEL_N_FRAMES, MEL_N_MELS, MEL_INC_FRAMES);
         printf("get (ring -> %dx%d) cycles min %lu  med %lu  max %lu\n", MEL_N_MELS,
                MEL_N_FRAMES, (unsigned long)g_mn, (unsigned long)g_md, (unsigned long)g_mx);
-        printf("build %s %s  N_ITER %d  (push = 16 new frames per decision)\n", __DATE__,
-               __TIME__, N_ITER);
+        printf("build %s %s  N_ITER %d  (push = %d new frames per decision)\n", __DATE__,
+               __TIME__, N_ITER, MEL_INC_FRAMES);
         printf("core clock %lu Hz  CNN: disabled  counter: SysTick\n",
                (unsigned long)SystemCoreClock);
         for (int v = 0; v < N_VAR; v++) {
