@@ -59,6 +59,9 @@ def main():
     os.makedirs(out, exist_ok=True)
 
     rows = list(csv.DictReader(open(a.list)))
+    # webm 로 내려갔다가 webm_audit.py --retry --full 로 정확한 로컬 절단 오디오로 교체된 구간
+    webm_dir = os.path.join(os.path.dirname(raw.rstrip("/")), "raw_webm_replaced")
+    webm_replaced = {f[:-4] for f in os.listdir(webm_dir)} if os.path.isdir(webm_dir) else set()
     wins, meta, fails = [], [], []
     floats = {}                       # 검수용: sid → float 창 (그룹별 일부만 쓰므로 전부 보관해도 작다)
     for r in rows:
@@ -87,15 +90,22 @@ def main():
         lv1 = CLS.index(r["v1_class"]) if r["v1_class"] else 4
         lre = CLS.index(r["real_class"]) if r["real_class"] else 4
         rms = float(np.sqrt(np.mean(w.astype(np.float64) ** 2)))
+        zf = float(np.mean(q == 0))
         meta.append({**r, "label_v1": lv1, "label_real": lre, "win_start_sample": start,
                      "win_start_s": f"{start / SR:.3f}", "audio_len_s": f"{len(x) / SR:.2f}",
                      "webm_trim": int(webm_trim),
+                     "webm_origin": int(webm_trim or sid in webm_replaced),   # 처음에 webm 로 내려간 구간 52개
+                     "webm_replaced_exact": int(sid in webm_replaced),        # 정확한 로컬 절단으로 교체됨
                      "rms_dbfs": f"{20 * np.log10(max(rms, 1e-9)):.1f}",
                      "peak": f"{float(np.abs(w).max()):.3f}",
-                     "zero_frac_int8": f"{float(np.mean(q == 0)):.3f}"})
+                     "zero_frac_int8": f"{zf:.3f}",
+                     # v1 `--floor-zero` 규칙(int8 0 비율 > 0.95)에 걸리는 이벤트 창. 이벤트 클래스에만
+                     # 하한이 걸린다 (CLAUDE.md 7장). **표시만 하고 지우지 않는다.**
+                     "v1_floor_excluded": int(g != "background" and zf > 0.95),
+                     # 배경은 하한이 없어 유지한다. 거의 빈/완전 무음 배경 표시용.
+                     "bg_near_silent": int(g == "background" and zf > 0.95)})
         wins.append(q)
-        if g in CLS:
-            floats[sid] = w
+        floats[sid] = w
 
     np.save(os.path.join(out, "windows_int8.npy"), np.stack(wins) if wins else np.zeros((0, WIN), np.int8))
     if meta:
@@ -116,6 +126,24 @@ def main():
                 w = floats[sid]
                 sf.write(os.path.join(spot, f"{g}_{k:02d}_{sid}.wav"),
                          np.clip(np.round(w * 32767), -32768, 32767).astype(np.int16), SR, subtype="PCM_16")
+        def dump(name, sid):
+            w = floats[sid]
+            sf.write(os.path.join(spot, name),
+                     np.clip(np.round(w * 32767), -32768, 32767).astype(np.int16), SR, subtype="PCM_16")
+
+        # 추가 검수 (2026-10-05): webm 오프셋 보정 구간 10개(이벤트 클래스 우선), def_gap 10개
+        webm = sorted((m["segment_id"] for m in meta if m["webm_origin"] == 1 and m["group"] in CLS[:4]))
+        rest = sorted(m["segment_id"] for m in meta if m["webm_origin"] == 1 and m["group"] not in CLS[:4])
+        random.Random(SEED + 4).shuffle(webm)
+        random.Random(SEED + 4).shuffle(rest)
+        gmap = {m["segment_id"]: m["group"] for m in meta}
+        for k, sid in enumerate((webm + rest)[:a.n_spot], 1):
+            dump(f"webm_{k:02d}_{gmap[sid]}_{sid}.wav", sid)
+        gap = sorted(m["segment_id"] for m in meta if m["group"] == "def_gap")
+        random.Random(SEED + 4).shuffle(gap)
+        for k, sid in enumerate(gap[:a.n_spot], 1):
+            lab = next(m["v1_class"] for m in meta if m["segment_id"] == sid)
+            dump(f"defgap_{k:02d}_{lab}_{sid}.wav", sid)
         print("검수용 wav →", spot)
 
 
