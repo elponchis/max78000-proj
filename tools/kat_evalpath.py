@@ -59,6 +59,27 @@ CASES = [
      "data/logs-local/safesound-melcbrt-v1___*/safesound-melcbrt-v1_qat_best.pth.tar"),
 ]
 
+# 외부 검증 세트 평가(`tools/eval_external.py`)에 쓰는 구성 (2026-10-05 추가).
+# 프레임 정의·모델 인자(dimensions / pool6 / width_mult)가 구성마다 달라
+# 위 다섯으로는 덮이지 않는다. `--external` 로 이것만 돈다 (전부 시드 1).
+_G = "glob:data/logs-local/safesound-{0}-v1___*/safesound-{0}-v1_qat_best.pth.tar"
+CASES_EXTERNAL = [
+    ("④ 0.5×", "ai85safesoundnet_w050", "SafeSound", "wave_w050", _G.format("w050")),
+    ("①′", "ai85safesoundmelnet", "SafeSoundMelInc", "mel_inc", _G.format("melinc")),
+    ("h400", "ai85safesoundmelnet", "SafeSoundMelH400", "mel_h400",
+     _G.format("melh400")),
+    ("h500", "ai85safesoundmelnet", "SafeSoundMelH500", "mel_h500",
+     _G.format("melh500")),
+    ("h500m32", "ai85safesoundmelnet", "SafeSoundMelH500M32", "mel_h500m32",
+     _G.format("melh500m32")),
+    ("u1000", "ai85safesoundmelnet_p4", "SafeSoundMelU1000", "mel_u1000",
+     _G.format("melu1000")),
+    ("u1000f1024", "ai85safesoundmelnet_p4", "SafeSoundMelU1000F1024",
+     "mel_u1000f1024", _G.format("melu1000f1024")),
+    ("u800", "ai85safesoundmelnet_p4", "SafeSoundMelU800", "mel_u800",
+     _G.format("melu800")),
+]
+
 CONF_RE = re.compile(r"==> Confusion:\s*\n((?:\s*\[.*\]\s*\n?)+)")
 
 
@@ -116,9 +137,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true", help="④만")
     ap.add_argument("--tol", type=float, default=1e-4)
+    ap.add_argument("--external", action="store_true",
+                    help="외부 세트 평가에 쓰는 구성만 (④ 는 --quick 과 같은 사례)")
     a = ap.parse_args()
 
     cases = CASES[:1] if a.quick else CASES
+    if a.external:
+        cases = CASES[:1] + CASES_EXTERNAL
     print("평가 경로 회귀 테스트 — 우리 로더 vs train.py --evaluate")
     print(f"{'계열':<14}{'train.py':>11}{'우리 로더':>12}{'차이':>10}  결과")
     print("-" * 56)
