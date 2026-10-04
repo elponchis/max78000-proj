@@ -1,0 +1,77 @@
+# 2차 후보 u1000 (풀링 4단) — curve-u1000.yaml 에서 생성 (synth_variant.sh)
+#
+# 모델: models/ai85net-safesound-mel.py `ai85safesoundmelnet`
+# 입력: (1, 64, 64) int8 로그 멜 (멜 64 × 프레임 64). CPU 가 만든다.
+#
+# 데이터 메모리 배치 — 층의 `processors` 는 **그 층의 입력**이 놓인 곳이고,
+# 출력은 다음 층의 `processors` 로 간다. 입력과 출력이 같은 프로세서를 쓰면
+# `out_offset` 으로 갈라 놓는다.
+#   L0 입력  1ch 64×64   proc 0        (4,096 워드)
+#   L0 출력 32ch 64×64   proc 32~63    ← 채널당 4,096픽셀 (한도 8,192)
+#   L1 출력 32ch 32×32   proc 0~31
+#   L2 출력 64ch 16×16   전부, 0x2000
+#   L3 출력 64ch  8×8    전부, 0x0000
+#   L4 출력 128ch 4×4    전부, 0x2000   (프로세서당 2채널)
+#   L5 출력 128ch 2×2    전부, 0x0000
+arch: ai85safesoundmelnet_p4
+dataset: SafeSoundMelU1000
+
+layers:
+  # ── conv1 : Conv2d 3×3, 1 → 32, 64×64
+  - pad: 1
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0x0000000000000001
+    data_format: HWC
+    operation: Conv2d
+    kernel_size: 3x3
+  # ── conv2 : MaxPool2 + Conv2d 3×3, 32 → 32, → 32×32
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0xffffffff00000000
+    operation: Conv2d
+    kernel_size: 3x3
+  # ── conv3 : MaxPool2 + Conv2d 3×3, 32 → 64, → 16×16
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x2000
+    processors: 0x00000000ffffffff
+    operation: Conv2d
+    kernel_size: 3x3
+  # ── conv4 : MaxPool2 + Conv2d 3×3, 64 → 64, → 8×8
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0xffffffffffffffff
+    operation: Conv2d
+    kernel_size: 3x3
+  # ── conv5 : MaxPool2 + Conv2d 3×3, 64 → 128, → 4×4
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x2000
+    processors: 0xffffffffffffffff
+    operation: Conv2d
+    kernel_size: 3x3
+  # ── conv6 : MaxPool2 + Conv2d 1×1, 128 → 128, → 2×2
+  - pad: 0
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0xffffffffffffffff
+    operation: Conv2d
+    kernel_size: 1x1
+  # ── fc : 128×2×2 = 512 → 5 (wide, 32bit 출력. Softmax 는 CPU)
+  - flatten: true
+    out_offset: 0x2000
+    processors: 0xffffffffffffffff
+    operation: MLP
+    output_width: 32
+    activate: None
