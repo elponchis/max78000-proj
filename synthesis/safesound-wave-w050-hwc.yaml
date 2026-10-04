@@ -1,0 +1,81 @@
+# 구성 ④ 폭 0.5× (raw 파형 1D CNN, 채널 절반) — MAX78000 합성 설정
+#
+# safesound-wave-hwc.yaml 과 층 구성이 같고 **채널 수만** 다르다:
+#   128 → 48 → 48 → 32 → 24 → 32 → 48 → 48 → 32 → FC(32×4 = 128 → 5)
+# 층의 `processors` 는 그 층의 **입력 채널 수**만큼 켠다 (L0 는 128채널 = 64 × 2패스).
+arch: ai85safesoundnet_w050
+dataset: SafeSound
+
+layers:
+  # ── voice_conv1 : Conv1d k=1, 128 → 48
+  - pad: 0
+    activate: ReLU
+    out_offset: 0x2000
+    processors: 0xffffffffffffffff
+    data_format: HWC
+    operation: Conv1d
+    kernel_size: 1
+  # ── voice_conv2 : Conv1d k=3, 48 → 48
+  - pad: 0
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0x0000ffffffffffff
+    operation: Conv1d
+    kernel_size: 3
+  # ── voice_conv3 : MaxPool2 + Conv1d k=3, 48 → 32
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x2000
+    processors: 0x0000ffffffffffff
+    operation: Conv1d
+    kernel_size: 3
+  # ── voice_conv4 : Conv1d k=3, 32 → 24
+  - pad: 0
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0x00000000ffffffff
+    operation: Conv1d
+    kernel_size: 3
+  # ── kws_conv1 : MaxPool2 + Conv1d k=3, 24 → 32
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x2000
+    processors: 0x0000000000ffffff
+    operation: Conv1d
+    kernel_size: 3
+  # ── kws_conv2 : Conv1d k=3, 32 → 48
+  - pad: 0
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0x00000000ffffffff
+    operation: Conv1d
+    kernel_size: 3
+  # ── kws_conv3 : AvgPool2 + Conv1d k=3, 48 → 48
+  - avg_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x2000
+    processors: 0x0000ffffffffffff
+    operation: Conv1d
+    kernel_size: 3
+  # ── kws_conv4 : MaxPool2 + Conv1d k=6, 48 → 32
+  - max_pool: 2
+    pool_stride: 2
+    pad: 1
+    activate: ReLU
+    out_offset: 0x0000
+    processors: 0x0000ffffffffffff
+    operation: Conv1d
+    kernel_size: 6
+  # ── fc : 4×32 = 128 → 5 (wide, 32bit 출력. Softmax 는 CPU)
+  - flatten: true
+    out_offset: 0x2000
+    processors: 0x00000000ffffffff
+    operation: MLP
+    output_width: 32
+    activate: None

@@ -34,10 +34,16 @@ GROUPS = {   # 색, 모양, 범례 이름
     "raw_npu": ("#eb6834", "o", "raw waveform, 1D CNN on NPU"),
     "m4": ("#1baf7a", "o", "same 1D CNN in software on Cortex-M4"),
 }
+# 로그 멜 2D 계열 — 점에는 글자(a..h)만 찍고 설명은 표로 뺀다 (에너지 큰 순)
+KEYED = ["melinc", "h400", "m32", "h500", "h500m32", "u1000f1024", "u800", "u1000"]
 # 라벨 위치 (점 기준 오프셋, 포인트) — 겹치지 않게 손으로 잡았다
-OFFS = {"wave": (8, -16), "melinc": (9, 13), "h500": (0, 19), "h500m32": (-2, -19),
-        "m32": (10, -15), "a1d": (9, -15), "m4cmsis": (0, 14), "m4plain": (0, 14)}
-HALIGN = {"h500": "center", "h500m32": "center", "m4cmsis": "center", "m4plain": "center"}
+OFFS = {"wave": (8, -16), "w050": (9, -14), "melinc": (9, 13), "h400": (-6, 17),
+        "h500": (2, -19), "h500m32": (-4, -19), "m32": (11, -14), "u800": (-9, 12),
+        "u1000": (-9, 4), "u1000f1024": (-6, -19), "a1d": (9, -15),
+        "m4cmsis": (0, 14), "m4plain": (0, 14)}
+HALIGN = {"h400": "right", "h500": "center", "h500m32": "center", "u800": "right",
+          "u1000": "right", "u1000f1024": "center", "m4cmsis": "center",
+          "m4plain": "center"}
 
 
 def main():
@@ -46,6 +52,7 @@ def main():
     fig.patch.set_facecolor(SURFACE)
     ax.set_facecolor(SURFACE)
 
+    key_lines = []
     for r in rows:
         color, marker, _ = GROUPS[r["group"]]
         x, x2 = float(r["e_datasheet_uJ"]), float(r["e_literature_uJ"])
@@ -57,14 +64,28 @@ def main():
         ax.plot(x, y, marker=marker, ms=8.5, zorder=3, mec=color, mew=1.8,
                 mfc=color if measured else SURFACE, ls="none")
         t = float(r["time_ms"])
-        lab = f"{r['label']}\n{'' if measured else '~'}{t:g} ms"
+        tms = f"{'' if measured else '~'}{t:g} ms"
+        if r["id"] in KEYED:
+            # 로그 멜 2D 계열은 점이 몰려 있다 — 점에는 글자만, 설명은 옆의 표로
+            letter = "abcdefgh"[KEYED.index(r["id"])]
+            ax.annotate(letter, (x, y), xytext=(-9, 9), textcoords="offset points",
+                        fontsize=8.2, color=INK, ha="center", va="center",
+                        fontweight="bold")
+            key_lines.append(f"{letter}   {r['label']}  ·  {tms}")
+            continue
+        lab = f"{r['label']}\n{tms}"
         ax.annotate(lab, (x, y), xytext=OFFS.get(r["id"], (8, 6)),
                     textcoords="offset points", fontsize=7.6, color=INK2,
                     ha=HALIGN.get(r["id"], "left"), va="center", linespacing=1.15)
 
+    ax.text(0.435, 0.735, "log-mel + 2D CNN configurations",
+            transform=ax.transAxes, fontsize=7.4, color=INK, va="top", fontweight="bold")
+    ax.text(0.435, 0.700, "\n".join(sorted(key_lines)), transform=ax.transAxes,
+            fontsize=7.2, color=INK2, va="top", linespacing=1.45)
+
     ax.set_xscale("log")
-    ax.set_xlim(45, 40000)
-    ax.set_ylim(0.49, 0.70)
+    ax.set_xlim(14, 40000)
+    ax.set_ylim(0.465, 0.70)
     ax.set_xlabel("Estimated energy per decision (µJ, log scale)", color=INK2, fontsize=9)
     ax.set_ylabel("macro-F1 at 300 false alarms/h", color=INK2, fontsize=9)
     ax.grid(True, which="major", color=GRID, lw=0.6)
