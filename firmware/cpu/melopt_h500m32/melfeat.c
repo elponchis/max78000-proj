@@ -165,23 +165,45 @@ static int8_t ring[MEL_N_FRAMES][MEL_N_MELS];
 static int ring_head; // 다음에 쓸 열 = 가장 오래된 열
 // 직전 판단의 꼬리 262 샘플 + 새 4,000 샘플. 새 16프레임이 이 안에 다 들어온다
 // (마지막 프레임: 3,750 + 512 = 4,262).
-static int8_t hist[MEL_INC_TAIL + MEL_INC_STEP];
+// ⚠️ 프레임 간격이 n_fft 보다 크면 (MEL_INC_TAIL < 0) 프레임 사이 샘플을 **건너뛴다**.
+// 그때는 이력이 필요 없다 — 새 프레임이 전부 새 블록 안에 있고, 첫 프레임은
+// 블록의 INC_SKIP 번째 샘플에서 시작한다. (2026-10-05: 음수 길이 memmove 로
+// 보드가 멈췄다 — u1000 / u800.)
+#if MEL_INC_TAIL >= 0
+#define INC_KEEP MEL_INC_TAIL
+#define INC_SKIP 0
+#else
+#define INC_KEEP 0
+#define INC_SKIP (-(MEL_INC_TAIL))
+#endif
+static int8_t hist[INC_KEEP + MEL_INC_STEP];
 
 void melfeat_inc_reset(const int8_t *tail)
 {
     memset(ring, -128, sizeof(ring));
     ring_head = 0;
-    if (tail) memcpy(&hist[MEL_INC_STEP], tail, MEL_INC_TAIL);
-    else memset(&hist[MEL_INC_STEP], 0, MEL_INC_TAIL);
+    if (tail && INC_KEEP) memcpy(&hist[MEL_INC_STEP], tail, INC_KEEP);
+    else memset(&hist[MEL_INC_STEP], 0, INC_KEEP);
+}
+
+// 새 블록에서 첫 새 프레임이 시작하는 곳. 이력이 있으면 꼬리를 앞으로 당기고
+// 새 샘플을 뒤에 붙인다. 없으면 새 블록을 그대로 쓴다 (복사 없음).
+static const int8_t *inc_source(const int8_t *x_new)
+{
+#if MEL_INC_TAIL >= 0
+    memmove(hist, &hist[MEL_INC_STEP], INC_KEEP);
+    memcpy(&hist[INC_KEEP], x_new, MEL_INC_STEP);
+    return hist;
+#else
+    return &x_new[INC_SKIP];
+#endif
 }
 
 void melfeat_inc_push(const int8_t *x_new)
 {
-    // 꼬리를 앞으로, 새 샘플을 뒤에
-    memmove(hist, &hist[MEL_INC_STEP], MEL_INC_TAIL);
-    memcpy(&hist[MEL_INC_TAIL], x_new, MEL_INC_STEP);
+    const int8_t *src = inc_source(x_new);
     for (int j = 0; j < MEL_INC_FRAMES; j++) {
-        fill_plain(&hist[j * MEL_HOP_INC]);
+        fill_plain(&src[j * MEL_HOP_INC]);
         rfft512(buf, spec);
         power_mel();
         log_quant(ring[ring_head], 1);
@@ -308,10 +330,9 @@ void melfeat_inc_push_v(const int8_t *x_new, int variant, uint32_t *prof,
                         uint32_t (*tick)(void), uint32_t mask)
 {
     variant_init();
-    memmove(hist, &hist[MEL_INC_STEP], MEL_INC_TAIL);
-    memcpy(&hist[MEL_INC_TAIL], x_new, MEL_INC_STEP);
+    const int8_t *src = inc_source(x_new);
     for (int j = 0; j < MEL_INC_FRAMES; j++) {
-        frame_v(&hist[j * MEL_HOP_INC], ring[ring_head], 1, variant, prof, tick, mask);
+        frame_v(&src[j * MEL_HOP_INC], ring[ring_head], 1, variant, prof, tick, mask);
         ring_head = (ring_head + 1) % MEL_N_FRAMES;
     }
 }

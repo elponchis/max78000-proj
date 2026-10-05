@@ -32,9 +32,11 @@ static const int variants[N_VAR] = { 0, MELV_LUTLOG, MELV_Q15 | MELV_LUTLOG,
 static const char *names[N_VAR] = { "V0 f32+logf", "V1 f32+LUT", "V2 q15+LUT", "V3 q31+LUT" };
 
 static int8_t feat[N_FEAT];
+static int8_t feat_inc[N_FEAT];
 static uint32_t t_push[N_ITER];
 static struct {
     uint32_t n_diff, n_over;
+    uint32_t n_inc; // 증분 4회 != 일괄 인 값의 수 (0 이어야 한다)
     int max_diff;
     uint32_t mn, md, mean, mx;
     uint32_t prof[4];
@@ -80,6 +82,12 @@ int main(void)
             if (d > 2) res[v].n_over++;
             if (d > res[v].max_diff) res[v].max_diff = d;
         }
+        // 증분 == 일괄 (같은 변형끼리, 비트 단위). 프레임 건너뛰기 경로 포함
+        melfeat_inc_reset(&w[MEL_OFF_INC]);
+        for (int k = 0; k < 4; k++)
+            melfeat_inc_push_v(&w[tail0 + MEL_INC_STEP * k], var, 0, 0, 0);
+        melfeat_inc_get(feat_inc);
+        for (int i = 0; i < N_FEAT; i++) res[v].n_inc += (feat_inc[i] != feat[i]);
         // 지연
         melfeat_inc_reset(&w[MEL_OFF_INC]);
         for (int i = 0; i < N_ITER; i++) {
@@ -126,6 +134,8 @@ int main(void)
             printf("%s | KAT mismatches %lu/%d  max %d LSB  over+-2: %lu -> %s\n", names[v],
                    (unsigned long)res[v].n_diff, N_FEAT, res[v].max_diff,
                    (unsigned long)res[v].n_over, res[v].n_over == 0 ? "PASS" : "FAIL");
+            printf("%s | incremental(4 pushes) vs batch: %lu mismatches -> %s\n", names[v],
+                   (unsigned long)res[v].n_inc, res[v].n_inc == 0 ? "PASS" : "FAIL");
             printf("%s | push cycles min %lu  med %lu  mean %lu  max %lu\n", names[v],
                    (unsigned long)res[v].mn, (unsigned long)res[v].md,
                    (unsigned long)res[v].mean, (unsigned long)res[v].mx);
