@@ -55,10 +55,18 @@ def main():
     key_lines = []
     for r in rows:
         color, marker, _ = GROUPS[r["group"]]
-        x, x2 = float(r["e_datasheet_uJ"]), float(r["e_literature_uJ"])
+        x = float(r["e_datasheet_uJ"])
         y, sd = float(r["f1"]), float(r["f1_sd"])
         measured = r["board"] == "1"
-        ax.plot([x, x2], [y, y], color=color, lw=1.0, alpha=0.55, zorder=2,
+        # 가는 선 = 공개 전력값들(데이터시트 / Ulkar & Okman / Moosmann) 전체 범위.
+        # Moosmann 값은 실측 지연이 있는 NPU 구성에만 있다 — 세로 눈금으로 표시한다
+        xs = [x, float(r["e_literature_uJ"])]
+        if r.get("e_moosmann_uJ"):
+            xm = float(r["e_moosmann_uJ"])
+            xs.append(xm)
+            ax.plot([xm, xm], [y - 0.0024, y + 0.0024], color=color, lw=1.3,
+                    alpha=0.95, zorder=2)
+        ax.plot([min(xs), max(xs)], [y, y], color=color, lw=1.0, alpha=0.55, zorder=2,
                 solid_capstyle="round")
         ax.plot([x, x], [y - sd, y + sd], color=color, lw=1.0, alpha=0.55, zorder=2)
         ax.plot(x, y, marker=marker, ms=8.5, zorder=3, mec=color, mew=1.8,
@@ -110,11 +118,13 @@ def main():
                  fontsize=9.5, color=INK, loc="left", pad=10)
     fig.text(0.012, 0.012,
              "Energy is an ESTIMATE (measured latency × published power), not a measurement. "
-             "Marker: datasheet power; line: up to literature-derived power.\n"
+             "Marker: datasheet power.\n"
+             "Line: range over published power values; tick: with Moosmann et al. "
+             "inference power (board-measured NPU configurations only).\n"
              "Vertical bar: ±1 sd over seeds. Number under each label: time per decision "
              "(busy-wait, sleep excluded). DRAFT.",
              fontsize=6.6, color=MUTED, ha="left", va="bottom", linespacing=1.3)
-    fig.subplots_adjust(left=0.085, right=0.985, top=0.92, bottom=0.165)
+    fig.subplots_adjust(left=0.085, right=0.985, top=0.92, bottom=0.185)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     fig.savefig(OUT, facecolor=SURFACE)
     print(f"저장: {OUT}")
