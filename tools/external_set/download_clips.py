@@ -57,6 +57,10 @@ def main():
     ap.add_argument("--limit", type=int, default=0, help="시험용: 이번 실행에서 시도할 최대 개수")
     ap.add_argument("--sleep", type=float, nargs=2, default=(4.0, 8.0))
     ap.add_argument("--seed", type=int, default=78000)
+    ap.add_argument("--mono16k", action="store_true",
+                    help="16kHz 모노 wav 로 저장 (용량 1/6). webm 폴백(20초)은 앞 --webm-preroll 초를 잘라 10초로 맞춘다")
+    ap.add_argument("--webm-preroll", type=float, default=9.967,
+                    help="webm 폴백 오프셋. external_v1 독립 검증 51건 평균 9.967초 (sd 0.018)")
     a = ap.parse_args()
     raw = os.path.expanduser(a.raw)
     os.makedirs(raw, exist_ok=True)
@@ -100,6 +104,8 @@ def main():
                "-f", "140/bestaudio/best", "--download-sections", f"*{s}-{s + 10}",
                "-x", "--audio-format", "wav", "-o", os.path.join(raw, f"{sid}.%(ext)s"),
                f"https://www.youtube.com/watch?v={r['ytid']}"]
+        if a.mono16k:
+            cmd[1:1] = ["--postprocessor-args", "ExtractAudio:-ar 16000 -ac 1"]
         try:
             p = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
             text = (p.stderr or "") + (p.stdout or "")
@@ -109,7 +115,17 @@ def main():
         tried += 1
         if rc == 0 and os.path.exists(out) and os.path.getsize(out) > 44:
             consec_login = 0
-            log(sid, "ok", "")
+            note = ""
+            if a.mono16k:
+                dur = float(subprocess.run(["/usr/bin/ffprobe", "-v", "error", "-show_entries", "format=duration",
+                                            "-of", "csv=p=0", out], capture_output=True, text=True).stdout or 0)
+                if dur > 15:                       # webm 폴백: [시작-10s, 시작+10s] 20초 → 뒤 10초
+                    tmpf = out + ".trim.wav"
+                    subprocess.run(["/usr/bin/ffmpeg", "-v", "error", "-y", "-ss", f"{a.webm_preroll}", "-t", "10",
+                                    "-i", out, "-ar", "16000", "-ac", "1", tmpf], capture_output=True, timeout=120)
+                    os.replace(tmpf, out)
+                    note = "webm_trim"
+            log(sid, "ok", note)
             print(f"[{tried}] ok   {sid}", flush=True)
         else:
             reason, detail = classify(text)
