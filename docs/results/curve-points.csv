@@ -1,13 +1,13 @@
 id,label,group,f1,f1_sd,n_seeds,time_ms,e_datasheet_uJ,e_literature_uJ,board,note
 wave,(4) raw waveform 1D,raw_npu,0.5329,0.0238,5,2.53,71,130,1,board-measured latency
-w050,(4) at 0.5x width,raw_npu,0.4979,0.0219,3,1.62,34,65,0,latency estimated (NPU 26278 cycles synthesized from seed-1 checkpoint)
+w050,(4) at 0.5x width,raw_npu,0.4979,0.0219,3,1.62,34,65,1,board-measured latency (2026-10-05)
 melinc,(1)' hop 250,mel_npu,0.6694,0.0064,3,15.04,267,565,1,board-measured latency (V1 preprocessing)
-h400,hop 400,mel_npu,0.6661,0.0034,3,9.4,167,353,0,latency estimated; within +-0.02 of (1)'
+h400,hop 400,mel_npu,0.6661,0.0034,3,9.42,167,353,1,board-measured latency (2026-10-05); within +-0.02 of (1)'
 h500,hop 500,mel_npu,0.6509,0.0113,3,7.55,134,284,1,board-measured latency (2026-10-03)
 h500m32,hop 500 + 32 mel,mel_npu,0.6412,0.0060,3,5.88,86,194,1,board-measured latency (2026-10-03)
 m32,32 mel,mel_npu,0.6434,0.0115,3,11.9,173,392,0,latency estimated
-u800,hop 800 + 32 mel,mel_npu,0.6596,0.0080,3,3.74,55,123,0,latency estimated; 4-pool model; 36% of samples unobserved
-u1000,hop 1000 + 32 mel,mel_npu,0.6342,0.0089,3,3.0,44,99,0,latency estimated; 4-pool model; 49% of samples unobserved
+u800,hop 800 + 32 mel,mel_npu,0.6596,0.0080,3,3.66,54,121,1,board-measured latency (2026-10-05); 4-pool model
+u1000,hop 1000 + 32 mel,mel_npu,0.6342,0.0089,3,2.93,43,98,1,board-measured latency (2026-10-05); 4-pool model
 u1000f1024,hop 1000 + 32 mel (n_fft 1024),mel_npu,0.6229,0.0008,3,5.5,66,161,0,latency estimated (rfft-1024 cost unmeasured); 4-pool model
 a1d,A: log-mel + 1D backend,mel_npu_1d,0.5638,0.0100,3,10.9,122,307,0,latency estimated (NPU 38514 cycles synthesized)
 m4cmsis,M4 CMSIS-NN,m4,0.5329,0.0238,5,225.7,2007,5598,1,board-measured latency; same weights and outputs as (4)
