@@ -49,6 +49,11 @@ WIN = 16384          # 1초 @ 16kHz — 모델 입력
 MARGIN = 1600        # 샤드에 저장된 양옆 여유 (±100ms). shift 재절단용
 STORE = WIN + 2 * MARGIN
 ROW = 128            # (128,128) reshape
+# v2 배경 혼합 증강 — 사전 등록값 (docs/results/dataset-v2-design.md 8절).
+# ⚠️ 외부 세트 결과를 보고 다시 맞추지 않는다.
+MIX_PROB = 0.5             # 이벤트 창에 배경을 섞을 확률
+MIX_SNR_DB = (0.0, 20.0)   # 창 전체 RMS 기준 SNR, 균등
+MIX_POOL_MAX_ZERO = 0.5    # 배경 풀에서 빼는 int8 0 비율 상한
 
 # 전처리와 **반드시 같은 값**이어야 한다 (prepare_safesound.py --floor-zero).
 # 게인 증강 후 창이 int8 에서 비었는지 판정하는 기준이다.
@@ -78,6 +83,26 @@ NORM_GMAX_SH = 2        # 최대 시프트 2 = x4 = +12dB. 조용한 창의 잡�
 GAIN_TRIES = 8       # 재추출 횟수 상한
 
 
+def mix_int8(e, b, snr_db):
+    """이벤트 창 e 에 배경 창 b 를 SNR `snr_db` 로 섞는다. int8 → int8.
+
+    `g = rms(e) / (rms(b)·10^(SNR/20))`, `y = clip(round(e + g·b))`. rms 는 **창
+    전체**다. 이벤트 레벨은 그대로 두고 배경만 스케일하며, int8 변환은
+    **포화뿐**이다 (창 전체를 다시 줄이지 않는다 — 실기기가 포화이고, 줄이면
+    이벤트의 절대 레벨이 혼합 여부에 따라 달라진다).
+    `tools/diag_external_drop.py` 의 `mix` 와 같은 식이다 (`tools/kat_mix.py`).
+    어느 한쪽이 완전 0 이면 섞지 않는다.
+    """
+    ef = e.astype(np.float64)
+    bf = b.astype(np.float64)
+    re = float(np.sqrt((ef ** 2).mean()))
+    rb = float(np.sqrt((bf ** 2).mean()))
+    if re <= 0.0 or rb <= 0.0:
+        return e
+    g = re / (rb * 10.0 ** (snr_db / 20.0))
+    return np.clip(np.round(ef + g * bf), -128, 127).astype(np.int8)
+
+
 class SafeSound(Dataset):
     """int8 샤드 lazy 로더.
 
@@ -92,7 +117,8 @@ class SafeSound(Dataset):
     def __init__(self, root, d_type, transform=None, augment=None,
                  floor_zero=FLOOR_ZERO, gain_db=GAIN_DB, shift_ms=SHIFT_MS,
                  noise_dir=None, seed=0, norm_pow2=False,
-                 subset_frac=None, clip_prob=0.0):
+                 subset_frac=None, clip_prob=0.0, mix_prob=0.0,
+                 mix_snr_db=MIX_SNR_DB):
         if d_type not in ("train", "test"):
             raise ValueError(f"d_type 은 train/test 여야 한다: {d_type}")
         self.root = root
@@ -104,6 +130,10 @@ class SafeSound(Dataset):
         # 게인 증강에서 피크 초과 시 **포화**로 처리할 확률.
         # 0.0 = 항상 되돌리기(기존), 1.0 = 항상 포화, 0.5 = 혼합
         self.clip_prob = float(clip_prob)
+        # 배경 혼합 증강 (v2). 0.0 = 끔 (v1 과 비트 단위로 같은 경로)
+        self.mix_prob = float(mix_prob)
+        self.mix_snr_db = tuple(mix_snr_db)
+        self._mix_pool = None
         self.norm_pow2 = bool(norm_pow2)
         self.norm_target = NORM_TARGET
         self.norm_gmax_sh = NORM_GMAX_SH
@@ -234,14 +264,44 @@ class SafeSound(Dataset):
                 return q.astype(np.int8)
         return w
 
-    def _mix_noise(self, w, rng):
+    def _bg_pool(self):
+        """혼합에 쓸 배경 창의 인덱스 — **이 split 의** background 중 int8 0 비율
+        ≤ MIX_POOL_MAX_ZERO 인 것. 처음 쓸 때 한 번 훑는다 (워커마다)."""
+        if self._mix_pool is None:
+            bg = len(CLASSES) - 1
+            pool = []
+            for i, (target, shard, row, _l, _r) in enumerate(self.index):
+                if target != bg:
+                    continue
+                w = np.asarray(self._shard(shard)[row])[MARGIN:MARGIN + WIN]
+                if float((w == 0).mean()) <= MIX_POOL_MAX_ZERO:
+                    pool.append(i)
+            self._mix_pool = np.array(pool, dtype=np.int64)
+        return self._mix_pool
+
+    def _mix_noise(self, w, rng, target=None):
         """MSnoise 혼합 (SNR 0~20dB). **v1 에서는 쓰지 않는다** (CLAUDE.md 규칙 6).
 
         v1 기준선 학습 뒤 별도 비교 실험으로 붙인다. 붙일 때는 ai8x-training 의
         MSnoise 전처리 결과를 16kHz 창으로 변환해 `noise_dir` 에 넣고, 채움 베드와
         같은 규칙(같은 split 안에서만)을 적용한다.
+
+        **v2 (2026-10-05): 배경 혼합.** `mix_prob > 0` 이면 이벤트 창에 **같은
+        split 의 배경 창**을 SNR `mix_snr_db` 균등으로 섞는다. 사전 등록:
+        `docs/results/dataset-v2-design.md` 8절 — 게인 **뒤**에 섞고, int8
+        변환은 포화만 쓰며, background 클래스 창은 건드리지 않는다.
         """
-        return w
+        if self.mix_prob <= 0.0 or target is None or target == len(CLASSES) - 1:
+            return w
+        if rng.random() >= self.mix_prob:
+            return w
+        pool = self._bg_pool()
+        if not len(pool):
+            return w
+        _t, shard, row, _l, _r = self.index[int(pool[rng.integers(len(pool))])]
+        b = np.asarray(self._shard(shard)[row])[MARGIN:MARGIN + WIN]
+        snr = float(rng.uniform(self.mix_snr_db[0], self.mix_snr_db[1]))
+        return mix_int8(w, b, snr)
 
     # ──────────────────────────────────────────────────────────── 샘플
     def __getitem__(self, i):
@@ -252,7 +312,7 @@ class SafeSound(Dataset):
         w = self._crop(stored, left, right, rng)          # (WIN,)
         if self.augment:
             w = self._rand_gain(w, rng)
-            w = self._mix_noise(w, rng)
+            w = self._mix_noise(w, rng, target)
 
         # 음량 정규화는 **증강 뒤**다. 랜덤 게인은 실기기의 레벨 변동을 흉내
         # 내는 것이고, 실기기에서도 정규화는 그 변동을 받은 뒤에 일어난다.
@@ -366,7 +426,7 @@ class SafeSound16(SafeSound):
 
 
 def safesound_get_datasets(data, load_train=True, load_test=True,
-                           norm_pow2=False, clip_prob=0.0):
+                           norm_pow2=False, clip_prob=0.0, mix_prob=0.0):
     """ai8x-training 규약 로더. `data` 는 (data_dir, args).
 
     `norm_pow2` 는 라운드 6 (b) 1단계의 음량 정규화다. **테스트셋에도 켠다** —
@@ -379,7 +439,8 @@ def safesound_get_datasets(data, load_train=True, load_test=True,
     # ⚠️ clip_prob 는 **증강**이라 train 에만 건다. 평가·펌웨어 경로는
     #    포화(np.clip) 하나로 고정이다 (2026-09-30 원칙).
     train_ds = (SafeSound(root, "train", transform=transform,
-                          norm_pow2=norm_pow2, clip_prob=clip_prob)
+                          norm_pow2=norm_pow2, clip_prob=clip_prob,
+                          mix_prob=mix_prob)
                 if load_train else None)
     test_ds = (SafeSound(root, "test", transform=transform,
                          norm_pow2=norm_pow2) if load_test else None)
@@ -389,6 +450,11 @@ def safesound_get_datasets(data, load_train=True, load_test=True,
 def safesound_mix50_get_datasets(data, load_train=True, load_test=True):
     """게인 증강에서 되돌리기/포화를 **50:50** 으로 섞는다 (학습 전용)."""
     return safesound_get_datasets(data, load_train, load_test, clip_prob=0.5)
+
+
+def safesound_v2_get_datasets(data, load_train=True, load_test=True):
+    """v2 — 배경 혼합 증강 (학습 전용, 확률 MIX_PROB, SNR MIX_SNR_DB)."""
+    return safesound_get_datasets(data, load_train, load_test, mix_prob=MIX_PROB)
 
 
 def safesound_norm2_get_datasets(data, load_train=True, load_test=True):
@@ -474,6 +540,15 @@ V1_TRAIN_COUNTS = (528, 477, 491, 1934, 9577)   # siren/glass/scream/dog_bark/ba
 # 균형 샘플러(WeightedRandomSampler)도 대안이지만 ai8x 의 train.py 가 DataLoader 를
 # 직접 만들기 때문에 패치가 필요하다. 가중 손실이 같은 목적을 패치 없이 달성한다.
 datasets = [
+    {
+        # v2 — v1 데이터 + 배경 혼합 증강 (dataset-v2-design.md 8절).
+        # 시험셋·모델·손실 가중치는 SafeSound 와 같다
+        "name": "SafeSoundV2",
+        "input": (128, 128),
+        "output": tuple(CLASSES),
+        "weight": class_weights(),
+        "loader": safesound_v2_get_datasets,
+    },
     {
         "name": "SafeSound",
         "input": (128, 128),

@@ -36,11 +36,13 @@ import ai8x
 
 try:                                   # ai8x-training 이 datasets 패키지로 로드할 때
     from . import melfeat as MF
+    from .safesound import MIX_PROB as S_MIX_PROB
     from .safesound import (CLASSES, MARGIN, SafeSound, V1_TRAIN_COUNTS,
                             class_weights)
 except ImportError:                    # tools/ 가 단독 모듈로 import 할 때
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import melfeat as MF
+    from safesound import MIX_PROB as S_MIX_PROB
     from safesound import (CLASSES, MARGIN, SafeSound, V1_TRAIN_COUNTS,
                            class_weights)
 
@@ -107,7 +109,7 @@ class SafeSoundMel(SafeSound):
         w = self._crop(stored, left, right, rng)
         if self.augment:
             w = self._rand_gain(w, rng)
-            w = self._mix_noise(w, rng)
+            w = self._mix_noise(w, rng, target)
         return MF.mel_int8(w, self.scheme)
 
     def __getitem__(self, i):
@@ -137,7 +139,7 @@ class SafeSoundMel1D(SafeSoundMel):
         return x.squeeze(0), target
 
 
-def _mel_loader(scheme, subset_frac=None, clip_prob=0.0, cls=None):
+def _mel_loader(scheme, subset_frac=None, clip_prob=0.0, cls=None, mix_prob=0.0):
     """압축 법칙 하나에 대한 ai8x-training 규약 로더를 만든다.
 
     ⚠️ **캐시 파일 이름에 법칙을 넣는다.** 넣지 않으면 (1) 의 로그 캐시를
@@ -153,7 +155,7 @@ def _mel_loader(scheme, subset_frac=None, clip_prob=0.0, cls=None):
         # 서로 다른 테스트셋을 보게 되어 곡선이 성립하지 않는다.
         train_ds = (DS(root, "train", transform=transform,
                                  scheme=scheme, subset_frac=subset_frac,
-                                 clip_prob=clip_prob)
+                                 clip_prob=clip_prob, mix_prob=mix_prob)
                     if load_train else None)
         # 테스트셋은 무증강이므로 캐시해 둔다. 없으면 즉석 계산으로 돌아간다.
         tag = "" if scheme == "log" else f"_{scheme}"
@@ -265,6 +267,19 @@ for _name, _scheme in (("SafeSoundMelH500", "log_h500"),
         "output": tuple(CLASSES),
         "weight": class_weights(),
         "loader": _mel_loader(_scheme),
+    })
+
+# v2 — 같은 특징·같은 시험셋, 학습에만 배경 혼합 증강 (dataset-v2-design.md 8절)
+for _name, _scheme in (("SafeSoundMelIncV2", "loginc"),
+                       ("SafeSoundMelH400V2", "log_h400"),
+                       ("SafeSoundMelU1000V2", "log_u1000"),
+                       ("SafeSoundMelU800V2", "log_u800")):
+    datasets.append({
+        "name": _name,
+        "input": (1,) + MF.scheme_shape(_scheme),
+        "output": tuple(CLASSES),
+        "weight": class_weights(),
+        "loader": _mel_loader(_scheme, mix_prob=S_MIX_PROB),
     })
 
 for _name, _scheme in (("SafeSoundMelLin", "lin"),
