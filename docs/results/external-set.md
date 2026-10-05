@@ -145,6 +145,12 @@ webm 파일과 상호상관으로 오프셋을 쟀다. 쿠키 없음, 80MB 초�
 - siren 실사용 `real_primary` 87개의 하위 종류: `Siren` 34, Civil defense 12, Fire engine 12, Police 9, Civil defense+Siren 7, Ambulance 4, 그 외 복합 9. 이 비율이 외부 세트의 하위 종류 분포다.
 - 이벤트 길이(가장 긴 단일 이벤트) 중앙값: siren 9.3초 / glass 1.4초 / scream 1.2초 / dog_bark 0.6초. 1초 이하 비율은 dog_bark 59/87, scream 57/130, glass 19/74, siren 4/121 — 창이 이벤트보다 길어 **배경 소리가 섞인다**(학습 데이터와 같은 조건).
 
+- **def_gap 과 scream 그룹의 "Shout만" 구간은 같은 모집단의 무작위 추출이다(모집단 134, 뽑힘 92).** 선별 경로와 공변량 9개에서
+  차이를 찾지 못했다. 두 집단의 발화율 차이는 우연일 가능성을 배제할 수 없으므로 합쳐서 한 집단으로 다룬다.
+  (모집단 = strong eval 에서 Shout 만 있고 Screaming·Yell·v1 군중 목록·다른 대상 클래스 라벨이 없는 구간. scream 그룹 55 + def_gap 37.)
+- 모집단 134개 중 뽑히지 않은 42개의 사유: **선별됐으나 다운로드 실패 20개**(other 5, private 5, login_required 4, age_restricted 4, unavailable 2),
+  **추출 상한 22개**(scream v1 100·def_gap 100 도달로 목록 밖), 기타 0개. 선별은 112개(scream 63 + def_gap 49)였고 유효 92개(82%)다.
+
 ### 배경 구성 (유효 264)
 
 라벨(구간 수, 상위 20; 한 구간이 여러 라벨을 가진다):
