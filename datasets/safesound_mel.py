@@ -109,7 +109,7 @@ class SafeSoundMel(SafeSound):
         w = self._crop(stored, left, right, rng)
         if self.augment:
             w = self._rand_gain(w, rng)
-            w = self._mix_noise(w, rng, target)
+            w = self._mix_noise(w, rng, target, i)
         return MF.mel_int8(w, self.scheme)
 
     def __getitem__(self, i):
@@ -139,7 +139,8 @@ class SafeSoundMel1D(SafeSoundMel):
         return x.squeeze(0), target
 
 
-def _mel_loader(scheme, subset_frac=None, clip_prob=0.0, cls=None, mix_prob=0.0):
+def _mel_loader(scheme, subset_frac=None, clip_prob=0.0, cls=None, mix_prob=0.0,
+                mix_bg=False):
     """압축 법칙 하나에 대한 ai8x-training 규약 로더를 만든다.
 
     ⚠️ **캐시 파일 이름에 법칙을 넣는다.** 넣지 않으면 (1) 의 로그 캐시를
@@ -155,7 +156,8 @@ def _mel_loader(scheme, subset_frac=None, clip_prob=0.0, cls=None, mix_prob=0.0)
         # 서로 다른 테스트셋을 보게 되어 곡선이 성립하지 않는다.
         train_ds = (DS(root, "train", transform=transform,
                                  scheme=scheme, subset_frac=subset_frac,
-                                 clip_prob=clip_prob, mix_prob=mix_prob)
+                                 clip_prob=clip_prob, mix_prob=mix_prob,
+                                 mix_bg=mix_bg)
                     if load_train else None)
         # 테스트셋은 무증강이므로 캐시해 둔다. 없으면 즉석 계산으로 돌아간다.
         tag = "" if scheme == "log" else f"_{scheme}"
@@ -280,6 +282,19 @@ for _name, _scheme in (("SafeSoundMelIncV2", "loginc"),
         "output": tuple(CLASSES),
         "weight": class_weights(),
         "loader": _mel_loader(_scheme, mix_prob=S_MIX_PROB),
+    })
+
+# v2.1 — v2 + background 창에도 혼합 (dataset-v2.1-design.md)
+for _name, _scheme in (("SafeSoundMelIncV21", "loginc"),
+                       ("SafeSoundMelH400V21", "log_h400"),
+                       ("SafeSoundMelU1000V21", "log_u1000"),
+                       ("SafeSoundMelU800V21", "log_u800")):
+    datasets.append({
+        "name": _name,
+        "input": (1,) + MF.scheme_shape(_scheme),
+        "output": tuple(CLASSES),
+        "weight": class_weights(),
+        "loader": _mel_loader(_scheme, mix_prob=S_MIX_PROB, mix_bg=True),
     })
 
 for _name, _scheme in (("SafeSoundMelLin", "lin"),

@@ -118,7 +118,7 @@ class SafeSound(Dataset):
                  floor_zero=FLOOR_ZERO, gain_db=GAIN_DB, shift_ms=SHIFT_MS,
                  noise_dir=None, seed=0, norm_pow2=False,
                  subset_frac=None, clip_prob=0.0, mix_prob=0.0,
-                 mix_snr_db=MIX_SNR_DB):
+                 mix_snr_db=MIX_SNR_DB, mix_bg=False):
         if d_type not in ("train", "test"):
             raise ValueError(f"d_type 은 train/test 여야 한다: {d_type}")
         self.root = root
@@ -133,6 +133,9 @@ class SafeSound(Dataset):
         # 배경 혼합 증강 (v2). 0.0 = 끔 (v1 과 비트 단위로 같은 경로)
         self.mix_prob = float(mix_prob)
         self.mix_snr_db = tuple(mix_snr_db)
+        # v2.1: background 창에도 다른 train 배경을 같은 확률·같은 SNR 로 섞는다
+        # (자기 자신 제외). v2 는 False — 이벤트에만 섞어 겹침이 이벤트 단서가 됐다
+        self.mix_bg = bool(mix_bg)
         self._mix_pool = None
         self.norm_pow2 = bool(norm_pow2)
         self.norm_target = NORM_TARGET
@@ -279,7 +282,7 @@ class SafeSound(Dataset):
             self._mix_pool = np.array(pool, dtype=np.int64)
         return self._mix_pool
 
-    def _mix_noise(self, w, rng, target=None):
+    def _mix_noise(self, w, rng, target=None, self_idx=None):
         """MSnoise 혼합 (SNR 0~20dB). **v1 에서는 쓰지 않는다** (CLAUDE.md 규칙 6).
 
         v1 기준선 학습 뒤 별도 비교 실험으로 붙인다. 붙일 때는 ai8x-training 의
@@ -291,14 +294,22 @@ class SafeSound(Dataset):
         `docs/results/dataset-v2-design.md` 8절 — 게인 **뒤**에 섞고, int8
         변환은 포화만 쓰며, background 클래스 창은 건드리지 않는다.
         """
-        if self.mix_prob <= 0.0 or target is None or target == len(CLASSES) - 1:
+        if self.mix_prob <= 0.0 or target is None:
+            return w
+        if target == len(CLASSES) - 1 and not self.mix_bg:
             return w
         if rng.random() >= self.mix_prob:
             return w
         pool = self._bg_pool()
         if not len(pool):
             return w
-        _t, shard, row, _l, _r = self.index[int(pool[rng.integers(len(pool))])]
+        j = int(pool[rng.integers(len(pool))])
+        if self_idx is not None and j == self_idx:           # 자기 자신 제외
+            if len(pool) < 2:
+                return w
+            while j == self_idx:
+                j = int(pool[rng.integers(len(pool))])
+        _t, shard, row, _l, _r = self.index[j]
         b = np.asarray(self._shard(shard)[row])[MARGIN:MARGIN + WIN]
         snr = float(rng.uniform(self.mix_snr_db[0], self.mix_snr_db[1]))
         return mix_int8(w, b, snr)
@@ -312,7 +323,7 @@ class SafeSound(Dataset):
         w = self._crop(stored, left, right, rng)          # (WIN,)
         if self.augment:
             w = self._rand_gain(w, rng)
-            w = self._mix_noise(w, rng, target)
+            w = self._mix_noise(w, rng, target, i)
 
         # 음량 정규화는 **증강 뒤**다. 랜덤 게인은 실기기의 레벨 변동을 흉내
         # 내는 것이고, 실기기에서도 정규화는 그 변동을 받은 뒤에 일어난다.
@@ -426,7 +437,8 @@ class SafeSound16(SafeSound):
 
 
 def safesound_get_datasets(data, load_train=True, load_test=True,
-                           norm_pow2=False, clip_prob=0.0, mix_prob=0.0):
+                           norm_pow2=False, clip_prob=0.0, mix_prob=0.0,
+                           mix_bg=False):
     """ai8x-training 규약 로더. `data` 는 (data_dir, args).
 
     `norm_pow2` 는 라운드 6 (b) 1단계의 음량 정규화다. **테스트셋에도 켠다** —
@@ -440,7 +452,7 @@ def safesound_get_datasets(data, load_train=True, load_test=True,
     #    포화(np.clip) 하나로 고정이다 (2026-09-30 원칙).
     train_ds = (SafeSound(root, "train", transform=transform,
                           norm_pow2=norm_pow2, clip_prob=clip_prob,
-                          mix_prob=mix_prob)
+                          mix_prob=mix_prob, mix_bg=mix_bg)
                 if load_train else None)
     test_ds = (SafeSound(root, "test", transform=transform,
                          norm_pow2=norm_pow2) if load_test else None)
@@ -455,6 +467,12 @@ def safesound_mix50_get_datasets(data, load_train=True, load_test=True):
 def safesound_v2_get_datasets(data, load_train=True, load_test=True):
     """v2 — 배경 혼합 증강 (학습 전용, 확률 MIX_PROB, SNR MIX_SNR_DB)."""
     return safesound_get_datasets(data, load_train, load_test, mix_prob=MIX_PROB)
+
+
+def safesound_v21_get_datasets(data, load_train=True, load_test=True):
+    """v2.1 — v2 + background 창에도 혼합 (dataset-v2.1-design.md)."""
+    return safesound_get_datasets(data, load_train, load_test, mix_prob=MIX_PROB,
+                                  mix_bg=True)
 
 
 def safesound_norm2_get_datasets(data, load_train=True, load_test=True):
@@ -548,6 +566,13 @@ datasets = [
         "output": tuple(CLASSES),
         "weight": class_weights(),
         "loader": safesound_v2_get_datasets,
+    },
+    {
+        "name": "SafeSoundV21",
+        "input": (128, 128),
+        "output": tuple(CLASSES),
+        "weight": class_weights(),
+        "loader": safesound_v21_get_datasets,
     },
     {
         "name": "SafeSound",

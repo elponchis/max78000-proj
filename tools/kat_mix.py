@@ -9,6 +9,8 @@
   6. `mix_prob=0.5` 에서 이벤트 창의 약 절반이 바뀐다
   7. 배경 풀이 **train split 의 background** 뿐이고 0 비율 상한을 지킨다
   8. test Dataset 은 증강이 꺼져 있다 (v2 로더로 만들어도)
+  9~12. v2.1 (mix_bg): 배경 창이 설정 확률로 섞이는가 / 배경 풀이 train 배경뿐인가 /
+        자기 자신과 섞이지 않는가 / 시험셋은 무증강인가
 
 사용 (WSL2, ai8x venv):  python tools/kat_mix.py
 """
@@ -135,6 +137,59 @@ def main():
     print(f"8. 로더: test 무증강, train mix_prob={tr.mix_prob} snr={tr.mix_snr_db}; "
           f"멜 경로 혼합 반영 {diff}/5 → {'OK' if ok8 else 'FAIL'}")
     bad += ["8"] * (not ok8)
+
+    # ── v2.1 (mix_bg) ─────────────────────────────────────────────
+    ds21 = S.SafeSound(root, "train", mix_prob=S.MIX_PROB, mix_bg=True)
+    pool21 = ds21._bg_pool()
+    ib = int(pool21[0])
+    wb = win(ib)[S.MARGIN:S.MARGIN + S.WIN]
+    ch = sum(not np.array_equal(ds21._mix_noise(wb, rng, bg, ib), wb) for _ in range(2000))
+    ok9 = 900 <= ch <= 1100
+    print(f"9. v2.1 background 창 혼합 확률: 2000회 중 {ch}회 변화 (목표 {S.MIX_PROB}) → "
+          f"{'OK' if ok9 else 'FAIL'}")
+    bad += ["9"] * (not ok9)
+    tg = {ds21.index[int(i)][0] for i in pool21}
+    paths = {ds21.index[int(i)][1] for i in pool21}
+    ok10 = tg == {bg} and all(os.sep + "train" + os.sep in q for q in paths) \
+        and np.array_equal(pool21, pool)
+    print(f"10. v2.1 배경 풀: {len(pool21)}창, train·background 뿐, v2 풀과 동일 → "
+          f"{'OK' if ok10 else 'FAIL'}")
+    bad += ["10"] * (not ok10)
+    # 자기 자신 제외: 풀을 {자기, 하나} 로 줄이면 상대는 항상 '하나' 여야 한다
+    other = int(pool21[1])
+    ds21._mix_pool = np.array([ib, other])
+    wo = win(other)[S.MARGIN:S.MARGIN + S.WIN]
+    ok11 = True
+    for k in range(200):
+        # 같은 시드의 난수열로 _mix_noise 와 기대값을 각각 만든다 — 상대는 항상 '하나'
+        r1, r2 = np.random.default_rng(1000 + k), np.random.default_rng(1000 + k)
+        y = ds21._mix_noise(wb, r1, bg, ib)
+        if r2.random() >= S.MIX_PROB:
+            exp = wb
+        else:
+            jj = int(ds21._mix_pool[r2.integers(2)])
+            while jj == ib:
+                jj = int(ds21._mix_pool[r2.integers(2)])
+            exp = S.mix_int8(wb, wo, float(r2.uniform(0, 20)))
+        if not np.array_equal(y, exp):
+            ok11 = False
+            break
+    ds21._mix_pool = pool21
+    print(f"11. v2.1 자기 자신과 섞이지 않음 (풀 2개로 좁혀 200회) → {'OK' if ok11 else 'FAIL'}")
+    bad += ["11"] * (not ok11)
+    tr21, te21 = S.safesound_v21_get_datasets((os.path.join(AI8X, "data"), args))
+    mtr21, mte21 = by["SafeSoundMelU800V21"]["loader"]((os.path.join(AI8X, "data"), args))
+    ok12 = (not te21.augment and te21.mix_prob == 0.0 and not te21.mix_bg
+            and tr21.mix_prob == S.MIX_PROB and tr21.mix_bg
+            and not mte21.augment and mte21.mix_prob == 0.0 and mtr21.mix_bg)
+    # 멜 경로: 배경 창의 특징도 바뀌는가
+    m21 = SM.SafeSoundMel(os.path.join(AI8X, "data", "SafeSound"), "train",
+                          scheme="log_u800", mix_prob=1.0, mix_bg=True, gain_db=0.0)
+    diffb = sum(not np.array_equal(m21._features(ib), mtr0._features(ib)) for _ in range(5))
+    ok12 = ok12 and diffb >= 4
+    print(f"12. v2.1 로더: test 무증강, train mix_bg; 멜 경로 배경 혼합 반영 {diffb}/5 → "
+          f"{'OK' if ok12 else 'FAIL'}")
+    bad += ["12"] * (not ok12)
 
     print("\n" + ("전부 통과" if not bad else f"실패: {bad}"))
     sys.exit(1 if bad else 0)
