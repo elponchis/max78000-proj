@@ -438,14 +438,15 @@ class SafeSound16(SafeSound):
 
 def safesound_get_datasets(data, load_train=True, load_test=True,
                            norm_pow2=False, clip_prob=0.0, mix_prob=0.0,
-                           mix_bg=False):
+                           mix_bg=False, root_name="SafeSound"):
     """ai8x-training 규약 로더. `data` 는 (data_dir, args).
 
     `norm_pow2` 는 라운드 6 (b) 1단계의 음량 정규화다. **테스트셋에도 켠다** —
     증강이 아니라 전처리이고 펌웨어가 하는 일이기 때문이다.
+    `root_name` 은 `data_dir` 아래 데이터 루트 이름 (v3 는 "SafeSoundV3").
     """
     (data_dir, args) = data
-    root = os.path.join(data_dir, "SafeSound")
+    root = os.path.join(data_dir, root_name)
     transform = ai8x.normalize(args=args)
 
     # ⚠️ clip_prob 는 **증강**이라 train 에만 건다. 평가·펌웨어 경로는
@@ -473,6 +474,16 @@ def safesound_v21_get_datasets(data, load_train=True, load_test=True):
     """v2.1 — v2 + background 창에도 혼합 (dataset-v2.1-design.md)."""
     return safesound_get_datasets(data, load_train, load_test, mix_prob=MIX_PROB,
                                   mix_bg=True)
+
+
+def safesound_v3_get_datasets(data, load_train=True, load_test=True):
+    """v3 — v2.1 증강 그대로 + 학습 창에 AudioSet strong train 추가 (dataset-v3-design.md).
+
+    루트 `SafeSoundV3` (= data/processed/safesound_v3: v1 샤드 링크 + AudioSet 샤드, test 는 v1 링크).
+    혼합 풀은 "같은 split 의 train 배경" 정의 그대로라 AudioSet 배경 창도 풀에 들어간다.
+    """
+    return safesound_get_datasets(data, load_train, load_test, mix_prob=MIX_PROB,
+                                  mix_bg=True, root_name="SafeSoundV3")
 
 
 def safesound_norm2_get_datasets(data, load_train=True, load_test=True):
@@ -550,6 +561,9 @@ def class_weights(root=None, d_type="train", counts=None, power=1.0):
 # ⚠️ 재집계하면 `python3 -c "import safesound; print(safesound.class_weights('<root>'))"`
 # 로 다시 뽑아 아래를 갱신할 것 — 수량이 바뀌었는데 가중치가 그대로면 조용히 틀어진다.
 V1_TRAIN_COUNTS = (528, 477, 491, 1934, 9577)   # siren/glass/scream/dog_bark/background
+# v3 (dataset-v3-design.md): v1 + AudioSet strong train 창. `scripts/build_v3_windows.py` 가 MANIFEST 에
+# 같은 값을 쓴다 — 빌드 뒤 MANIFEST.counts 와 다르면 여기를 갱신할 것 (가중치가 조용히 틀어진다).
+V3_TRAIN_COUNTS = (1195, 970, 804, 2366, 11777)   # 2026-10-07 dry-run (scream 추가분 수신 전) — 최종 빌드 후 갱신
 
 # → siren 4.93 / glass 5.45 / scream 5.30 / dog_bark 1.35 / background 0.27
 # background 0.27 은 오탐률을 보고 조정할 파라미터다 — 낮추면 배경음을 덜 배워
@@ -558,6 +572,14 @@ V1_TRAIN_COUNTS = (528, 477, 491, 1934, 9577)   # siren/glass/scream/dog_bark/ba
 # 균형 샘플러(WeightedRandomSampler)도 대안이지만 ai8x 의 train.py 가 DataLoader 를
 # 직접 만들기 때문에 패치가 필요하다. 가중 손실이 같은 목적을 패치 없이 달성한다.
 datasets = [
+    {
+        # v3 — v2.1 증강 + AudioSet strong train 창 (dataset-v3-design.md). 가중치는 v3 창 수.
+        "name": "SafeSoundV3",
+        "input": (128, 128),
+        "output": tuple(CLASSES),
+        "weight": class_weights(counts=list(V3_TRAIN_COUNTS)),
+        "loader": safesound_v3_get_datasets,
+    },
     {
         # v2 — v1 데이터 + 배경 혼합 증강 (dataset-v2-design.md 8절).
         # 시험셋·모델·손실 가중치는 SafeSound 와 같다

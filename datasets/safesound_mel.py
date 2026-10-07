@@ -38,13 +38,13 @@ try:                                   # ai8x-training 이 datasets 패키지로
     from . import melfeat as MF
     from .safesound import MIX_PROB as S_MIX_PROB
     from .safesound import (CLASSES, MARGIN, SafeSound, V1_TRAIN_COUNTS,
-                            class_weights)
+                            V3_TRAIN_COUNTS, class_weights)
 except ImportError:                    # tools/ 가 단독 모듈로 import 할 때
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import melfeat as MF
     from safesound import MIX_PROB as S_MIX_PROB
     from safesound import (CLASSES, MARGIN, SafeSound, V1_TRAIN_COUNTS,
-                           class_weights)
+                           V3_TRAIN_COUNTS, class_weights)
 
 __all__ = ["CLASSES", "SafeSoundMel", "safesound_mel_get_datasets",
            "V1_TRAIN_COUNTS", "MF"]
@@ -140,7 +140,7 @@ class SafeSoundMel1D(SafeSoundMel):
 
 
 def _mel_loader(scheme, subset_frac=None, clip_prob=0.0, cls=None, mix_prob=0.0,
-                mix_bg=False):
+                mix_bg=False, root_name="SafeSound"):
     """압축 법칙 하나에 대한 ai8x-training 규약 로더를 만든다.
 
     ⚠️ **캐시 파일 이름에 법칙을 넣는다.** 넣지 않으면 (1) 의 로그 캐시를
@@ -148,7 +148,7 @@ def _mel_loader(scheme, subset_frac=None, clip_prob=0.0, cls=None, mix_prob=0.0,
     """
     def get_datasets(data, load_train=True, load_test=True):
         (data_dir, args) = data
-        root = os.path.join(data_dir, "SafeSound")   # 파형과 **같은 샤드**다
+        root = os.path.join(data_dir, root_name)     # 파형과 **같은 샤드**다
         transform = ai8x.normalize(args=args)
         DS = cls or SafeSoundMel
 
@@ -282,6 +282,20 @@ for _name, _scheme in (("SafeSoundMelIncV2", "loginc"),
         "output": tuple(CLASSES),
         "weight": class_weights(),
         "loader": _mel_loader(_scheme, mix_prob=S_MIX_PROB),
+    })
+
+# v3 — v2.1 증강 + AudioSet strong train 창 (dataset-v3-design.md). 루트 SafeSoundV3, 가중치 v3 창 수
+# (파형 구성 SafeSoundV3 과 같은 값).
+for _name, _scheme in (("SafeSoundMelIncV3", "loginc"),
+                       ("SafeSoundMelH400V3", "log_h400"),
+                       ("SafeSoundMelU1000V3", "log_u1000"),
+                       ("SafeSoundMelU800V3", "log_u800")):
+    datasets.append({
+        "name": _name,
+        "input": (1,) + MF.scheme_shape(_scheme),
+        "output": tuple(CLASSES),
+        "weight": class_weights(counts=list(V3_TRAIN_COUNTS)),
+        "loader": _mel_loader(_scheme, mix_prob=S_MIX_PROB, mix_bg=True, root_name="SafeSoundV3"),
     })
 
 # v2.1 — v2 + background 창에도 혼합 (dataset-v2.1-design.md)

@@ -189,7 +189,14 @@ def metrics(y, p):
 
 
 def labels(M, definition):
-    """정의별 정답 (−1 = 채점 제외). external-set.md 6절."""
+    """정의별 정답 (−1 = 채점 제외). external-set.md 6절.
+
+    `v1eq` (2026-10-07, dataset-v3-design.md 1.2·사전 등록 1): v1 정의에서 **siren 만
+    `Siren` + 하위 4종** 으로 넓힌 것. FSD50K 어휘에는 `Siren` 만 있어 v1 의 사이렌은 종류
+    불문 전부 `Siren` 이었는데, AudioSet strong 은 조상 라벨을 붙이지 않아 하위만 있는
+    구간 37개가 v1 문자열 규칙에서 빠져 있었다. 라벨 파일(meta.csv)만으로 정했다 —
+    siren 그룹은 전부 `real_class == siren` 이므로 그 열을 쓴다. 다른 클래스는 v1 과 같다.
+    """
     y = np.full(len(M), -1)
     for i, r in enumerate(M):
         g = r["group"]
@@ -197,6 +204,8 @@ def labels(M, definition):
             y[i] = BG
         elif g in EVENTS:
             if definition == "v1" and r["v1_class"] == g:
+                y[i] = EVENTS.index(g)
+            if definition == "v1eq" and (r["v1_class"] == g or (g == "siren" and r["real_class"] == g)):
                 y[i] = EVENTS.index(g)
             if definition == "real" and r["real_primary"] == "1" and r["real_class"] == g:
                 y[i] = EVENTS.index(g)
