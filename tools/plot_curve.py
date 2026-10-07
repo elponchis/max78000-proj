@@ -12,9 +12,13 @@
 색은 3색으로 제한했다 (산점도는 모든 쌍이 인접하므로 3색까지만 색각 이상
 검증을 통과한다). 색 = 추론이 도는 곳·입력 표현, 모양 = 뒷단 구조.
 
-사용 (WSL2):  ~/ai8x-training/venv/bin/python tools/plot_curve.py
+사용 (WSL2):
+  본 그림 (v2.1):  ~/ai8x-training/venv/bin/python tools/plot_curve.py
+  v1 부록 그림:    ~/ai8x-training/venv/bin/python tools/plot_curve.py --v1
+한 그림에 두 판(v1 / v2.1)의 수치를 섞지 않는다 — 점 CSV 가 판마다 따로다.
 """
 
+import argparse
 import csv
 import os
 
@@ -23,8 +27,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt                              # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(REPO, "docs", "results", "curve-points.csv")
-OUT = os.path.join(REPO, "docs", "figures", "curve-draft.png")
+# 판별 점 CSV / 출력 / 그림 제목 꼬리표
+EDITIONS = {
+    "v21": ("curve-points-v21.csv", "curve-v21.png", "dataset v2.1 (main)"),
+    "v1": ("curve-points.csv", "curve-draft.png", "dataset v1 (appendix)"),
+}
 
 SURFACE, INK, INK2, MUTED, GRID, AXIS = ("#fcfcfb", "#0b0b0b", "#52514e", "#898781",
                                          "#e1e0d9", "#c3c2b7")
@@ -47,7 +54,14 @@ HALIGN = {"h400": "right", "h500": "center", "h500m32": "center", "u800": "right
 
 
 def main():
-    rows = list(csv.DictReader(open(SRC, encoding="utf-8")))
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--v1", action="store_true", help="v1 부록 그림 (기본은 v2.1 본 그림)")
+    args = ap.parse_args()
+    src_name, out_name, edition = EDITIONS["v1" if args.v1 else "v21"]
+    src = os.path.join(REPO, "docs", "results", src_name)
+    out = os.path.join(REPO, "docs", "figures", out_name)
+    rows = list(csv.DictReader(open(src, encoding="utf-8")))
+    keyed = [k for k in KEYED if k in {r["id"] for r in rows}]   # 이 판에 있는 것만 a, b, …
     fig, ax = plt.subplots(figsize=(8.6, 5.2), dpi=200)
     fig.patch.set_facecolor(SURFACE)
     ax.set_facecolor(SURFACE)
@@ -73,9 +87,9 @@ def main():
                 mfc=color if measured else SURFACE, ls="none")
         t = float(r["time_ms"])
         tms = f"{'' if measured else '~'}{t:g} ms"
-        if r["id"] in KEYED:
+        if r["id"] in keyed:
             # 로그 멜 2D 계열은 점이 몰려 있다 — 점에는 글자만, 설명은 옆의 표로
-            letter = "abcdefgh"[KEYED.index(r["id"])]
+            letter = "abcdefgh"[keyed.index(r["id"])]
             ax.annotate(letter, (x, y), xytext=(-9, 9), textcoords="offset points",
                         fontsize=8.2, color=INK, ha="center", va="center",
                         fontweight="bold")
@@ -93,7 +107,9 @@ def main():
 
     ax.set_xscale("log")
     ax.set_xlim(14, 40000)
-    ax.set_ylim(0.465, 0.70)
+    lo = min(float(r["f1"]) - float(r["f1_sd"]) for r in rows)
+    hi = max(float(r["f1"]) + float(r["f1_sd"]) for r in rows)
+    ax.set_ylim(lo - 0.025, hi + 0.03)
     ax.set_xlabel("Estimated energy per decision (µJ, log scale)", color=INK2, fontsize=9)
     ax.set_ylabel("macro-F1 at 300 false alarms/h", color=INK2, fontsize=9)
     ax.grid(True, which="major", color=GRID, lw=0.6)
@@ -104,30 +120,32 @@ def main():
     for s in ("left", "bottom"):
         ax.spines[s].set_color(AXIS)
 
+    present = {r["group"] for r in rows}            # 이 판에 있는 계열만 범례에
     handles = [plt.Line2D([], [], marker=m, ls="none", ms=7, mec=c, mfc=c, mew=1.6, label=n)
-               for c, m, n in GROUPS.values()]
+               for g, (c, m, n) in GROUPS.items() if g in present]
     handles += [plt.Line2D([], [], marker="o", ls="none", ms=7, mec=MUTED, mfc=MUTED, mew=1.6,
-                           label="latency measured on board"),
-                plt.Line2D([], [], marker="o", ls="none", ms=7, mec=MUTED, mfc=SURFACE, mew=1.6,
-                           label="latency estimated (not yet measured)")]
+                           label="latency measured on board")]
+    if any(r["board"] != "1" for r in rows):
+        handles += [plt.Line2D([], [], marker="o", ls="none", ms=7, mec=MUTED, mfc=SURFACE, mew=1.6,
+                               label="latency estimated (not yet measured)")]
     leg = ax.legend(handles=handles, loc="upper right", fontsize=7.4, frameon=False,
                     labelcolor=INK2, handletextpad=0.4, borderaxespad=0.6)
     leg.set_zorder(1)
 
-    ax.set_title("Accuracy vs. estimated energy per decision (MAX78000FTHR, 1 s window, 250 ms hop)",
+    ax.set_title(f"Accuracy vs. estimated energy per decision (MAX78000FTHR, 1 s window, 250 ms hop) — {edition}",
                  fontsize=9.5, color=INK, loc="left", pad=10)
     fig.text(0.012, 0.012,
              "Energy is an ESTIMATE (measured latency × published power), not a measurement. "
              "Marker: datasheet power.\n"
              "Line: range over published power values; tick: with Moosmann et al. "
              "inference power (board-measured NPU configurations only).\n"
-             "Vertical bar: ±1 sd over seeds. Number under each label: time per decision "
-             "(busy-wait, sleep excluded). DRAFT.",
+             "Vertical bar: ±1 sd over seeds (n = 3 or 5 per configuration, see the results table). "
+             "Number under each label: time per decision (busy-wait, sleep excluded).",
              fontsize=6.6, color=MUTED, ha="left", va="bottom", linespacing=1.3)
     fig.subplots_adjust(left=0.085, right=0.985, top=0.92, bottom=0.185)
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    fig.savefig(OUT, facecolor=SURFACE)
-    print(f"저장: {OUT}")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    fig.savefig(out, facecolor=SURFACE)
+    print(f"저장: {out}")
 
 
 if __name__ == "__main__":

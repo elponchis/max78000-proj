@@ -27,14 +27,15 @@ def seeds(name, ver, key):
 
 
 print("### 8.1 채택 판정 (2절 규칙 그대로) 과 본 표 선택 (7절 일탈 규칙)\n")
-print("| 구성 | 조건 1 외부 F1 (v2.1 − v1) | 조건 2 시험셋 F1 (v2.1 − v1) | 조건 3 외부 오경보 맞춤 (v2.1 − v1) | 조건 4 배경+배경 발화 v2.1 | 넷 다 | 조건 2·4 |")
+print("차이(v2.1 − v1)는 **같은 시드끼리** (④ 시드 1~5, 나머지 시드 1~3) Welch 95% CI. 조건 4 도 같은 시드 평균." + "\n")
+print("| 구성 (비교 시드) | 조건 1 외부 F1 (v2.1 − v1) | 조건 2 시험셋 F1 (v2.1 − v1) | 조건 3 외부 오경보 맞춤 (v2.1 − v1) | 조건 4 배경+배경 발화 v2.1 | 넷 다 | 조건 2·4 |")
 print("|---|---|---|---|---|---|---|")
 n24 = 0
 for n, p in P.items():
     c = p["cond"]
     ok24 = c["2_test"] and c["4_bgbg"]
     n24 += ok24
-    print(f"| {n} | {ci(p['delta_v1']['ext_f1'])} {'○' if c['1_ext'] else '×'} | "
+    print(f"| {n} (1~{p['n_old']}) | {ci(p['delta_v1']['ext_f1'])} {'○' if c['1_ext'] else '×'} | "
           f"{ci(p['delta_v1']['test_f1'])} {'○' if c['2_test'] else '×'} | "
           f"{ci(p['delta_v1']['ext_matched'])} {'○' if c['3_matched'] else '×'} | "
           f"{100*np.mean(p['seeds']['v21']['bgbg_fire'][:p['n_old']]):.2f}% {'○' if c['4_bgbg'] else '×'} | "
@@ -42,12 +43,17 @@ for n, p in P.items():
 print(f"\n네 조건 충족 {R['n_pass']}/{R['n_total']} → 채택 판정 **{'채택' if R['adopt'] else '기각'}**. "
       f"조건 2·4 충족 {n24}/{R['n_total']} → 본 표 **{'v2.1' if n24 >= 3 else 'v1'}** (7절).")
 
-print("\n### 8.2 세 판 나란히 — 시드 평균 (v2.1 은 전 시드)\n")
-print("| 구성 | 시험셋 F1 v1 / v2 / v2.1 | 외부 F1 (시험셋 문턱값) | 외부 F1 (외부 오경보 맞춤) | 외부 오경보/h | 배경+배경 발화 % |")
-print("|---|---|---|---|---|---|")
+print("\n### 8.2 세 판 나란히 — 시드 평균\n")
+print("v1·v2 는 ④ 시드 1~5, 나머지 시드 1~3. v2.1 은 **전 시드**(④·간격 400·①′ 5, 가·다 3) 평균이고, "
+      "8.1 의 차이는 v2.1 중 **v1 과 같은 시드** 만으로 계산했다 — 그래서 전 시드 평균의 차와 8.1 의 차이가 다를 수 있다 "
+      "(예: ①′ 전 시드 0.7148, 시드 1~3 0.7079, 차이 +0.0384 = 0.7079 − 0.6694). 외부 열도 같은 규칙." + "\n")
+print("| 구성 (v1·v2 시드 수 / v2.1 시드 수) | 시험셋 F1 v1 / v2 / v2.1 (전 시드) | v2.1 시험셋 F1 ±sd (전 시드) | v2.1 시험셋 F1 v1 과 같은 시드 | 외부 F1 (시험셋 문턱값) v1 / v2 / v2.1 | 외부 F1 (외부 오경보 맞춤) v1 / v2 / v2.1 | 외부 오경보/h v1 / v2 / v2.1 | 배경+배경 발화 % v1 / v2 / v2.1 |")
+print("|---|---|---|---|---|---|---|---|")
 for n, p in P.items():
     m = p["mean"]
-    print(f"| {n} | " + " / ".join(f"{m[v]['test_f1']:.4f}" for v in VERS) + " | "
+    a = np.asarray(p["seeds"]["v21"]["test_f1"]); a3 = a[:p["n_old"]]
+    print(f"| {n} ({p['n_old']} / {len(a)}) | " + " / ".join(f"{m[v]['test_f1']:.4f}" for v in VERS) + " | "
+          + f"{a.mean():.4f} ± {a.std(ddof=1):.4f} (n={len(a)}) | {a3.mean():.4f} (n={len(a3)}) | "
           + " / ".join(f"{m[v]['ext_f1']:.4f}" for v in VERS) + " | "
           + " / ".join(f"{m[v]['ext_matched']:.4f}" for v in VERS) + " | "
           + " / ".join(f"{m[v]['ext_fa']:.0f}" for v in VERS) + " | "
@@ -68,7 +74,7 @@ for i, n in enumerate(names):
           + " | ".join(str(rk[(v, 'ext_f1')][i]) for v in VERS) + " |")
 
 print("\n### 8.4 재판정 항목 — 세 판 (시험셋 F1 @300/h, Welch 95% CI)\n")
-print("v1·v2 는 시드 1~3(④ 는 1~5), v2.1 은 전 시드(④·간격 400·①′ 5, 가·다 3).\n")
+print("각 판 안의 두 구성을 비교한다 (판 사이 비교가 아니다). v1·v2 는 시드 1~3(④ 는 1~5), v2.1 은 전 시드(④·간격 400·①′ 5, 가·다 3). 동등 기준 ±0.02 는 사전 등록 그대로다." + "\n")
 print("| 비교 | v1 | v2 | v2.1 | v2.1 판정 |")
 print("|---|---|---|---|---|")
 for a, b, kind in (("간격 400", "①′", "eq"), ("가 u1000", "①′", ""), ("다 u800", "①′", ""),
@@ -80,7 +86,7 @@ for a, b, kind in (("간격 400", "①′", "eq"), ("가 u1000", "①′", ""), 
     d = welch(seeds(b, "v21", "test_f1"), seeds(a, "v21", "test_f1"))
     if kind == "eq":
         verdict = "**동등** (±0.02 안)" if d[1] >= -0.02 and d[2] <= 0.02 else (
-            "못 가른다" if d[1] < 0 < d[2] else ("유의하게 높다" if d[1] > 0 else "유의하게 낮다"))
+            "동등 판정 미통과 (CI 가 0 을 포함하나 ±0.02 를 벗어난다)" if d[1] < 0 < d[2] else ("유의하게 높다" if d[1] > 0 else "유의하게 낮다"))
     else:
         verdict = "못 가른다" if d[1] < 0 < d[2] else ("유의하게 높다" if d[1] > 0 else "유의하게 낮다")
     print(f"| {a} − {b} | " + " | ".join(cells) + f" | {verdict} |")
@@ -89,6 +95,7 @@ for key, title in (("test_recall", "시험셋 recall % v1 / v2 / v2.1"),
                    ("ext_recall", "외부 recall % (시험셋 문턱값) v1 / v2 / v2.1"),
                    ("mix_mix-gen-10", "혼합 시험셋 +10 dB recall % v1 / v2 / v2.1")):
     print(f"\n### {title}\n")
+    print("시드 평균. v1·v2 는 ④ 1~5·나머지 1~3, v2.1 은 전 시드 (④·간격 400·①′ 5, 가·다 3)." + "\n")
     print("| 구성 | " + " | ".join(EV) + " |\n|---|" + "---|" * 4)
     for n, p in P.items():
         c = p["class"]

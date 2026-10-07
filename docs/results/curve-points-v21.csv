@@ -1,0 +1,8 @@
+id,label,group,f1,f1_sd,n_seeds,time_ms,e_datasheet_uJ,e_literature_uJ,e_moosmann_uJ,board,note
+wave,(4) raw waveform 1D,raw_npu,0.5483,0.0127,5,2.53,71,130,78,1,dataset v2.1; latency measured with v1 seed-1 weights (same structure)
+melinc,(1)' hop 250,mel_npu,0.7148,0.0104,5,15.04,267,565,417,1,dataset v2.1; V1 preprocessing
+h400,hop 400,mel_npu,0.7085,0.0095,5,9.42,167,353,261,1,dataset v2.1; equivalence (+-0.02) not passed in v2.1 (passed in v1)
+u800,hop 800 + 32 mel,mel_npu,0.6630,0.0036,3,3.66,54,121,98,1,dataset v2.1; 4-pool model
+u1000,hop 1000 + 32 mel,mel_npu,0.6462,0.0053,3,2.93,43,98,78,1,dataset v2.1; 4-pool model
+m4cmsis,M4 CMSIS-NN,m4,0.5483,0.0127,5,225.7,2007,5598,,1,same weights and outputs as (4); accuracy = (4) v2.1
+m4plain,M4 plain C,m4,0.5483,0.0127,5,864.0,7680,21430,,1,same weights and outputs as (4); accuracy = (4) v2.1
