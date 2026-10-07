@@ -37,8 +37,19 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--external-list", default=os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                                             "sampling_list.csv"))
+    # 추가 모드 (2026-10-07): 이미 받은 목록과 영상 ID 가 겹치지 않는 구간을 한 클래스에 더 뽑아 목록 뒤에 붙인다.
+    ap.add_argument("--extra", choices=CLASSES, help="이 클래스만 추가로 뽑는다 (배경 없음)")
+    ap.add_argument("--n-extra", type=int, default=400)
+    ap.add_argument("--base-list", help="--extra 와 함께: 이미 받은 목록. 이 목록의 영상 ID 는 제외하고 결과를 뒤에 붙인다")
+    ap.add_argument("--seed-extra", type=int, default=78003)
+    ap.add_argument("--batch", default="base", help="추가분에 붙일 배치 이름 (열 `batch`)")
     a = ap.parse_args()
     meta = os.path.expanduser(a.meta)
+    base_rows = []
+    if a.extra:
+        base_rows = list(csv.DictReader(open(a.base_list)))
+        for r in base_rows:
+            r.setdefault("batch", "base")
 
     nm = dict(l.rstrip("\n").split("\t") for l in open(f"{meta}/mid_to_display_name.tsv"))
     by = {v: k for k, v in nm.items()}
@@ -54,6 +65,7 @@ def main():
     yt = lambda s: s.rsplit("_", 1)[0]  # noqa: E731
     banned = {yt(s) for s in load(f"{meta}/audioset_eval_strong.tsv")}
     banned |= {r["ytid"] for r in csv.DictReader(open(a.external_list))}
+    banned |= {r["ytid"] for r in base_rows}          # --extra: 이미 받은 train_v2 구간과 영상 ID 겹침 금지
     dropped = [s for s in seg if yt(s) in banned]
     print(f"train 구간 {len(seg)}, eval/external_v1 과 영상 ID 가 겹쳐 제외 {len(dropped)}")
     for s in dropped:
@@ -90,22 +102,24 @@ def main():
         rows[sid] = dict(s=s, v1=next(iter(a1), ""), real=next(iter(a2), ""))
     print("다중 클래스 겹침 제외", multi)
 
-    rng = random.Random(SEED)
+    rng = random.Random(a.seed_extra if a.extra else SEED)
+    n_cls = a.n_extra if a.extra else N_CLASS
     chosen, how = {}, {}
-    for c in CLASSES:
-        for key, quota in (("v1", N_CLASS // 2), ("real", N_CLASS)):
+    for c in ([a.extra] if a.extra else CLASSES):
+        for key, quota in (("v1", n_cls // 2), ("real", n_cls)):
             pool = sorted(x for x, r in rows.items() if r[key] == c and x not in chosen)
             rng.shuffle(pool)
             have = sum(1 for g in chosen.values() if g == c)
             for x in pool[:max(0, quota - have)]:
                 chosen[x] = c
                 how[x] = key
-    pool = sorted(x for x, r in rows.items() if not (r["s"] & ALL))
-    print("배경 후보", len(pool))
-    rng.shuffle(pool)
-    for x in pool[:N_BG]:
-        chosen[x] = "background"
-        how[x] = "bg"
+    if not a.extra:
+        pool = sorted(x for x, r in rows.items() if not (r["s"] & ALL))
+        print("배경 후보", len(pool))
+        rng.shuffle(pool)
+        for x in pool[:N_BG]:
+            chosen[x] = "background"
+            how[x] = "bg"
 
     def span(sid, r):
         c = r["v1"] or r["real"]
@@ -118,7 +132,7 @@ def main():
 
     cols = ["segment_id", "ytid", "start_s", "group", "v1_class", "real_class", "in_v1", "in_real", "pass",
             "event_start", "event_end", "event_dur", "siren_sub", "scream_sub", "has_bark", "has_dog",
-            "hardneg_like", "labels_all"]
+            "hardneg_like", "labels_all", "batch"]
     out = []
     for sid in sorted(chosen):
         r, s = rows[sid], rows[sid]["s"]
@@ -135,11 +149,20 @@ def main():
                         scream_sub=";".join(sorted(nm[m] for m in s & (cv1 | crowd))),
                         has_bark=int(by["Bark"] in s), has_dog=int(by["Dog"] in s),
                         hardneg_like=";".join(hn) if chosen[sid] == "background" or hn else "",
-                        labels_all=";".join(sorted(nm.get(m, m) for m in s))))
+                        labels_all=";".join(sorted(nm.get(m, m) for m in s)), batch=a.batch))
+    new_rows = out
+    if a.extra:
+        out = base_rows + new_rows            # 기존 행은 그대로(batch=base), 추가분을 뒤에 붙인다
+        print(f"추가 {len(new_rows)}구간 ({a.extra}), 기존 {len(base_rows)} → 합계 {len(out)}")
     with open(a.out, "w", newline="") as f:
         w = csv.DictWriter(f, cols)
         w.writeheader()
         w.writerows(out)
+    if a.extra:
+        g = new_rows
+        print(f"추가분 v1 양성 {sum(r['v1_class'] == a.extra for r in g)}, 실사용 양성 {sum(r['real_class'] == a.extra for r in g)}, "
+              f"패스1(v1) {sum(r['pass'] == 'v1' for r in g)}, 패스2(real) {sum(r['pass'] == 'real' for r in g)}")
+        return
 
     print(f"\n총 구간 {len(out)}")
     print(f"{'class':11}{'합집합':>7}{'v1':>6}{'real':>6}{'패스1(v1)':>11}{'패스2(real)':>12}  후보(v1/real)")

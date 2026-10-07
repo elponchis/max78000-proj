@@ -333,3 +333,16 @@ v1 학습 배경은 `data/processed/safesound/train/background/index.csv` 의 `n
 
 - 메모리 종료는 train_v2 5회, external_v1 1회다. 상태 파일 시각은 그 직전 구간의 처리가 끝난 시각이라, 종료 시점이 그보다 앞서지는 않는다.
 - ⚠️ 이 시각은 **다운로드 쪽 기록**이다. 주 세션 학습이 실제로 영향을 받았는지는 학습 로그와 대조해야 한다 (확인하지 않았다).
+
+### 10.7 추가 배치 `extra1_scream` (2026-10-07, scream 400구간)
+
+- 선별 규칙은 10.1 과 같다(패스 1 v1 200 + 패스 2 실사용으로 합집합 400, 시드 78003, `build_train_v2.py --extra scream`).
+  **영상 ID 는 기존 train_v2 2,800구간·`external_v1`·eval 전체와 겹치지 않는다 (0개).**
+- 표시: `train_v2_list.csv` 와 `download_state.csv` 에 **`batch` 열**을 추가했다. 기존 2,800행은 `base`, 추가 400행은 `extra1_scream`.
+  이 열이 없던 때의 상태 파일은 `download_state.before_extra1.csv` 로 백업했다(레포 밖).
+- 결과: 400구간 중 **유효 327 (82%)**, 실패 73, 차단·429 0. 실패 사유: other 23(전부 `ffmpeg exited with code 1`), unavailable 20,
+  login_required 14, private 13, removed 2, age_restricted 1. webm 폴백 4개(10.5 와 같은 방식으로 처리).
+- 유효 327개의 정의별 개수: v1 양성 196, 실사용 양성 194 (둘 다 63, v1만 133, 실사용만 131).
+  추가분에는 v1 에서는 scream 인데 실사용에서는 siren(하위 종류 라벨 때문)인 구간이 4개 들어 있다.
+- 누적 scream: 목록 800, 유효 **651** (base 324 + extra1 327). train_v2 전체 유효는 2,689. 메모리 종료 없이 한 번에 끝났다.
+- 학습에 아직 쓰지 않는다.

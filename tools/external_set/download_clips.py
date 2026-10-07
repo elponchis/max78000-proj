@@ -75,13 +75,17 @@ def main():
         for r in csv.DictReader(open(state_path)):
             done[r["segment_id"]] = r
     new_state = not os.path.exists(state_path)
+    # 목록에 `batch` 열이 있으면 상태 파일에도 같은 열을 쓴다 (추가 배치 표시, 2026-10-07).
+    # 기존 상태 파일은 열이 있을 때만 쓴다 — 없는 파일에 열을 몰래 붙이지 않는다.
+    has_batch = ("batch" in rows[0]) if new_state else ("batch" in open(state_path).readline())
+    batch_of = {r["segment_id"]: r.get("batch", "") for r in rows}
     sf = open(state_path, "a", newline="")
     w = csv.writer(sf)
     if new_state:
-        w.writerow(["segment_id", "status", "reason", "time"])
+        w.writerow(["segment_id", "status", "reason", "time"] + (["batch"] if has_batch else []))
 
     def log(sid, status, reason):
-        w.writerow([sid, status, reason, time.strftime("%F %T")])
+        w.writerow([sid, status, reason, time.strftime("%F %T")] + ([batch_of.get(sid, "")] if has_batch else []))
         sf.flush()
 
     tried = 0
