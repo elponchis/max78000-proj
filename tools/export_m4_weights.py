@@ -16,9 +16,14 @@ M4 대조군은 **NPU 와 같은 가중치·같은 정수 규약**으로 추론�
   3. 그 입력·기대 출력을 헤더에 함께 넣는다 (보드 KAT 용)
 
 사용 (WSL2, ai8x-training venv — torch 가 필요하다):
-    ~/ai8x-training/venv/bin/python tools/export_m4_weights.py
+    ~/ai8x-training/venv/bin/python tools/export_m4_weights.py            # ④ v1 (기본값)
+    ~/ai8x-training/venv/bin/python tools/export_m4_weights.py \
+        --ck data/synth/safesound-v21-wave-q8.pth.tar \
+        --sample data/synth/sample_safesound-v21-wave.npy \
+        --kat -1 -2 3 -4 5          # 보드 NPU 가 같은 샘플에 낸 raw 로짓 5개 (시리얼 "class i: raw")
 """
 
+import argparse
 import os
 import sys
 
@@ -71,6 +76,16 @@ def conv1d(x, w, pad):
 
 
 def main():
+    global CK, SAMPLE, OUT, KAT_RAW
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--ck", default=CK, help="④ 양자화 체크포인트 (quantize.py 출력)")
+    ap.add_argument("--sample", default=SAMPLE, help="합성 샘플 입력 .npy")
+    ap.add_argument("--kat", type=int, nargs=5, default=KAT_RAW,
+                    help="보드 NPU 가 그 샘플에 낸 raw 로짓 5개 (기본값은 ④ v1, 2026-10-02)")
+    ap.add_argument("--out", default=OUT)
+    a = ap.parse_args()
+    CK, SAMPLE, KAT_RAW, OUT = a.ck, a.sample, a.kat, a.out
+    print("체크포인트:", CK, "\n샘플:", SAMPLE)
     sd = torch.load(CK, map_location="cpu", weights_only=False)
     sd = sd.get("state_dict", sd)
     sd = {k.replace("module.", ""): v for k, v in sd.items()}
@@ -112,7 +127,7 @@ def main():
 
     with open(OUT, "w", encoding="utf-8") as f:
         f.write("/* @generated — tools/export_m4_weights.py. 손으로 고치지 말 것.\n"
-                " * ④ (safesound-wave-q8) 의 int8 가중치 — NPU 에 올린 것과 같은 값.\n"
+                f" * ④ ({os.path.basename(CK)}) 의 int8 가중치 — NPU 에 올린 것과 같은 값.\n"
                 " * 가중치 배치: w[co][k][ci] (입력 채널이 가장 안쪽 — 내적이 연속 메모리) */\n"
                 "#ifndef M4_WEIGHTS_H\n#define M4_WEIGHTS_H\n#include <stdint.h>\n\n"
                 f"#define M4_FC_SHIFT {fc_shift}\n\n")

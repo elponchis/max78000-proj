@@ -1,0 +1,6 @@
+// This file was @generated automatically
+
+#define SAMPLE_OUTPUT { \
+  0x50402000, 0xffffffff, 0x00000004, 0xffffa83b, 0xfffff555, 0x00001ead, 0xffffca30, 0x5040a000, \
+  0xffffffff, 0x00000001, 0x0000000e, 0x00000000 \
+}
