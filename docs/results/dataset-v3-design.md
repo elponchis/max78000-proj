@@ -138,7 +138,7 @@ data/processed/safesound_v3/
   `SafeSoundMelU1000V3`, `SafeSoundMelU800V3`, `SafeSoundMelIncV3` — 전부 `mix_prob=MIX_PROB,
   mix_bg=True` (v2.1 과 같은 증강), root 만 `safesound_v3`.
 - **클래스 가중치는 v3 창 수로 다시 계산**한다 (`class_weights(root)`; `V3_TRAIN_COUNTS`
-  상수를 따로 둔다 — `V1_TRAIN_COUNTS` 는 건드리지 않는다). 최종 창 수 (2026-10-08 빌드):
+  상수를 따로 둔다 — `V1_TRAIN_COUNTS` 는 건드리지 않는다). 최종 창 수 (2026-10-07 23:47 빌드):
   siren 1,195 / glass 970 / scream 1,041 / dog_bark 2,366 / background 11,967.
 
 ## 2. 창 추출 규칙과 클래스별 창 수
@@ -329,7 +329,7 @@ v1 동등 scream 약 210구간 + 하드 네거티브 약 110 → 창 약 **+300*
   다른 원인이라고 적을 수 있는 근거가 된다.
 - DNS 일시 실패 2건(external-set.md 10.2)은 재시도하면 받아질 가능성이 높다 — 같은 요청에
   포함.
-- **결과 (2026-10-08)**: 외부데이터 세션이 scream 400구간(`extra1_scream`)을 받았다 — 유효 **327** (82%).
+- **결과 (2026-10-07 23:47)**: 외부데이터 세션이 scream 400구간(`extra1_scream`)을 받았다 — 유효 **327** (82%).
   v1 동등 scream 192구간 → 창 **+237** (scream 합계 550창 / 1,041, 비중 53%), 군중 동반 131구간은
   하드 네거티브로. 2절 표에 반영됐다.
 - 추가분은 **1단계 전에** 받는 것을 권고한다. 1단계 뒤에 넣으면 1단계와 2단계의 데이터가
@@ -429,7 +429,7 @@ v2.1 시험셋 F1 − 격차/2), scream recall ≥ 27.7 / 16.6 %, siren ≥ 30.4
 ### 11.2 클래스 가중치 — v3 창 수로 재계산 (지시 2)
 
 `class_weights(counts)` = N/(K·n_c), 표본당 평균 1 (`datasets/safesound.py`). v3 는 `V3_TRAIN_COUNTS` 상수
-(파형·멜 구성 모두 같은 값, `SafeSound*V3` 등록). 최종 값은 2026-10-08 빌드 MANIFEST 와 같다 (KAT 2 통과).
+(파형·멜 구성 모두 같은 값, `SafeSound*V3` 등록). 최종 값은 2026-10-07 23:47 빌드 MANIFEST 와 같다 (KAT 2 통과).
 
 | 클래스 | v1 창 | v1 가중치 | v3 창 (최종) | v3 가중치 (최종, `V3_TRAIN_COUNTS`) |
 |---|---:|---:|---:|---:|
@@ -475,9 +475,15 @@ test 경로로 읽어 시험셋 @300/h 문턱값으로 판정, index note 의 `a
   `datasets/safesound_mel.py`: `SafeSoundMel{Inc,H400,U1000,U800}V3`. `~/ai8x-training/data/SafeSoundV3`
   → `data/processed/safesound_v3` 링크. ai8x 쪽 `data/SafeSound` 사본은 레포 v1 샤드와 25개 파일 전부
   바이트 일치를 확인했다 (v3 는 레포 쪽을 링크한다).
-- `tools/kat_v3.py`: 9절 KAT 6개. **최종 빌드(2026-10-08) 전부 통과**: v1 행 13,007 비트 일치, 창 수 =
+- `tools/kat_v3.py`: 9절 KAT 6개. **최종 빌드(2026-10-07 23:47) 전부 통과**: v1 행 13,007 비트 일치, 창 수 =
   MANIFEST = `V3_TRAIN_COUNTS`, AudioSet 행 4,532 (영상 2,600) external_v1 겹침 0, 채움 창 1,195 전부
   train_v2 배경 베드, test = v1 test, 혼합 풀 7,035 + 2,239 = 9,274. 청취용 wav 클래스별 10개
   `data/interim/listen_v3/` (청취는 선택).
 - `scripts/run_chain26.sh`: ④ ×3 → 간격 400 ×3 (설정은 chain25 와 같음, 데이터셋 이름만 V3). 메모리·
   다운로드 게이트 포함. 2단계는 넣지 않았다.
+
+### 11.7 시작 기록
+
+- 2026-10-07 23:48:30 `run_chain26.sh` 시작 (MemAvailable 9,502 MB, 다운로드 프로세스 없음). MANIFEST
+  `dataset-v3` 2026-10-07T23:47:06. 로그 `data/logs-local/chain26.out`, 실행 `safesound-v3-wave`(-s2,-s3) →
+  `safesound-v3-melh400`(-s2,-s3).
