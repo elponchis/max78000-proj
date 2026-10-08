@@ -251,41 +251,46 @@ O = 그 클래스의 소리가 들린다, X = 아니다, ? = 모르겠다.
 
 **요약 (사용자 보고 그대로)**: 유리 15창 → **O 1 / ? 2 / X 12**, 비명 14창 → **O 1 / ? 3 / X 10**.
 
-⚠️ 창별 원문 판정표는 이 세션에 전달되지 않았다 (요약 수치만 받았다). 아래 표의 판정 열은 비어 있고, 받는 대로
-채운다. 파일·출처·점수는 `~/safesound-external/audit/answer_key.csv` 와 같다.
+창별 원문 판정(2026-10-09 수신)을 그대로 넣었다. 파일·출처·점수는 `~/safesound-external/audit/answer_key.csv` 와 같다.
+비명은 `scream_v1_test_0.001_low11` 을 뺀 14창을 판정했다.
 
 | 파일 | 출처 | PANNs 점수 | 라벨/비고 | 판정 |
 |---|---|---:|---|---|
-| glass_as_train_0.000_low01.wav | AudioSet 학습 | 0.0004 | glass, 겹침 1.02 s | |
-| glass_v1_train_0.000_low02.wav | FSD50K 학습 | 0.0004 | Shatter 클립, 베드 채움 | |
-| glass_v1_train_0.004_low03.wav | FSD50K 학습 | 0.0037 | Shatter 클립 (1초 미만, 베드 위) | |
-| glass_as_train_0.000_low04.wav | AudioSet 학습 | 0.0004 | glass, 겹침 1.02 s | |
-| glass_as_train_0.003_low05.wav | AudioSet 학습 | 0.0033 | glass, 겹침 0.93 s | |
-| glass_as_train_0.006_low06.wav | AudioSet 학습 | 0.0057 | glass, 베드 채움 10런 | |
-| glass_v1_train_0.000_low07.wav | FSD50K 학습 | 0.0003 | Shatter 클립, 베드 채움 | |
-| glass_v1_train_0.000_low08.wav | FSD50K 학습 | 0.0003 | Shatter 클립, 베드 채움 9런 | |
-| glass_as_train_0.001_low09.wav | AudioSet 학습 | 0.0008 | glass, 겹침 1.02 s | |
-| glass_v1_train_0.003_low10.wav | FSD50K 학습 | 0.0029 | Shatter 클립 | |
-| glass_as_train_0.001_low11.wav | AudioSet 학습 | 0.0008 | glass, 겹침 0.82 s | |
-| glass_v1_test_0.006_low12.wav | FSD50K 시험 | 0.0060 | | |
-| glass_v1_test_0.004_low13.wav | FSD50K 시험 | 0.0043 | | |
-| glass_as_train_0.006_low14.wav | AudioSet 학습 | 0.0063 | glass, 겹침 1.02 s | |
-| glass_as_train_0.005_low15.wav | AudioSet 학습 | 0.0048 | glass, 겹침 0.98 s | |
-| scream_as_train_0.002_low01.wav | AudioSet 학습 | 0.0019 | Yell·Shout 만 (v3.1 제외분) | |
-| scream_as_train_0.000_low02.wav | AudioSet 학습 | 0.0002 | Screaming 보유, 겹침 0.51 s | |
-| scream_as_train_0.000_low03.wav | AudioSet 학습 | 0.0002 | Screaming 보유, 겹침 1.02 s | |
-| scream_as_train_0.014_low04.wav | AudioSet 학습 | 0.0144 | Screaming 보유, 겹침 1.00 s | |
-| scream_as_train_0.000_low05.wav | AudioSet 학습 | 0.0002 | Yell·Shout 만, 겹침 0.27 s | |
-| scream_ext_0.007_low06.wav | 외부 | 0.0066 | Church bell; Female speech; … | |
-| scream_as_train_0.001_low07.wav | AudioSet 학습 | 0.0011 | Yell·Shout 만, 겹침 0.39 s | |
-| scream_as_train_0.000_low08.wav | AudioSet 학습 | 0.0003 | Yell·Shout 만, 베드 채움 | |
-| scream_ext_0.004_low09.wav | 외부 | 0.0036 | Crowd; Female speech; … | |
-| scream_as_train_0.007_low10.wav | AudioSet 학습 | 0.0068 | Screaming 보유, 겹침 1.02 s | |
-| scream_v1_test_0.001_low11.wav | FSD50K 시험 | 0.0015 | | |
-| scream_as_train_0.003_low12.wav | AudioSet 학습 | 0.0035 | Yell·Shout 만, 겹침 0.61 s | |
-| scream_ext_0.008_low13.wav | 외부 | 0.0081 | Coin (dropping); Gunshot; … | |
-| scream_as_train_0.003_low14.wav | AudioSet 학습 | 0.0032 | Yell·Shout 만, 겹침 0.92 s | |
-| scream_as_train_0.000_low15.wav | AudioSet 학습 | 0.0001 | Yell·Shout 만, 겹침 0.74 s | |
+| glass_as_train_0.000_low01.wav | AudioSet 학습 | 0.0004 | glass, 겹침 1.02 s | **X** — 총소리 비슷한 것 |
+| glass_v1_train_0.000_low02.wav | FSD50K 학습 | 0.0004 | Shatter 클립, 베드 채움 | **X** — '툭'소리 |
+| glass_v1_train_0.004_low03.wav | FSD50K 학습 | 0.0037 | Shatter 클립 (1초 미만, 베드 위) | **O** — 유리 깨지거나 그에 준하는 충격음 |
+| glass_as_train_0.000_low04.wav | AudioSet 학습 | 0.0004 | glass, 겹침 1.02 s | **X** — 총소리 비슷한 것 |
+| glass_as_train_0.003_low05.wav | AudioSet 학습 | 0.0033 | glass, 겹침 0.93 s | **X** — 종소리 비슷한 것 |
+| glass_as_train_0.006_low06.wav | AudioSet 학습 | 0.0057 | glass, 베드 채움 10런 | **X** — 음악 소리 |
+| glass_v1_train_0.000_low07.wav | FSD50K 학습 | 0.0003 | Shatter 클립, 베드 채움 | **X** — 휘파람 같은 소리 |
+| glass_v1_train_0.000_low08.wav | FSD50K 학습 | 0.0003 | Shatter 클립, 베드 채움 9런 | **X** — '툭'소리 |
+| glass_as_train_0.001_low09.wav | AudioSet 학습 | 0.0008 | glass, 겹침 1.02 s | **X** — 박수소리, 터지는 소리 비슷한 것 |
+| glass_v1_train_0.003_low10.wav | FSD50K 학습 | 0.0029 | Shatter 클립 | **X** — 짤랑 소리, 깨지지는 않은 것 같음 |
+| glass_as_train_0.001_low11.wav | AudioSet 학습 | 0.0008 | glass, 겹침 0.82 s | **X** — 거의 안 들림, 총소리 비슷한 것 |
+| glass_v1_test_0.006_low12.wav | FSD50K 시험 | 0.0060 | | **X** — 쟁그렁 소리, 깨지지는 않은 것 같고 닿은 소리 |
+| glass_v1_test_0.004_low13.wav | FSD50K 시험 | 0.0043 | | **X** — '퍽'소리 |
+| glass_as_train_0.006_low14.wav | AudioSet 학습 | 0.0063 | glass, 겹침 1.02 s | **?** — 유리가 깨지는 소리 같기도 함 (O)에 가까움 |
+| glass_as_train_0.005_low15.wav | AudioSet 학습 | 0.0048 | glass, 겹침 0.98 s | **?** — 깨지는데 유리인지 애매함 |
+| scream_as_train_0.002_low01.wav | AudioSet 학습 | 0.0019 | Yell·Shout 만 (v3.1 제외분) | **X** — cheer 느낌 |
+| scream_as_train_0.000_low02.wav | AudioSet 학습 | 0.0002 | Screaming 보유, 겹침 0.51 s | **X** — 그냥 배경음 |
+| scream_as_train_0.000_low03.wav | AudioSet 학습 | 0.0002 | Screaming 보유, 겹침 1.02 s | **X** — 기계음, 전기 면도기 같은 소리 |
+| scream_as_train_0.014_low04.wav | AudioSet 학습 | 0.0144 | Screaming 보유, 겹침 1.00 s | **?** — 아기가 우는 소리 - scream으로 봐도 되는가? |
+| scream_as_train_0.000_low05.wav | AudioSet 학습 | 0.0002 | Yell·Shout 만, 겹침 0.27 s | **X** — 일상음 |
+| scream_ext_0.007_low06.wav | 외부 | 0.0066 | Church bell; Female speech; … | **X** — 축제 소리 |
+| scream_as_train_0.001_low07.wav | AudioSet 학습 | 0.0011 | Yell·Shout 만, 겹침 0.39 s | **X** — 뭔가 떨어지는 소리, 충격음 |
+| scream_as_train_0.000_low08.wav | AudioSet 학습 | 0.0003 | Yell·Shout 만, 베드 채움 | **X** — 박수, 일상의 환호 |
+| scream_ext_0.004_low09.wav | 외부 | 0.0036 | Crowd; Female speech; … | **X** — cheer 소리 |
+| scream_as_train_0.007_low10.wav | AudioSet 학습 | 0.0068 | Screaming 보유, 겹침 1.02 s | **O** — scream으로 봐도 무방함 |
+| scream_v1_test_0.001_low11.wav | FSD50K 시험 | 0.0015 | | (판정 없음 — 14창만 판정) |
+| scream_as_train_0.003_low12.wav | AudioSet 학습 | 0.0035 | Yell·Shout 만, 겹침 0.61 s | **X** — 대화 속 일상음 |
+| scream_ext_0.008_low13.wav | 외부 | 0.0081 | Coin (dropping); Gunshot; … | **?/O** — 깜짝 놀라는 소리 - scream으로 봐도 되는가? |
+| scream_as_train_0.003_low14.wav | AudioSet 학습 | 0.0032 | Yell·Shout 만, 겹침 0.92 s | **?** — scream에 가까운 일상음 |
+| scream_as_train_0.000_low15.wav | AudioSet 학습 | 0.0001 | Yell·Shout 만, 겹침 0.74 s | **X** — 일상의 환호 |
+
+6.2 의 정의를 적용하면 비명은 `low04`(아기 울음) → X, `low13`(깜짝 놀라는 소리) → O 로 읽혀 **O 2 / ? 1 / X 11** 이
+된다 (저자 요약은 정의 결정 전 수치). AudioSet 출처(`as_train`·`ext`) 비명 13창 중 O 는 1~2창뿐이고, X 의 내용은
+환호·박수·대화·기계음·충격음이다. 유리 X 12창의 내용은 총소리·'툭'·'퍽'·짤랑(닿은 소리)·종소리·음악이다 —
+**충격음이긴 하되 유리 파손이 아닌 소리**가 onset 순 선별에 걸려 들어왔다.
 
 ### 6.1 사용자 결론 (그대로)
 
