@@ -190,9 +190,77 @@ class SafeSound(Dataset):
                      "먼저 prepare_safesound.py 를 실행할 것.")
         self._maps = {}          # 워커별 mmap 핸들 (fork 후 새로 연다)
         self._pid = None
+        # v4+D 증류 (attach_kd). None 이면 기존 경로와 비트 단위로 같다.
+        self._kd = None
 
     def __len__(self):
-        return len(self.index)
+        return len(self.index) + (self._kd["n_epoch"] if self._kd else 0)
+
+    # ────────────────────────────────────────────────── v4+D 증류 (docs/results/v4-distill-design.md)
+    def attach_kd(self, teacher_dir, unlab_root=None, unlab_half=False, n_epoch=None):
+        """교사 로짓(캐시)과 라벨 없는 창을 붙인다.
+
+        teacher_dir/teacher_<cls>.npy  (n_cls, 5) float32 — index.csv 행 순서와 같다 (kat_v3 --edition v4 가 확인)
+        unlab_root/train/unlabeled/{index.csv, shard_*.npy, teacher.npy}
+        unlab_half  True 면 영상(fsid) 해시 짝수만 (v4+D½: 영상 절반, 7.3절)
+        n_epoch     에폭마다 뽑는 라벨 없는 창 수 (기본 = 라벨 있는 창 수). **복원 추출** — 항목마다 무작위.
+
+        타깃은 float 텐서 [hard, t0..t4] 가 된다 (hard = -1 이면 라벨 없음). train.py 의 KD 분기가 받는다.
+        라벨 없는 창에는 게인·shift 만 걸고 배경 혼합은 걸지 않는다 (교사 타깃이 무증강 창에서 나왔다).
+        """
+        t = []
+        for target, cls in enumerate(CLASSES):
+            n = sum(1 for e in self.index if e[0] == target)
+            arr = np.load(os.path.join(teacher_dir, f"teacher_{cls}.npy")).astype(np.float32)
+            if arr.shape != (n, len(CLASSES)):
+                raise ValueError(f"교사 로짓 모양 불일치 {cls}: {arr.shape} vs 창 {n}")
+            t.append(arr)
+        kd = {"t_lab": np.concatenate(t), "unlab": [], "t_unlab": np.zeros((0, len(CLASSES)), np.float32), "n_epoch": 0}
+        if unlab_root:
+            d = os.path.join(unlab_root, "train", "unlabeled")
+            tu = np.load(os.path.join(d, "teacher.npy")).astype(np.float32)
+            rows, keep = [], []
+            with open(os.path.join(d, "index.csv"), encoding="utf-8") as f:
+                for i, r in enumerate(csv.DictReader(f)):
+                    if unlab_half and _fsid_unit(r["fsid"]) >= 0.5:
+                        continue
+                    rows.append((os.path.join(d, f"shard_{int(r['shard']):04d}.npy"), int(r["row"]),
+                                 int(r.get("left_margin", MARGIN)), int(r.get("right_margin", MARGIN))))
+                    keep.append(i)
+            if tu.shape[0] != i + 1:
+                raise ValueError(f"라벨 없는 교사 로짓 {tu.shape} vs index {i + 1}")
+            kd["unlab"], kd["t_unlab"] = rows, tu[keep]
+            kd["n_epoch"] = int(n_epoch if n_epoch is not None else len(self.index))
+            print(f"  [kd] 라벨 {len(self.index):,} + 라벨 없음 {len(rows):,}{' (영상 절반)' if unlab_half else ''}, "
+                  f"에폭당 {kd['n_epoch']:,} 복원 추출")
+        self._kd = kd
+        return self
+
+    def _locate(self, i):
+        """i → (target, shard, row, left, right, 교사 로짓 또는 None, 혼합 자기제외용 인덱스)."""
+        if i < len(self.index):
+            target, shard, row, left, right = self.index[i]
+            return target, shard, row, left, right, (self._kd["t_lab"][i] if self._kd else None), i
+        j = int(np.random.default_rng().integers(len(self._kd["unlab"])))
+        shard, row, left, right = self._kd["unlab"][j]
+        return -1, shard, row, left, right, self._kd["t_unlab"][j], None
+
+    def _window(self, i):
+        """증강까지 끝난 int8 창 (WIN,) 과 타깃. 파형·멜 경로가 **공유**한다 (복제 금지)."""
+        target, shard, row, left, right, t_log, self_idx = self._locate(i)
+        stored = np.asarray(self._shard(shard)[row])      # int8, (STORE,)
+        rng = np.random.default_rng()
+        w = self._crop(stored, left, right, rng)          # (WIN,)
+        if self.augment:
+            w = self._rand_gain(w, rng)
+            if target >= 0:
+                w = self._mix_noise(w, rng, target, self_idx)
+        return w, target, t_log
+
+    def _kd_target(self, target, t_log):
+        if self._kd is None:
+            return target
+        return torch.cat([torch.tensor([float(target)]), torch.from_numpy(np.asarray(t_log, dtype=np.float32))])
 
     def _shard(self, path):
         """샤드 mmap 핸들. 프로세스가 바뀌면(fork) 새로 연다."""
@@ -316,14 +384,7 @@ class SafeSound(Dataset):
 
     # ──────────────────────────────────────────────────────────── 샘플
     def __getitem__(self, i):
-        target, shard, row, left, right = self.index[i]
-        stored = np.asarray(self._shard(shard)[row])      # int8, (STORE,)
-
-        rng = np.random.default_rng()
-        w = self._crop(stored, left, right, rng)          # (WIN,)
-        if self.augment:
-            w = self._rand_gain(w, rng)
-            w = self._mix_noise(w, rng, target, i)
+        w, target, t_log = self._window(i)
 
         # 음량 정규화는 **증강 뒤**다. 랜덤 게인은 실기기의 레벨 변동을 흉내
         # 내는 것이고, 실기기에서도 정규화는 그 변동을 받은 뒤에 일어난다.
@@ -334,7 +395,7 @@ class SafeSound(Dataset):
             sh, w = self._norm_pow2(w)
             self.norm_sh_hist[sh] += 1
 
-        return self._to_tensor(w), target
+        return self._to_tensor(w), self._kd_target(target, t_log)
 
     def _to_tensor(self, w):
         """int8 창 (WIN,) → 모델 입력 텐서 (128,128)."""
@@ -492,6 +553,31 @@ def safesound_v31_get_datasets(data, load_train=True, load_test=True):
                                   mix_bg=True, root_name="SafeSoundV31")
 
 
+def safesound_v4_get_datasets(data, load_train=True, load_test=True):
+    """v4 — v3.1 에서 glass·scream 의 PANNs 점수 < 0.02 창 제외 + 아기 울음 구간 → 배경 (v4-distill-design.md 2절)."""
+    return safesound_get_datasets(data, load_train, load_test, mix_prob=MIX_PROB,
+                                  mix_bg=True, root_name="SafeSoundV4")
+
+
+def _attach_v4_kd(train_ds, data_dir, half):
+    if train_ds is not None:
+        root = os.path.join(data_dir, "SafeSoundV4")
+        train_ds.attach_kd(os.path.join(root, "teacher"), os.path.join(data_dir, "SafeSoundV4U"), unlab_half=half)
+    return train_ds
+
+
+def safesound_v4d_get_datasets(data, load_train=True, load_test=True):
+    """v4+D — v4 + PANNs 프로브 교사 증류, 라벨 없는 창 전체(U). 타깃이 [hard, 교사 로짓 5] 가 된다."""
+    tr, te = safesound_v4_get_datasets(data, load_train, load_test)
+    return _attach_v4_kd(tr, data[0], False), te
+
+
+def safesound_v4dh_get_datasets(data, load_train=True, load_test=True):
+    """v4+D½ — 라벨 없는 창을 영상 절반만 (fsid 해시 < 0.5). 에폭당 표본 수는 D 와 같다."""
+    tr, te = safesound_v4_get_datasets(data, load_train, load_test)
+    return _attach_v4_kd(tr, data[0], True), te
+
+
 def safesound_norm2_get_datasets(data, load_train=True, load_test=True):
     """SafeSoundNorm2 로더 (람다를 쓰지 않는다 — ai8x 가 이름을 로그에 찍는다)."""
     return safesound_get_datasets(data, load_train, load_test, norm_pow2=True)
@@ -569,6 +655,7 @@ def class_weights(root=None, d_type="train", counts=None, power=1.0):
 V1_TRAIN_COUNTS = (528, 477, 491, 1934, 9577)   # siren/glass/scream/dog_bark/background
 # v3 (dataset-v3-design.md): v1 + AudioSet strong train 창. `scripts/build_v3_windows.py` 가 MANIFEST 에
 # 같은 값을 쓴다 — 빌드 뒤 MANIFEST.counts 와 다르면 여기를 갱신할 것 (가중치가 조용히 틀어진다).
+V4_TRAIN_COUNTS = (1195, 578, 559, 2366, 11971)    # v4 2026-10-09 빌드 — MANIFEST 와 같아야 한다 (kat_v3 --edition v4)
 V31_TRAIN_COUNTS = (1195, 970, 725, 2366, 11967)   # v3.1 2026-10-08 빌드 (Yell·Shout 만 246구간 제외), MANIFEST 와 같음
 V3_TRAIN_COUNTS = (1195, 970, 1041, 2366, 11967)  # 2026-10-07 23:47 최종 빌드 (scream extra1 327구간 포함), MANIFEST 와 같음
 
@@ -579,6 +666,18 @@ V3_TRAIN_COUNTS = (1195, 970, 1041, 2366, 11967)  # 2026-10-07 23:47 최종 빌�
 # 균형 샘플러(WeightedRandomSampler)도 대안이지만 ai8x 의 train.py 가 DataLoader 를
 # 직접 만들기 때문에 패치가 필요하다. 가중 손실이 같은 목적을 패치 없이 달성한다.
 datasets = [
+    {   # v4 — 정리만 (v4-distill-design.md 2절). 가중치는 v4 창 수.
+        "name": "SafeSoundV4", "input": (128, 128), "output": tuple(CLASSES),
+        "weight": class_weights(counts=list(V4_TRAIN_COUNTS)), "loader": safesound_v4_get_datasets,
+    },
+    {   # v4+D — 증류 (라벨 없는 창 전체 U)
+        "name": "SafeSoundV4D", "input": (128, 128), "output": tuple(CLASSES),
+        "weight": class_weights(counts=list(V4_TRAIN_COUNTS)), "loader": safesound_v4d_get_datasets,
+    },
+    {   # v4+D½ — 라벨 없는 창 영상 절반
+        "name": "SafeSoundV4Dh", "input": (128, 128), "output": tuple(CLASSES),
+        "weight": class_weights(counts=list(V4_TRAIN_COUNTS)), "loader": safesound_v4dh_get_datasets,
+    },
     {
         # v3.1 — v3 에서 Yell·Shout 만 있는 AudioSet 구간 제외 (dataset-v3.1-design.md). 가중치는 v3.1 창 수.
         "name": "SafeSoundV31",

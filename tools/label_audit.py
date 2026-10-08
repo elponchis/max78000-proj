@@ -350,6 +350,26 @@ def listen(names, M, groups, report):
     print("\n청취 표본:", json.dumps(summary, ensure_ascii=False), "→", AUDIT_DIR, f"({len(key_rows)} wav + answer_key.csv)")
 
 
+def write_exclude(path):
+    """v4 학습 정리 (label-audit.md 7.2): glass·scream 중 PANNs 해당 클래스 점수 < 0.02 인 **학습** 창 목록.
+    열: cls, clip_id, start_sample, source, score. v1 계열 + AudioSet(v3.1 규칙 창만, in_v31=1)."""
+    names = label_names()
+    rows = []
+    for src, z in (("v1_train", load("v1_train")), ("as_train", load("as_train"))):
+        s = class_scores(z["P"], names)
+        for c, cls in ((1, "glass"), (2, "scream")):
+            for i in np.flatnonzero(z["y"] == c):
+                if src == "as_train" and cls == "scream" and not str(z["notes"][i]).endswith("in_v31=1"):
+                    continue
+                if s[cls][i] < VERY_LOW:
+                    rows.append(dict(cls=cls, clip_id=str(z["clips"][i]), start_sample=int(z["starts"][i]), source=src,
+                                     score=f"{float(s[cls][i]):.5f}"))
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=["cls", "clip_id", "start_sample", "source", "score"]); w.writeheader(); w.writerows(rows)
+    import collections
+    print("제외 목록:", path, dict(collections.Counter((r["source"], r["cls"]) for r in rows)), "합계", len(rows))
+
+
 def score(a):
     names = label_names()
     M = ext_meta()
@@ -373,7 +393,10 @@ if __name__ == "__main__":
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--no-listen", action="store_true")
+    ap.add_argument("--exclude-csv", default=None, help="v4 학습 제외 창 목록을 쓴다 (glass·scream < 0.02)")
     a = ap.parse_args()
+    if a.exclude_csv:
+        write_exclude(a.exclude_csv)
     if a.run:
         run(a)
     if a.score:

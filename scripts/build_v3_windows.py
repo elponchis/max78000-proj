@@ -122,8 +122,17 @@ def main():
                     help="v3.1: AudioSet 구간 중 Yell·Shout 만 있고 Screaming 이 없는 구간을 학습에서 제외한다 "
                          "(양성·배경 어느 쪽으로도 안 씀). 군중 동반은 v1 규칙 그대로 하드 네거티브.")
     ap.add_argument("--tag", default=None, help="MANIFEST tag (기본 dataset-v3 / --scream-screaming-only 면 dataset-v3.1)")
+    ap.add_argument("--exclude", default=None,
+                    help="v4: 제외할 학습 창 목록 csv (cls, clip_id, start_sample) — v1 행·AudioSet 행 모두. 쓰기 단계에서 뺀다 "
+                         "(창 선택은 v3.1 과 같게 유지).")
+    ap.add_argument("--force-bg", default="", help="v4: 쉼표로 구분한 구간 ID — 어느 정의든 무시하고 background 로 배정 (아기 울음)")
     a = ap.parse_args()
     tag = a.tag or ("dataset-v3.1" if a.scream_screaming_only else "dataset-v3")
+    excl = set()
+    if a.exclude:
+        with open(a.exclude, encoding="utf-8") as f:
+            excl = {(r["cls"], r["clip_id"], int(r["start_sample"])) for r in csv.DictReader(f)}
+    force_bg = {s for s in a.force_bg.split(",") if s}
 
     # ── 라벨 사전 ──
     nm = dict(l.rstrip("\n").split("\t") for l in open(os.path.join(a.meta, "mid_to_display_name.tsv"), encoding="utf-8"))
@@ -175,7 +184,9 @@ def main():
         s = {l for _, _, l in strong[sid]}
         c1, c2 = v1eq(s), real(s)
         rc = next(iter(c2), "-") if len(c2) == 1 else "-"
-        if r["group"] == "background":
+        if sid in force_bg:
+            assign[sid] = ("background", "", rc, None); tally["강제 배경(--force-bg)"] += 1
+        elif r["group"] == "background":
             assign[sid] = ("background", "", rc, None); tally["background"] += 1
         elif len(c1) > 1:
             tally["제외(다중)"] += 1
@@ -267,7 +278,24 @@ def main():
             tot[name] += g(name)
         tot["win"] += w; tot["v1"] += v1_counts[cls]
     print(f"| **합계** | **{tot['v1']:,}** | {tot['seg']:,} | {tot['cand']:,} | {tot['floor_drop']} | {tot['nowin']} | {tot['fill_seg']} | **{tot['win']:,}** | **{tot['v1'] + tot['win']:,}** | {100 * tot['win'] / (tot['v1'] + tot['win']):.0f}% |")
+    # ── v4 제외 (쓰기 전에 적용 — 집계 표는 제외 전 수치, 아래 줄이 제외 후) ──
+    n_excl = collections.Counter()
+    v1_keep = {}
+    for cls in CLASSES:
+        with open(os.path.join(a.v1_root, "train", cls, "index.csv"), encoding="utf-8") as f:
+            rows_v1 = list(csv.DictReader(f))
+        keep = [r for r in rows_v1 if (cls, r["clip_id"], int(r["start_sample"])) not in excl]
+        n_excl["v1:" + cls] += len(rows_v1) - len(keep)
+        v1_keep[cls] = keep
+        before = len(out_rows[cls])
+        out_rows[cls] = [t for t in out_rows[cls] if (cls, t[1], t[3]) not in excl]
+        n_excl["audioset:" + cls] += before - len(out_rows[cls])
+        v1_counts[cls] = len(keep)
+    if excl:
+        print("제외 적용:", dict(n_excl), " 목록", len(excl), " (목록 중 적용 안 된 것", len(excl) - sum(n_excl.values()), ")")
     counts_v3 = [v1_counts[c] + len(out_rows[c]) for c in CLASSES]
+    if excl:
+        print("제외 후 창 수:", dict(zip(CLASSES, counts_v3)))
     print("\n클래스 가중치 v1:", class_weights(V1_TRAIN_COUNTS), "\n클래스 가중치 v3:", class_weights(counts_v3), " (창 수", counts_v3, ")")
     if a.dry_run:
         return
@@ -286,6 +314,8 @@ def main():
             rd = csv.DictReader(f)
             header = rd.fieldnames
             v1_rows = list(rd)
+        if excl:
+            v1_rows = v1_keep[cls]
         for sh in sorted({int(r["shard"]) for r in v1_rows}):
             if sh >= SHARD_BASE:
                 sys.exit(f"[에러] v1 샤드 번호 {sh} 가 {SHARD_BASE} 이상이다")
@@ -322,6 +352,7 @@ def main():
                      "floor_zero": FLOOR_ZERO, "fill": vars(args), "webm_fallback": "included, note webm_trim=1"},
            "counts": {c: {"v1": v1_counts[c], "audioset": len(out_rows[c]), "total": v1_counts[c] + len(out_rows[c])} for c in CLASSES},
            "class_weights_v3": class_weights(counts_v3),
+           "exclude": {"file": a.exclude, "n_list": len(excl), "applied": dict(n_excl), "force_bg": sorted(force_bg)},
            "stat": {k: dict(v) for k, v in stat.items()},
            "audioset_segments": {c: sorted(set(v)) for c, v in seg_ids.items()},
            "webm_fallback_ids": sorted(webm)}

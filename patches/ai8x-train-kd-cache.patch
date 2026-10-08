@@ -1,0 +1,62 @@
+diff --git a/train.py b/train.py
+index 21514df..704ec2c 100755
+--- a/train.py
++++ b/train.py
+@@ -933,16 +933,39 @@ def train(train_loader, model, criterion, optimizer, epoch,
+         if args.out_fold_ratio != 1:
+             output = ai8x.unfold_batch(output, args.out_fold_ratio)
+ 
+-        loss = criterion(output, target)
++        # ── SafeSound v4+D: 캐시 교사 증류 (datasets/safesound.py attach_kd, docs/results/v4-distill-design.md 3·7절)
++        # 타깃이 float (B, 1+K) 이면 [hard, 교사 로짓 K]. hard < 0 = 라벨 없는 창 (KL 만).
++        #   loss = n_lab/B · [(1−α)·CE(hard) + α·T²·KL(lab)] + n_unlab/B · T²·KL(unlab)
++        # 온도·비중은 환경변수 SAFESOUND_KD_T / SAFESOUND_KD_ALPHA (기본 2.0 / 0.5). 다른 데이터셋 경로는 바뀌지 않는다.
++        output_acc, target_acc = output, target
++        if torch.is_tensor(target) and target.dim() == 2 and target.is_floating_point() \
++                and target.shape[1] == output.shape[1] + 1:
++            kd_T = float(os.environ.get('SAFESOUND_KD_T', '2.0'))
++            kd_a = float(os.environ.get('SAFESOUND_KD_ALPHA', '0.5'))
++            hard = target[:, 0].long()
++            t_log = target[:, 1:]
++            lab = hard >= 0
++            kl = torch.nn.functional.kl_div(torch.log_softmax(output / kd_T, dim=1),
++                                            torch.softmax(t_log / kd_T, dim=1), reduction='none').sum(1)
++            n_b = float(target.shape[0])
++            loss = output.new_zeros(())
++            if bool(lab.any()):
++                ce = criterion(output[lab], hard[lab])
++                loss = loss + (lab.sum().float() / n_b) * ((1.0 - kd_a) * ce + kd_a * kd_T * kd_T * kl[lab].mean())
++            if bool((~lab).any()):
++                loss = loss + ((~lab).sum().float() / n_b) * kd_T * kd_T * kl[~lab].mean()
++            output_acc, target_acc = output[lab], hard[lab]
++        else:
++            loss = criterion(output, target)
+         if not args.obj_detection and not args.dr and not args.kd_relationbased:
+             # Measure accuracy if the conditions are set. For `Last Batch` only accuracy
+             # calculation last two batches are used as the last batch might include just a few
+             # samples.
+-            if args.show_train_accuracy == 'full' or \
++            if (args.show_train_accuracy == 'full' or \
+                 (args.show_train_accuracy == 'last_batch'
+-                    and train_step >= len(train_loader)-2):
+-                if len(output.data.shape) <= 2 or args.regression:
+-                    classerr.add(output.data, target)
++                    and train_step >= len(train_loader)-2)) and len(target_acc) > 0:
++                if len(output_acc.data.shape) <= 2 or args.regression:
++                    classerr.add(output_acc.data, target_acc)
+                 else:
+                     classerr.add(output.data.permute(0, 2, 3, 1).flatten(start_dim=0, end_dim=2),
+                                  target.flatten())
+@@ -1257,6 +1280,12 @@ def _validate(data_loader, model, criterion, loggers, args, epoch=-1, tflogger=N
+                                 args.dataset, False, args.slice_sample)
+                 sample_saved = True
+ 
++            # SafeSound v4+D: 검증 분할에 KD 타깃([hard, 교사 로짓])이 올 수 있다 — 라벨 있는 행만, hard 로 채점
++            if torch.is_tensor(target) and target.dim() == 2 and target.is_floating_point()                     and target.shape[1] == output.shape[1] + 1:
++                _lab = target[:, 0] >= 0
++                output, target = output[_lab], target[_lab, 0].long()
++                if len(target) == 0:
++                    continue
+             # compute loss
+             loss = criterion(output, target)
+             if args.kd_relationbased:

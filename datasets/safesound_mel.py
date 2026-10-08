@@ -38,13 +38,13 @@ try:                                   # ai8x-training 이 datasets 패키지로
     from . import melfeat as MF
     from .safesound import MIX_PROB as S_MIX_PROB
     from .safesound import (CLASSES, MARGIN, SafeSound, V1_TRAIN_COUNTS,
-                            V3_TRAIN_COUNTS, V31_TRAIN_COUNTS, class_weights)
+                            V3_TRAIN_COUNTS, V31_TRAIN_COUNTS, V4_TRAIN_COUNTS, class_weights)
 except ImportError:                    # tools/ 가 단독 모듈로 import 할 때
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import melfeat as MF
     from safesound import MIX_PROB as S_MIX_PROB
     from safesound import (CLASSES, MARGIN, SafeSound, V1_TRAIN_COUNTS,
-                           V3_TRAIN_COUNTS, V31_TRAIN_COUNTS, class_weights)
+                           V3_TRAIN_COUNTS, V31_TRAIN_COUNTS, V4_TRAIN_COUNTS, class_weights)
 
 __all__ = ["CLASSES", "SafeSoundMel", "safesound_mel_get_datasets",
            "V1_TRAIN_COUNTS", "MF"]
@@ -102,20 +102,16 @@ class SafeSoundMel(SafeSound):
         return path
 
     def _features(self, i):
-        """int8 로그 멜 (N_MELS, N_FRAMES). 파형 경로와 증강을 공유한다."""
-        target, shard, row, left, right = self.index[i]
-        stored = np.asarray(self._shard(shard)[row])
-        rng = np.random.default_rng()
-        w = self._crop(stored, left, right, rng)
-        if self.augment:
-            w = self._rand_gain(w, rng)
-            w = self._mix_noise(w, rng, target, i)
-        return MF.mel_int8(w, self.scheme)
+        """int8 로그 멜 (N_MELS, N_FRAMES). 파형 경로와 증강을 공유한다 (`SafeSound._window`)."""
+        return MF.mel_int8(self._window(i)[0], self.scheme)
 
     def __getitem__(self, i):
-        target = self.index[i][0]
         c = self._load_cache()
-        f = np.asarray(c[i]) if c is not None else self._features(i)
+        if c is not None:
+            target, f, t_log = self.index[i][0], np.asarray(c[i]), None
+        else:
+            w, target, t_log = self._window(i)
+            f = MF.mel_int8(w, self.scheme)
 
         # int8 [-128,127] → [0,1) → ai8x.normalize 가 [-128,127] 로 되돌린다.
         # 파형 경로(safesound.py)와 **같은 관례**다. 여기서 평균·분산 정규화를
@@ -124,7 +120,7 @@ class SafeSoundMel(SafeSound):
         x = (x.float() / 256.0).unsqueeze(0)          # (1, N_MELS, N_FRAMES)
         if self.transform is not None:
             x = self.transform(x)
-        return x, target
+        return x, self._kd_target(target, t_log)
 
 
 class SafeSoundMel1D(SafeSoundMel):
@@ -140,7 +136,7 @@ class SafeSoundMel1D(SafeSoundMel):
 
 
 def _mel_loader(scheme, subset_frac=None, clip_prob=0.0, cls=None, mix_prob=0.0,
-                mix_bg=False, root_name="SafeSound"):
+                mix_bg=False, root_name="SafeSound", kd=None):
     """압축 법칙 하나에 대한 ai8x-training 규약 로더를 만든다.
 
     ⚠️ **캐시 파일 이름에 법칙을 넣는다.** 넣지 않으면 (1) 의 로그 캐시를
@@ -168,6 +164,9 @@ def _mel_loader(scheme, subset_frac=None, clip_prob=0.0, cls=None, mix_prob=0.0,
                       scheme=scheme,
                       cache=cache if os.path.isfile(cache) else None)
                    if load_test else None)
+        if kd and train_ds is not None:          # v4+D / v4+D½ (safesound.attach_kd)
+            train_ds.attach_kd(os.path.join(root, "teacher"), os.path.join(data_dir, "SafeSoundV4U"),
+                               unlab_half=(kd == "half"))
         return train_ds, test_ds
     get_datasets.__name__ = (f"safesound_mel_{scheme}"
                              f"{'_1d' if cls is SafeSoundMel1D else ''}_get_datasets")
@@ -282,6 +281,19 @@ for _name, _scheme in (("SafeSoundMelIncV2", "loginc"),
         "output": tuple(CLASSES),
         "weight": class_weights(),
         "loader": _mel_loader(_scheme, mix_prob=S_MIX_PROB),
+    })
+
+# v4 — 정리 / v4+D 증류(U) / v4+D½ (v4-distill-design.md). 루트 SafeSoundV4 (+ SafeSoundV4U, teacher/)
+for _name, _scheme, _kd in (("SafeSoundMelH400V4", "log_h400", None),
+                            ("SafeSoundMelH400V4D", "log_h400", "full"),
+                            ("SafeSoundMelH400V4Dh", "log_h400", "half"),
+                            ("SafeSoundMelIncV4", "loginc", None)):
+    datasets.append({
+        "name": _name,
+        "input": (1,) + MF.scheme_shape(_scheme),
+        "output": tuple(CLASSES),
+        "weight": class_weights(counts=list(V4_TRAIN_COUNTS)),
+        "loader": _mel_loader(_scheme, mix_prob=S_MIX_PROB, mix_bg=True, root_name="SafeSoundV4", kd=_kd),
     })
 
 # v3.1 — v3 에서 Yell·Shout 만 있는 AudioSet 구간 제외 (dataset-v3.1-design.md). 루트 SafeSoundV31

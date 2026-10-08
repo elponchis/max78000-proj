@@ -66,6 +66,11 @@ GROUPS = {
                 "safesound-fbnorm2-v1"],
     "chain26 v3 1단계 (3시드)": ["safesound-v3-wave", "safesound-v3-wave-s2", "safesound-v3-wave-s3",
                                "safesound-v3-melh400", "safesound-v3-melh400-s2", "safesound-v3-melh400-s3"],
+    "chain28 v4 / v4+D / v4+D½ (3시드)": ["safesound-v4-wave", "safesound-v4-wave-s2", "safesound-v4-wave-s3",
+                                      "safesound-v4-melh400", "safesound-v4-melh400-s2", "safesound-v4-melh400-s3",
+                                      "safesound-v4d-wave", "safesound-v4d-wave-s2", "safesound-v4d-wave-s3",
+                                      "safesound-v4d-melh400", "safesound-v4d-melh400-s2", "safesound-v4d-melh400-s3",
+                                      "safesound-v4dh-melh400", "safesound-v4dh-melh400-s2", "safesound-v4dh-melh400-s3"],
     "chain27 v3.1 1단계 (3시드)": ["safesound-v31-wave", "safesound-v31-wave-s2", "safesound-v31-wave-s3",
                                  "safesound-v31-melh400", "safesound-v31-melh400-s2", "safesound-v31-melh400-s3"],
 }
