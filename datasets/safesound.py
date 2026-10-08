@@ -486,6 +486,12 @@ def safesound_v3_get_datasets(data, load_train=True, load_test=True):
                                   mix_bg=True, root_name="SafeSoundV3")
 
 
+def safesound_v31_get_datasets(data, load_train=True, load_test=True):
+    """v3.1 — v3 에서 AudioSet 의 Yell·Shout 만 있는 구간(Screaming 없음)을 뺀 것. 나머지 전부 v3 와 같다."""
+    return safesound_get_datasets(data, load_train, load_test, mix_prob=MIX_PROB,
+                                  mix_bg=True, root_name="SafeSoundV31")
+
+
 def safesound_norm2_get_datasets(data, load_train=True, load_test=True):
     """SafeSoundNorm2 로더 (람다를 쓰지 않는다 — ai8x 가 이름을 로그에 찍는다)."""
     return safesound_get_datasets(data, load_train, load_test, norm_pow2=True)
@@ -563,6 +569,7 @@ def class_weights(root=None, d_type="train", counts=None, power=1.0):
 V1_TRAIN_COUNTS = (528, 477, 491, 1934, 9577)   # siren/glass/scream/dog_bark/background
 # v3 (dataset-v3-design.md): v1 + AudioSet strong train 창. `scripts/build_v3_windows.py` 가 MANIFEST 에
 # 같은 값을 쓴다 — 빌드 뒤 MANIFEST.counts 와 다르면 여기를 갱신할 것 (가중치가 조용히 틀어진다).
+V31_TRAIN_COUNTS = (1195, 970, 725, 2366, 11967)   # v3.1 2026-10-08 빌드 (Yell·Shout 만 246구간 제외), MANIFEST 와 같음
 V3_TRAIN_COUNTS = (1195, 970, 1041, 2366, 11967)  # 2026-10-07 23:47 최종 빌드 (scream extra1 327구간 포함), MANIFEST 와 같음
 
 # → siren 4.93 / glass 5.45 / scream 5.30 / dog_bark 1.35 / background 0.27
@@ -572,6 +579,14 @@ V3_TRAIN_COUNTS = (1195, 970, 1041, 2366, 11967)  # 2026-10-07 23:47 최종 빌�
 # 균형 샘플러(WeightedRandomSampler)도 대안이지만 ai8x 의 train.py 가 DataLoader 를
 # 직접 만들기 때문에 패치가 필요하다. 가중 손실이 같은 목적을 패치 없이 달성한다.
 datasets = [
+    {
+        # v3.1 — v3 에서 Yell·Shout 만 있는 AudioSet 구간 제외 (dataset-v3.1-design.md). 가중치는 v3.1 창 수.
+        "name": "SafeSoundV31",
+        "input": (128, 128),
+        "output": tuple(CLASSES),
+        "weight": class_weights(counts=list(V31_TRAIN_COUNTS)) if all(V31_TRAIN_COUNTS) else class_weights(),
+        "loader": safesound_v31_get_datasets,
+    },
     {
         # v3 — v2.1 증강 + AudioSet strong train 창 (dataset-v3-design.md). 가중치는 v3 창 수.
         "name": "SafeSoundV3",

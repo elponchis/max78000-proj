@@ -209,6 +209,16 @@ def labels(M, definition):
                 y[i] = EVENTS.index(g)
             if definition == "real" and r["real_primary"] == "1" and r["real_class"] == g:
                 y[i] = EVENTS.index(g)
+            if definition == "real31":
+                # 실사용 정의 (v3.1 주 기준, dataset-v3.1-design.md 4절): 양성 = real_primary 이고 그 클래스,
+                # **음성** = 배경 + "그 정의에서 배경인 구간" — scream 그룹의 Yell·Shout 만(Screaming 없음) 구간.
+                # def_gap(Dog 만 / Yell·Shout 만) 도 아래에서 음성으로 넣는다.
+                if r["real_primary"] == "1" and r["real_class"] == g:
+                    y[i] = EVENTS.index(g)
+                elif g == "scream" and r["real_class"] != "scream":
+                    y[i] = BG
+        elif g == "def_gap" and definition == "real31":
+            y[i] = BG
     return y
 
 

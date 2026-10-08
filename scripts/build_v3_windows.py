@@ -118,7 +118,12 @@ def main():
     ap.add_argument("--v1-root", default=os.path.join(REPO, "data", "processed", "safesound"))
     ap.add_argument("--out", default=os.path.join(REPO, "data", "processed", "safesound_v3"))
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--scream-screaming-only", action="store_true",
+                    help="v3.1: AudioSet 구간 중 Yell·Shout 만 있고 Screaming 이 없는 구간을 학습에서 제외한다 "
+                         "(양성·배경 어느 쪽으로도 안 씀). 군중 동반은 v1 규칙 그대로 하드 네거티브.")
+    ap.add_argument("--tag", default=None, help="MANIFEST tag (기본 dataset-v3 / --scream-screaming-only 면 dataset-v3.1)")
     a = ap.parse_args()
+    tag = a.tag or ("dataset-v3.1" if a.scream_screaming_only else "dataset-v3")
 
     # ── 라벨 사전 ──
     nm = dict(l.rstrip("\n").split("\t") for l in open(os.path.join(a.meta, "mid_to_display_name.tsv"), encoding="utf-8"))
@@ -175,7 +180,11 @@ def main():
         elif len(c1) > 1:
             tally["제외(다중)"] += 1
         elif c1:
-            c = next(iter(c1)); assign[sid] = (c, "", rc, MIDS[c]); tally[c] += 1
+            c = next(iter(c1))
+            if a.scream_screaming_only and c == "scream" and not (s & cre):
+                tally["제외(v3.1: Yell·Shout 만, Screaming 없음)"] += 1
+                continue
+            assign[sid] = (c, "", rc, MIDS[c]); tally[c] += 1
         elif (s & cv1) and (s & crowd):
             assign[sid] = ("background", "scream_crowd", rc, cv1); tally["background:scream_crowd"] += 1
         else:
@@ -307,9 +316,9 @@ def main():
             return subprocess.run(("git",) + g, cwd=REPO, capture_output=True, text=True, check=True).stdout.strip()
         except Exception:                                   # noqa: BLE001
             return ""
-    man = {"tag": "dataset-v3", "created": datetime.now().astimezone().isoformat(timespec="seconds"),
+    man = {"tag": tag, "created": datetime.now().astimezone().isoformat(timespec="seconds"),
            "commit": git("rev-parse", "HEAD"), "v1_root": a.v1_root, "v1_manifest": json.load(open(os.path.join(a.v1_root, "MANIFEST.json"))).get("tag"),
-           "rules": {"definition": "v1eq (siren=Siren+하위4종)", "hop": HOP, "max_win": MAX_WIN, "min_overlap_s": MIN_OVERLAP_S,
+           "rules": {"definition": "v1eq (siren=Siren+하위4종)" + (" + scream=Screaming 필수 (Yell·Shout 만 제외)" if a.scream_screaming_only else ""), "hop": HOP, "max_win": MAX_WIN, "min_overlap_s": MIN_OVERLAP_S,
                      "floor_zero": FLOOR_ZERO, "fill": vars(args), "webm_fallback": "included, note webm_trim=1"},
            "counts": {c: {"v1": v1_counts[c], "audioset": len(out_rows[c]), "total": v1_counts[c] + len(out_rows[c])} for c in CLASSES},
            "class_weights_v3": class_weights(counts_v3),

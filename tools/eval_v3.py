@@ -8,6 +8,9 @@
                v1 라벨과 나란히 출력 → data/external_eval/v3_baseline.json
   --v3         v3 체크포인트(safesound-v3-*)를 채점하고 조건 A~E·해결 기준을 판정한다.
                → data/external_eval/v3_eval.json. 아직 없는 구성은 건너뛴다.
+  --v31        v3.1 (safesound-v31-*, dataset-v3.1-design.md): 외부를 **두 정의**로 채점 — 주 기준 실사용(real31:
+               양성 real_primary, 음성 = 배경 + Yell·Shout 만 + def_gap), 보조 v1eq. 조건 A~E 는 주 기준으로,
+               **F** = 시험셋 scream recall 점 추정 ≥ −5 pp (v2.1 대비) 추가. → v31_eval.json
   --train-by-source   v3 체크포인트로 **학습 창**(무증강)의 재현율을 출처별(v1 계열 / AudioSet)로 낸다
                (사전 등록 3). v3 학습 루트의 index.csv note 로 출처를 가른다.
 
@@ -43,6 +46,7 @@ PAIRS = [
     ("①′", "mel_inc", "safesound-melinc-v1", 3, "safesound-v21-melinc", 5, "safesound-v3-melinc", 3),
 ]
 K = 3                                   # v3 − v2.1 비교 시드 수 (1~3)
+COND_F_PP = -0.05                       # F (v3.1): 시험셋 scream recall 점 추정 ≥ −5 pp
 COND_C_MIN = -0.02                      # C: 시험셋 F1 점 추정 ≥ −0.02
 COND_D_WIN = 2.0                        # D: 외부 배경 발화 창 수 시드 평균 ≤ v2.1 + 2창
 COND_E_BGBG = 0.026                     # E: 배경+배경 혼합 창 발화율 ≤ 2.6%
@@ -52,6 +56,7 @@ SOLVE_KEEP = -0.03                      # 해결: glass·dog_bark 외부 recall 
 SOLVE_MAP = 0.04                        # 해결: 외부 mAP +0.04
 OUT_BASE = os.path.join(E.WORK, "v3_baseline.json")
 OUT_V3 = os.path.join(E.WORK, "v3_eval.json")
+OUT_V31 = os.path.join(E.WORK, "v31_eval.json")
 V3_ROOT = os.path.join(REPO, "data", "processed", "safesound_v3")
 
 
@@ -141,8 +146,8 @@ def baseline():
     print("저장:", OUT_BASE)
 
 
-def judge(name, R21, R3, n21):
-    """조건 A~E 와 해결 기준. R21 은 v2.1 시드 1~K, R3 는 v3 시드 1~K."""
+def judge(name, R21, R3, n21, cond_f=False):
+    """조건 A~E 와 해결 기준. R21 은 v2.1 시드 1~K, R3 는 v3 시드 1~K. cond_f: v3.1 의 F 추가."""
     g = lambda R, k: [r[k] for r in R]                               # noqa: E731
     gc = lambda R, k, c: [r[k][c] for r in R]                       # noqa: E731
     d = {"A_ext_f1": V.welch(g(R21, "ext_f1"), g(R3, "ext_f1")),
@@ -158,6 +163,8 @@ def judge(name, R21, R3, n21):
             "C": bool(d["C_test_f1"][0] >= COND_C_MIN),
             "D": bool(d["D_fire_n"][0] <= d["D_fire_n"][1] + COND_D_WIN),
             "E": bool(d["E_bgbg"] <= COND_E_BGBG)}
+    if cond_f:
+        cond["F"] = bool(d["test_recall"][2][0] >= COND_F_PP)
     test3, ext3 = float(np.mean(g(R3, "test_f1"))), float(np.mean(g(R3, "ext_f1")))
     test21, ext21 = float(np.mean(g(R21, "test_f1"))), float(np.mean(g(R21, "ext_f1")))
     gap21 = test21 - ext21
@@ -171,22 +178,38 @@ def judge(name, R21, R3, n21):
                                 ext_target=test21 - SOLVE_GAP * gap21)
 
 
-def v3():
+def v3(edition="v3"):
     M, ext_root, seg, isbg, bg_root = setup()
+    main_def = "real31" if edition == "v31" else "v1eq"
+    y_main = E.labels(M, main_def)
     y_eq = E.labels(M, "v1eq")
-    E.YV = y_eq
-    base = json.load(open(OUT_BASE, encoding="utf-8")) if os.path.isfile(OUT_BASE) else None
-    out = {"label": "v1eq", "pairs": []}
+    out = {"label": main_def, "edition": edition, "n_pos": {c: int((y_main == i).sum()) for i, c in enumerate(E.EVENTS)},
+           "n_neg": int((y_main == E.BG).sum()), "pairs": []}
+    print(f"[{edition}] 주 기준 {main_def}: 양성 {out['n_pos']} 음성 {out['n_neg']} (v1eq 음성 {int((y_eq == E.BG).sum())})")
     for name, config, p1, n1, p21, n21, p3, n3 in PAIRS:
+        if edition == "v31":
+            p3 = p3.replace("safesound-v3-", "safesound-v31-")
         try:
             c3 = seeds_of(p3, n3)
         except SystemExit as e:
             print(f"  {name}: 건너뜀 — {e}")
             continue
-        R3 = [score(config, ck, ext_root, bg_root, seg, isbg, y_eq) for ck in c3]
-        R21 = [score(config, ck, ext_root, bg_root, seg, isbg, y_eq) for ck in seeds_of(p21, K)]
-        R1 = [score(config, ck, ext_root, bg_root, seg, isbg, y_eq) for ck in seeds_of(p1, min(n1, K))]
-        d, cond, solve, s = judge(name, R21, R3, n21)
+        E.YV = y_main
+        R3 = [score(config, ck, ext_root, bg_root, seg, isbg, y_main) for ck in c3]
+        R21 = [score(config, ck, ext_root, bg_root, seg, isbg, y_main) for ck in seeds_of(p21, K)]
+        R1 = [score(config, ck, ext_root, bg_root, seg, isbg, y_main) for ck in seeds_of(p1, min(n1, K))]
+        d, cond, solve, s = judge(name, R21, R3, n21, cond_f=(edition == "v31"))
+        if edition == "v31":                      # 보조: v1eq 정의로도 같은 표
+            E.YV = y_eq
+            R3e = [score(config, ck, ext_root, bg_root, seg, isbg, y_eq) for ck in c3]
+            R21e = [score(config, ck, ext_root, bg_root, seg, isbg, y_eq) for ck in seeds_of(p21, K)]
+            de, conde, _se, _ss = judge(name, R21e, R3e, n21)
+            m2 = lambda R, k: float(np.mean([r[k] for r in R]))     # noqa: E731
+            print(f"\n== {name} [보조 v1eq]  외부 F1 v2.1 {m2(R21e, 'ext_f1'):.4f} → v3.1 {m2(R3e, 'ext_f1'):.4f} ({fmt_ci(de['A_ext_f1'])}) "
+                  f"mAP {m2(R21e, 'ext_map'):.4f} → {m2(R3e, 'ext_map'):.4f} ({fmt_ci(de['B_ext_map'])})  A {'○' if conde['A'] else '×'} B {'○' if conde['B'] else '×'}"
+                  f"\n   recall v2.1 → v3.1 (pp): " + "  ".join(
+                      f"{E.EVENTS[c]} {100 * np.mean([r['ext_recall'][c] for r in R21e]):.1f}→{100 * np.mean([r['ext_recall'][c] for r in R3e]):.1f} "
+                      f"({100 * de['ext_recall'][c][0]:+.1f} [{100 * de['ext_recall'][c][1]:+.1f}, {100 * de['ext_recall'][c][2]:+.1f}])" for c in range(4)), flush=True)
         row = {"name": name, "config": config, "n3": n3,
                "seeds": {tag: {k: [r[k] for r in R] for k in
                                ("test_f1", "ext_f1", "ext_recall", "ext_fire_n", "ext_m5", "ext_m26",
@@ -198,6 +221,11 @@ def v3():
                "delta_recall": {"ext": [list(t) for t in d["ext_recall"]], "test": [list(t) for t in d["test_recall"]]},
                "cond": cond, "pass_all": all(cond.values()), "solve": solve, "solve_all": all(solve.values()),
                "summary": s}
+        if edition == "v31":
+            row["v1eq"] = {"seeds": {tag: {k: [r[k] for r in R] for k in ("ext_f1", "ext_recall", "ext_map", "ext_m5", "ext_m26", "ext_fire_n")}
+                                     for tag, R in (("v21", R21e), ("v3", R3e))},
+                           "delta": {k: (list(v) if isinstance(v, tuple) else v) for k, v in de.items() if k not in ("ext_recall", "test_recall")},
+                           "delta_recall_ext": [list(t) for t in de["ext_recall"]], "cond": conde}
         out["pairs"].append(row)
         m = lambda R, k: float(np.mean([r[k] for r in R]))          # noqa: E731
         print(f"\n== {name} (v3 {n3}시드, v2.1 시드 1~{K})"
@@ -215,36 +243,43 @@ def v3():
                   f"{E.EVENTS[c]} {100 * np.mean([r['ext_recall'][c] for r in R21]):.1f}"
                   f"→{100 * np.mean([r['ext_recall'][c] for r in R3]):.1f} ({100 * d['ext_recall'][c][0]:+.1f} "
                   f"[{100 * d['ext_recall'][c][1]:+.1f}, {100 * d['ext_recall'][c][2]:+.1f}])" for c in range(4))
+              + (f"\n  시험셋 recall v2.1 → v3 (pp): " + "  ".join(
+                  f"{E.EVENTS[c]} {100 * np.mean([r['test_recall'][c] for r in R21]):.1f}→{100 * np.mean([r['test_recall'][c] for r in R3]):.1f} "
+                  f"({100 * d['test_recall'][c][0]:+.1f} [{100 * d['test_recall'][c][1]:+.1f}, {100 * d['test_recall'][c][2]:+.1f}])" for c in range(4)))
               + f"\n  조건 {cond} → {'통과' if row['pass_all'] else '미통과'}"
               f"\n  해결 {solve} (외부 F1 목표 ≥ {s['ext_target']:.3f}) → {'해결' if row['solve_all'] else '미해결'}",
               flush=True)
-    with open(OUT_V3, "w", encoding="utf-8") as f:
+    path = OUT_V31 if edition == "v31" else OUT_V3
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=1)
-    print("저장:", OUT_V3)
+    print("저장:", path)
 
 
-def train_by_source():
-    """v3 학습 창(무증강)의 재현율을 출처별로. 루트: diag/v3train/SafeSound/test → safesound_v3/train 링크."""
-    root = os.path.join(E.WORK, "diag", "v3train")
+def train_by_source(edition="v3"):
+    """학습 창(무증강)의 재현율을 출처별로. 루트: diag/<edition>train/SafeSound/test → safesound_<edition>/train 링크."""
+    v3_root = V3_ROOT if edition == "v3" else os.path.join(REPO, "data", "processed", "safesound_" + edition)
+    root = os.path.join(E.WORK, "diag", edition + "train")
     d = os.path.join(root, "SafeSound", "test")
     if not os.path.isdir(d):
         os.makedirs(os.path.join(root, "SafeSound"), exist_ok=True)
-        os.symlink(os.path.join(V3_ROOT, "train"), d)
+        os.symlink(os.path.join(v3_root, "train"), d)
     src = {}
     for cls in E.CLASSES:
-        with open(os.path.join(V3_ROOT, "train", cls, "index.csv"), encoding="utf-8") as f:
+        with open(os.path.join(v3_root, "train", cls, "index.csv"), encoding="utf-8") as f:
             for r in csv.DictReader(f):
                 src[r["clip_id"]] = "audioset" if r["note"].startswith("audioset") else "v1"
     print("| 구성 | 시드 | 출처 | " + " | ".join(E.CLASSES) + " |")
     print("|---|---:|---|" + "---:|" * 5)
     for name, config, _p1, _n1, _p21, _n21, p3, n3 in PAIRS:
+        if edition == "v31":
+            p3 = p3.replace("safesound-v3-", "safesound-v31-")
         try:
             cks = seeds_of(p3, n3)
         except SystemExit:
             continue
         acc = {s: [] for s in ("v1", "audioset")}
         for ck in cks:
-            clips, y, lg = E.logits_for(config, ck, root, "diag-v3train")
+            clips, y, lg = E.logits_for(config, ck, root, "diag-" + edition + "train")
             _c, yt, lt = E.logits_for(config, ck, V.TEST, "test")
             thr = E.thr_at(lt, yt == E.BG)
             p = E.predict(lg, thr)
@@ -261,13 +296,16 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--baseline", action="store_true")
     ap.add_argument("--v3", action="store_true")
+    ap.add_argument("--v31", action="store_true")
     ap.add_argument("--train-by-source", action="store_true")
     a = ap.parse_args()
     if a.baseline:
         baseline()
     if a.v3:
         v3()
+    if a.v31:
+        v3("v31")
     if a.train_by_source:
-        train_by_source()
-    if not (a.baseline or a.v3 or a.train_by_source):
+        train_by_source("v31" if a.v31 else "v3")
+    if not (a.baseline or a.v3 or a.v31 or a.train_by_source):
         ap.print_help()

@@ -38,13 +38,13 @@ try:                                   # ai8x-training 이 datasets 패키지로
     from . import melfeat as MF
     from .safesound import MIX_PROB as S_MIX_PROB
     from .safesound import (CLASSES, MARGIN, SafeSound, V1_TRAIN_COUNTS,
-                            V3_TRAIN_COUNTS, class_weights)
+                            V3_TRAIN_COUNTS, V31_TRAIN_COUNTS, class_weights)
 except ImportError:                    # tools/ 가 단독 모듈로 import 할 때
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import melfeat as MF
     from safesound import MIX_PROB as S_MIX_PROB
     from safesound import (CLASSES, MARGIN, SafeSound, V1_TRAIN_COUNTS,
-                           V3_TRAIN_COUNTS, class_weights)
+                           V3_TRAIN_COUNTS, V31_TRAIN_COUNTS, class_weights)
 
 __all__ = ["CLASSES", "SafeSoundMel", "safesound_mel_get_datasets",
            "V1_TRAIN_COUNTS", "MF"]
@@ -282,6 +282,19 @@ for _name, _scheme in (("SafeSoundMelIncV2", "loginc"),
         "output": tuple(CLASSES),
         "weight": class_weights(),
         "loader": _mel_loader(_scheme, mix_prob=S_MIX_PROB),
+    })
+
+# v3.1 — v3 에서 Yell·Shout 만 있는 AudioSet 구간 제외 (dataset-v3.1-design.md). 루트 SafeSoundV31
+for _name, _scheme in (("SafeSoundMelIncV31", "loginc"),
+                       ("SafeSoundMelH400V31", "log_h400"),
+                       ("SafeSoundMelU1000V31", "log_u1000"),
+                       ("SafeSoundMelU800V31", "log_u800")):
+    datasets.append({
+        "name": _name,
+        "input": (1,) + MF.scheme_shape(_scheme),
+        "output": tuple(CLASSES),
+        "weight": class_weights(counts=list(V31_TRAIN_COUNTS)) if all(V31_TRAIN_COUNTS) else class_weights(),
+        "loader": _mel_loader(_scheme, mix_prob=S_MIX_PROB, mix_bg=True, root_name="SafeSoundV31"),
     })
 
 # v3 — v2.1 증강 + AudioSet strong train 창 (dataset-v3-design.md). 루트 SafeSoundV3, 가중치 v3 창 수

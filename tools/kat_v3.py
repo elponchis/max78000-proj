@@ -38,7 +38,12 @@ def read_index(root, cls):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--listen", action="store_true")
+    ap.add_argument("--edition", default="v3", choices=["v3", "v31"], help="v31: 루트 safesound_v31, V31_TRAIN_COUNTS")
     a = ap.parse_args()
+    global V3
+    if a.edition == "v31":
+        V3 = os.path.join(REPO, "data", "processed", "safesound_v31")
+    COUNTS = S.V31_TRAIN_COUNTS if a.edition == "v31" else S.V3_TRAIN_COUNTS
     man = json.load(open(os.path.join(V3, "MANIFEST.json"), encoding="utf-8"))
     fails = []
 
@@ -70,8 +75,8 @@ def main():
     # 2 창 수
     counts = [len(read_index(V3, c)) for c in S.CLASSES]
     man_counts = [man["counts"][c]["total"] for c in S.CLASSES]
-    print(f"[2] index 창 수 {counts}  MANIFEST {man_counts}  V3_TRAIN_COUNTS {list(S.V3_TRAIN_COUNTS)}")
-    if counts != man_counts or counts != list(S.V3_TRAIN_COUNTS):
+    print(f"[2] index 창 수 {counts}  MANIFEST {man_counts}  {a.edition.upper()}_TRAIN_COUNTS {list(COUNTS)}")
+    if counts != man_counts or counts != list(COUNTS):
         fails.append("2 창 수 불일치 (safesound.V3_TRAIN_COUNTS 갱신 필요?)")
 
     # 3 영상 ID 분리
@@ -121,7 +126,7 @@ def main():
     # 7 청취용
     if a.listen:
         import soundfile as sf
-        out = os.path.join(REPO, "data", "interim", "listen_v3")
+        out = os.path.join(REPO, "data", "interim", "listen_" + a.edition)
         os.makedirs(out, exist_ok=True)
         rng = np.random.default_rng(78003)
         for c in S.CLASSES:
