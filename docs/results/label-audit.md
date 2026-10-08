@@ -241,3 +241,110 @@ scream 에 대한 판단 근거.
 - 0.3 절 규칙의 0.30 은 사전에 정한 값이지 보정된 값이 아니다. glass 처럼 도구가 무효인 클래스가 있다.
 - 외부 세트 정의 real31 의 음성 402 와 PANNs 매핑(Yell·Shout·Dog 포함)이 충돌해 real31 오경보/h 가 커진다 — F1 비교는
   v1eq 행이 더 깨끗하다.
+
+---
+
+## 6. 사용자 청취 결과 (2026-10-09, 4절 표본 중 glass·scream "매우 낮음" 30창)
+
+판정자 = 사용자(저자 1인). 대상은 4절의 `glass_*_low*.wav` 15창과 `scream_*_low*.wav` 15창(비명은 14창을 판정).
+O = 그 클래스의 소리가 들린다, X = 아니다, ? = 모르겠다.
+
+**요약 (사용자 보고 그대로)**: 유리 15창 → **O 1 / ? 2 / X 12**, 비명 14창 → **O 1 / ? 3 / X 10**.
+
+⚠️ 창별 원문 판정표는 이 세션에 전달되지 않았다 (요약 수치만 받았다). 아래 표의 판정 열은 비어 있고, 받는 대로
+채운다. 파일·출처·점수는 `~/safesound-external/audit/answer_key.csv` 와 같다.
+
+| 파일 | 출처 | PANNs 점수 | 라벨/비고 | 판정 |
+|---|---|---:|---|---|
+| glass_as_train_0.000_low01.wav | AudioSet 학습 | 0.0004 | glass, 겹침 1.02 s | |
+| glass_v1_train_0.000_low02.wav | FSD50K 학습 | 0.0004 | Shatter 클립, 베드 채움 | |
+| glass_v1_train_0.004_low03.wav | FSD50K 학습 | 0.0037 | Shatter 클립 (1초 미만, 베드 위) | |
+| glass_as_train_0.000_low04.wav | AudioSet 학습 | 0.0004 | glass, 겹침 1.02 s | |
+| glass_as_train_0.003_low05.wav | AudioSet 학습 | 0.0033 | glass, 겹침 0.93 s | |
+| glass_as_train_0.006_low06.wav | AudioSet 학습 | 0.0057 | glass, 베드 채움 10런 | |
+| glass_v1_train_0.000_low07.wav | FSD50K 학습 | 0.0003 | Shatter 클립, 베드 채움 | |
+| glass_v1_train_0.000_low08.wav | FSD50K 학습 | 0.0003 | Shatter 클립, 베드 채움 9런 | |
+| glass_as_train_0.001_low09.wav | AudioSet 학습 | 0.0008 | glass, 겹침 1.02 s | |
+| glass_v1_train_0.003_low10.wav | FSD50K 학습 | 0.0029 | Shatter 클립 | |
+| glass_as_train_0.001_low11.wav | AudioSet 학습 | 0.0008 | glass, 겹침 0.82 s | |
+| glass_v1_test_0.006_low12.wav | FSD50K 시험 | 0.0060 | | |
+| glass_v1_test_0.004_low13.wav | FSD50K 시험 | 0.0043 | | |
+| glass_as_train_0.006_low14.wav | AudioSet 학습 | 0.0063 | glass, 겹침 1.02 s | |
+| glass_as_train_0.005_low15.wav | AudioSet 학습 | 0.0048 | glass, 겹침 0.98 s | |
+| scream_as_train_0.002_low01.wav | AudioSet 학습 | 0.0019 | Yell·Shout 만 (v3.1 제외분) | |
+| scream_as_train_0.000_low02.wav | AudioSet 학습 | 0.0002 | Screaming 보유, 겹침 0.51 s | |
+| scream_as_train_0.000_low03.wav | AudioSet 학습 | 0.0002 | Screaming 보유, 겹침 1.02 s | |
+| scream_as_train_0.014_low04.wav | AudioSet 학습 | 0.0144 | Screaming 보유, 겹침 1.00 s | |
+| scream_as_train_0.000_low05.wav | AudioSet 학습 | 0.0002 | Yell·Shout 만, 겹침 0.27 s | |
+| scream_ext_0.007_low06.wav | 외부 | 0.0066 | Church bell; Female speech; … | |
+| scream_as_train_0.001_low07.wav | AudioSet 학습 | 0.0011 | Yell·Shout 만, 겹침 0.39 s | |
+| scream_as_train_0.000_low08.wav | AudioSet 학습 | 0.0003 | Yell·Shout 만, 베드 채움 | |
+| scream_ext_0.004_low09.wav | 외부 | 0.0036 | Crowd; Female speech; … | |
+| scream_as_train_0.007_low10.wav | AudioSet 학습 | 0.0068 | Screaming 보유, 겹침 1.02 s | |
+| scream_v1_test_0.001_low11.wav | FSD50K 시험 | 0.0015 | | |
+| scream_as_train_0.003_low12.wav | AudioSet 학습 | 0.0035 | Yell·Shout 만, 겹침 0.61 s | |
+| scream_ext_0.008_low13.wav | 외부 | 0.0081 | Coin (dropping); Gunshot; … | |
+| scream_as_train_0.003_low14.wav | AudioSet 학습 | 0.0032 | Yell·Shout 만, 겹침 0.92 s | |
+| scream_as_train_0.000_low15.wav | AudioSet 학습 | 0.0001 | Yell·Shout 만, 겹침 0.74 s | |
+
+### 6.1 사용자 결론 (그대로)
+
+1. **v1 유리 창 선별(onset 세기 순)이 다른 충격음을 유리로 넣었다.** — FSD50K `Shatter` 클립에서 어택이 가장 센
+   자리를 골랐더니, 그 자리가 유리 파손이 아니라 다른 충격음인 창이 많다. PANNs "매우 낮음" 유리 창 15개 중 12개가 X.
+2. **AudioSet 의 `Screaming` 주석은 환호·박수·대화를 많이 포함한다. 외부 세트의 비명 정답도 같은 문제가 있다.**
+   — 2.3 절의 관찰(PANNs 최상위 `Speech`·`Music`, 창은 이벤트 한가운데)과 맞는다. 비명 매우 낮음 14개 중 10개가 X.
+
+→ 5절의 판정을 갱신한다: **glass 는 (a) 학습 데이터 라벨 문제** (시험셋 포함 — 같은 방식으로 뽑았다), **scream 은
+(a)+(b)** — AudioSet 출처의 비명 양성(학습분·외부 둘 다)에 비명 아닌 창이 절반쯤 섞여 있다. PANNs `Screaming`/
+`Shatter` 점수 0.02 미만은 두 클래스에서 **라벨 오류의 유효한 지표**다 (30창 중 O 는 2창).
+
+### 6.2 정의 결정 (사용자, 2026-10-09)
+
+- **아기 울음은 비명이 아니다. 배경으로 둔다.** (`Baby cry, infant cry` 라벨 보유 구간 — 7절에 목록)
+- **놀라서 지르는 날카로운 외침은 비명으로 본다.**
+
+## 7. 다음 단계 — 시험용 정답 확정 청취 세트와 학습 정리 규칙 (학습 없음)
+
+### 7.1 청취 세트 `~/safesound-external/audit_test/` (저장소 밖, `tools/build_audit_test.py`, 시드 78005)
+
+대상 = **외부 세트 비명 양성 창 전체**(v1 정의 ∪ 실사용 정의 = 130창: 둘 다 25, v1 만(Yell·Shout 만) 56, 실사용
+만(군중 동반 Screaming) 49), **외부 세트 유리 양성 74창 전체**, **기존 시험셋 유리 221창 전체**. 각 세트에 대조로
+같은 클래스의 FSD50K 학습 창 중 PANNs ≥ 0.50 인 창 15개를 섞었다. **파일명은 무작위 번호만** (`001.wav` …),
+정답·출처·점수·라벨은 `key.csv` 에만 있다. 판정은 `verdict_sheet.csv` (set, file, verdict, memo) 에 적는다 —
+정답 파일을 보지 않고 듣는다.
+
+| 세트 | 대상 | 대조 | 합계 | 예상 시간 (창당 8초) |
+|---|---:|---:|---:|---:|
+| A_ext_scream — 외부 비명 | 130 | 15 | 145 | 약 19분 |
+| B_ext_glass — 외부 유리 | 74 | 15 | 89 | 약 12분 |
+| C_test_glass — 시험셋 유리 | 221 | 15 | 236 | 약 31분 |
+| **합계** | 425 | 45 | **470** | **약 63분** |
+
+1시간을 넘으므로 **세 세트를 따로 듣는다** (한 세트 = 한 번). C 가 길면 001~118 / 119~236 으로 나눠도 된다
+(번호가 무작위라 어디서 끊어도 편향이 없다). 판정 기호: O 양성 / X 그 클래스 아님 / ? 모름. 비명은 6.2 의 정의
+(아기 울음 X, 놀란 외침 O)로 듣는다.
+
+### 7.2 학습 데이터 정리 규칙 (설계, `eval-baseline-change.md` 와 `v4-distill-design.md` 에 반영)
+
+**학습용**: glass·scream 에서 PANNs 해당 클래스 점수(`Shatter`·`Breaking`·`Smash, crash` 묶음 최대 / `Screaming`)
+가 **0.02 미만인 창은 제외**한다 (배경으로 옮기지 않는다 — 다른 소리가 무엇인지 모르므로). 출처별 제외 수:
+
+| 출처 | 클래스 | 창 | 제외 (< 0.02) | 남음 | 비율 |
+|---|---|---:|---:|---:|---:|
+| FSD50K 계열 학습 | glass | 477 | **240** | 237 | 50.3% |
+| FSD50K 계열 학습 | scream | 491 | 56 | 435 | 11.4% |
+| AudioSet 학습분 | glass | 493 | **152** | 341 | 30.8% |
+| AudioSet 학습분 (v3.1 규칙 후, Screaming 보유) | scream | 234 | **110** | 124 | 47.0% |
+| **학습 합계** | glass | 970 | 392 | **578** | 40.4% |
+| | scream | 725 | 166 | **559** | 22.9% |
+| (참고, 거르지 않음) FSD50K 시험 | glass | 221 | 111 | — | 50.2% |
+| (참고, 거르지 않음) FSD50K 시험 | scream | 225 | 30 | — | 13.3% |
+
+**시험용** (기존 시험셋 glass, 외부 세트 scream·glass): PANNs 로 거르지 **않고** 7.1 청취 판정으로만 확정한다.
+O → 양성, X → 그 클래스에서 제외 (배경으로 옮기지 않는다), ? → 평가에서 제외. 기존 시험셋 scream 은 이번 대상이
+아니다 (PANNs 묶음 필터를 통과한 창이고 매우 낮음이 13% — 다음 차례).
+
+**아기 울음**: `Baby cry, infant cry` 라벨 보유 구간은 비명 양성에서 빼고 배경으로 둔다. 해당 구간 —
+외부: `g9Qah25_yH0_14000` (scream 그룹, v1 양성) → 배경, `VwHHMU4tT9s_0` (def_gap) → 배경 그대로, 배경 2구간은 그대로.
+AudioSet 학습분(v3): `DaMvU_MSjoo_20000`, `e4wSf2mkCLw_230000` (scream 양성, 4창) → 배경; `g4UK7TpsXIE_30000` 은
+v3 에 쓰이지 않았다. dog_bark·glass·background 그룹의 아기 울음 동반 구간(14)은 비명이 아니므로 건드리지 않는다.
