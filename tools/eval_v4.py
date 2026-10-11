@@ -34,16 +34,18 @@ HALF_LO = -0.02
 OUT = os.path.join(E.WORK, "v4_eval.json")
 # (표시 이름, eval_confusion 구성 키). 가·다·①′ 는 v4+D 에만 있다 (chain29, 2026-10-11 결정).
 CONFIGS = [("④", "wave"), ("간격 400", "mel_h400"), ("가 u1000", "mel_u1000"), ("다 u800", "mel_u800"), ("①′", "mel_inc"),
-           ("(a) NPU 로그 근사", "wave_logstage")]          # (a) 는 다섯 구성 표의 **별도 행** (chain30) — 순위에는 넣지 않는다
-EXTRA = {"(a) NPU 로그 근사"}
+           ("(a) NPU 로그 근사", "wave_logstage"),           # (a) 주 실행 (lr 0.0003 + ft 스케줄) — 다섯 구성 표의 **별도 행**, 판정은 이것으로
+           ("(a) 보조 lr 0.001", "wave_logstage")]           # (a) 보조 실행 (lr 0.001 기본 스케줄) — 민감도, 나란히 적기만 (v4-distill-design.md 10.9)
+EXTRA = {"(a) NPU 로그 근사", "(a) 보조 lr 0.001"}          # 순위에 넣지 않는다
 BIAS_CONFIGS = {"wave_logstage"}                           # --use-bias 로 학습한 구성
-# 판 → (④, 간격 400, 가, 다, ①′, (a) 접두). 시드 1~3. None = 그 판에 없는 구성.
-EDITIONS = [("v1", "safesound-v1cpu", "safesound-melh400-v1", None, None, None, "safesound-logstage-v1"),
-            ("v2.1", "safesound-v21-wave", "safesound-v21-melh400", None, None, None, None),
-            ("v3.1", "safesound-v31-wave", "safesound-v31-melh400", None, None, None, None),
-            ("v4", "safesound-v4-wave", "safesound-v4-melh400", None, None, None, None),
-            ("v4+D", "safesound-v4d-wave", "safesound-v4d-melh400", "safesound-v4d-melu1000", "safesound-v4d-melu800", "safesound-v4d-melinc", "safesound-v4d-logstage"),
-            ("v4+D½", None, "safesound-v4dh-melh400", None, None, None, None)]
+# 판 → (④, 간격 400, 가, 다, ①′, (a) 주, (a) 보조 접두). 시드 1~3. None = 그 판에 없는 구성.
+EDITIONS = [("v1", "safesound-v1cpu", "safesound-melh400-v1", None, None, None, "safesound-logstage-v1", None),
+            ("v2.1", "safesound-v21-wave", "safesound-v21-melh400", None, None, None, None, None),
+            ("v3.1", "safesound-v31-wave", "safesound-v31-melh400", None, None, None, None, None),
+            ("v4", "safesound-v4-wave", "safesound-v4-melh400", None, None, None, None, None),
+            ("v4+D", "safesound-v4d-wave", "safesound-v4d-melh400", "safesound-v4d-melu1000", "safesound-v4d-melu800", "safesound-v4d-melinc",
+             "safesound-v4d-logstage", "safesound-v4d-logstage-lr1e3"),
+            ("v4+D½", None, "safesound-v4dh-melh400", None, None, None, None, None)]
 EQUIV = 0.02                            # 재판정 "동등": (변형 − ①′) CI 가 [−0.02, +0.02] 안에 완전히 (curve-design.md)
 COMPARE = [("v3.1 − v2.1", "v2.1", "v3.1"), ("v4 − v3.1", "v3.1", "v4"), ("v4+D − v4", "v4", "v4+D")]
 # *L = 청취 주 정답(B 재청취), *L_Bfirst = 외부 유리만 B 첫 판정으로 바꾼 민감도 정답 (label-audit.md 7.3)
@@ -325,7 +327,10 @@ def score_all(S):
             print("\n| 판 | (a) − ④ 시험셋 F1 옛 정답 test | (a) − ④ 시험셋 F1 testL | (a) − ④ 외부 F1 real31L | (a) − ④ 외부 mAP |")
             print("|---|---|---|---|---|")
             rows_a = {}
-            for ed, A, W in (("v1 (시드 1~3)", A1, W1), ("v4+D (시드 1~3)", V4D["(a) NPU 로그 근사"], V4D["④"])):
+            rows_in = [("v1 (시드 1~3)", A1, W1), ("v4+D 주 실행 lr 0.0003 (판정)", V4D["(a) NPU 로그 근사"], V4D["④"])]
+            if V4D.get("(a) 보조 lr 0.001"):
+                rows_in.append(("v4+D 보조 lr 0.001 (참고, 판정 아님)", V4D["(a) 보조 lr 0.001"], V4D["④"]))
+            for ed, A, W in rows_in:
                 wo = V.welch([r["test_f1_old"] for r in W], [r["test_f1_old"] for r in A])
                 wl = V.welch([r["test_f1_L"] for r in W], [r["test_f1_L"] for r in A])
                 we = V.welch([r["ext_f1_real31L"] for r in W], [r["ext_f1_real31L"] for r in A])
