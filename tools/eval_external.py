@@ -140,8 +140,8 @@ def self_check(X, M):
 
 
 # ───────────────────────────────────────────────────────────────── 추론
-def logits_for(config, ck, data_root, tag):
-    """`collect_logits` 로 로짓을 얻는다 (체크포인트 mtime 기준 캐시)."""
+def logits_for(config, ck, data_root, tag, bias=False):
+    """`collect_logits` 로 로짓을 얻는다 (체크포인트 mtime 기준 캐시). `bias` 는 --use-bias 로 학습한 구성((a) logstage)."""
     import eval_confusion as EC
     os.makedirs(os.path.join(WORK, "logits"), exist_ok=True)
     key = os.path.basename(os.path.dirname(ck)).split("___")[0]
@@ -150,7 +150,7 @@ def logits_for(config, ck, data_root, tag):
         z = np.load(path, allow_pickle=False)
         return z["clips"], z["y"], z["logits"]
     a = argparse.Namespace(checkpoint=ck, config=config, data=data_root, ai8x=AI8X,
-                           simulate=False, bias=False, batch_size=128, split="test")
+                           simulate=False, bias=bias, batch_size=128, split="test")
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
         _fs, clips, _st, y, lg = EC.collect_logits(a, CLASSES, "test")

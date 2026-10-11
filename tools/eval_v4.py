@@ -33,14 +33,17 @@ HALF_GAIN = 0.02                        # v4+D − v4+D½: 점 추정 ≥ +0.02 
 HALF_LO = -0.02
 OUT = os.path.join(E.WORK, "v4_eval.json")
 # (표시 이름, eval_confusion 구성 키). 가·다·①′ 는 v4+D 에만 있다 (chain29, 2026-10-11 결정).
-CONFIGS = [("④", "wave"), ("간격 400", "mel_h400"), ("가 u1000", "mel_u1000"), ("다 u800", "mel_u800"), ("①′", "mel_inc")]
-# 판 → (④ 접두, 간격 400 접두, 가 접두, 다 접두, ①′ 접두). 시드 1~3. None = 그 판에 없는 구성.
-EDITIONS = [("v1", "safesound-v1cpu", "safesound-melh400-v1", None, None, None),
-            ("v2.1", "safesound-v21-wave", "safesound-v21-melh400", None, None, None),
-            ("v3.1", "safesound-v31-wave", "safesound-v31-melh400", None, None, None),
-            ("v4", "safesound-v4-wave", "safesound-v4-melh400", None, None, None),
-            ("v4+D", "safesound-v4d-wave", "safesound-v4d-melh400", "safesound-v4d-melu1000", "safesound-v4d-melu800", "safesound-v4d-melinc"),
-            ("v4+D½", None, "safesound-v4dh-melh400", None, None, None)]
+CONFIGS = [("④", "wave"), ("간격 400", "mel_h400"), ("가 u1000", "mel_u1000"), ("다 u800", "mel_u800"), ("①′", "mel_inc"),
+           ("(a) NPU 로그 근사", "wave_logstage")]          # (a) 는 다섯 구성 표의 **별도 행** (chain30) — 순위에는 넣지 않는다
+EXTRA = {"(a) NPU 로그 근사"}
+BIAS_CONFIGS = {"wave_logstage"}                           # --use-bias 로 학습한 구성
+# 판 → (④, 간격 400, 가, 다, ①′, (a) 접두). 시드 1~3. None = 그 판에 없는 구성.
+EDITIONS = [("v1", "safesound-v1cpu", "safesound-melh400-v1", None, None, None, "safesound-logstage-v1"),
+            ("v2.1", "safesound-v21-wave", "safesound-v21-melh400", None, None, None, None),
+            ("v3.1", "safesound-v31-wave", "safesound-v31-melh400", None, None, None, None),
+            ("v4", "safesound-v4-wave", "safesound-v4-melh400", None, None, None, None),
+            ("v4+D", "safesound-v4d-wave", "safesound-v4d-melh400", "safesound-v4d-melu1000", "safesound-v4d-melu800", "safesound-v4d-melinc", "safesound-v4d-logstage"),
+            ("v4+D½", None, "safesound-v4dh-melh400", None, None, None, None)]
 EQUIV = 0.02                            # 재판정 "동등": (변형 − ①′) CI 가 [−0.02, +0.02] 안에 완전히 (curve-design.md)
 COMPARE = [("v3.1 − v2.1", "v2.1", "v3.1"), ("v4 − v3.1", "v3.1", "v4"), ("v4+D − v4", "v4", "v4+D")]
 # *L = 청취 주 정답(B 재청취), *L_Bfirst = 외부 유리만 B 첫 판정으로 바꾼 민감도 정답 (label-audit.md 7.3)
@@ -81,7 +84,8 @@ def setup():
 
 def score_ckpt(config, ck, S):
     """체크포인트 하나 — 옛 정답과 새 정답 모두."""
-    _c, yt, lt = E.logits_for(config, ck, V.TEST, "test")
+    bias = config in BIAS_CONFIGS
+    _c, yt, lt = E.logits_for(config, ck, V.TEST, "test", bias=bias)
     assert np.array_equal(_c.astype(str), S["test_clips"].astype(str)) and np.array_equal(yt, S["test_y"])
     thr = E.thr_at(lt, yt == E.BG)
     p = E.predict(lt, thr)
@@ -89,7 +93,7 @@ def score_ckpt(config, ck, S):
     for tag, keep in (("old", np.ones(len(yt), bool)), ("L", S["keep_t"])):
         f1, rec, _ = E.metrics(yt[keep], p[keep])
         r[f"test_f1_{tag}"] = f1; r[f"test_recall_{tag}"] = rec.tolist(); r[f"test_f1_class_{tag}"] = class_f1(yt[keep], p[keep])
-    clips, _y, le = E.logits_for(config, ck, S["ext_root"], "ext")
+    clips, _y, le = E.logits_for(config, ck, S["ext_root"], "ext", bias=bias)
     assert np.array_equal(clips, S["seg"])
     pe = E.predict(le, thr)
     isbg = S["isbg"]
@@ -106,7 +110,7 @@ def score_ckpt(config, ck, S):
             s = (y == c) | isbg
             aps.append(V3.ap_of((le[:, c] - le[:, E.BG])[s], (y[s] == c).astype(float)))
         r[f"ext_map_{d}"] = float(np.mean(aps)); r[f"ext_ap_{d}"] = aps
-    _c3, yb, lb = E.logits_for(config, ck, S["bg_root"], "diag-bgbg")
+    _c3, yb, lb = E.logits_for(config, ck, S["bg_root"], "diag-bgbg", bias=bias)
     r["bgbg_fire"] = float((E.predict(lb, thr) != E.BG).mean())
     return r
 
@@ -274,13 +278,14 @@ def score_all(S):
 
     # ── v4+D 다섯 구성 — 구성 표·순위·재판정 (curve-design.md 의 사전 등록 항목을 testL / real31L 로 다시)
     V4D = {c: R.get(("v4+D", c)) for c, _cfg in CONFIGS}
-    have = [c for c, _cfg in CONFIGS if V4D[c]]
+    have = [c for c, _cfg in CONFIGS if V4D[c] and c not in EXTRA]          # 다섯 구성 (순위 대상)
+    extra = [c for c, _cfg in CONFIGS if V4D[c] and c in EXTRA]            # (a) — 별도 행
     if len(have) >= 2:
         out["v4d_configs"] = {}
-        print("\n## v4+D 다섯 구성 (시드 1~3 평균 ± sd; testL / real31L)")
+        print("\n## v4+D 다섯 구성 (시드 1~3 평균 ± sd; testL / real31L) — 아래 별도 행: (a) NPU 로그 근사")
         print("| 구성 | n | 시험셋 F1 testL | 외부 F1 real31L | 외부 mAP | 시험셋 recall siren/glass/scream/dog | 외부 recall siren/glass/scream/dog | 외부 배경 발화 | 배경+배경 |")
         print("|---|---:|---|---|---|---|---|---:|---:|")
-        for c in have:
+        for c in have + extra:
             rs = V4D[c]
             sd = lambda k: float(np.std([r[k] for r in rs], ddof=1)) if len(rs) > 1 else 0.0
             out["v4d_configs"][c] = {"n": len(rs), "test_f1_L": [m(rs, "test_f1_L"), sd("test_f1_L")],
@@ -299,7 +304,8 @@ def score_all(S):
             out["v4d_configs"][f"rank_{key}"] = rk
             print(f"  순위 ({lab}): " + " > ".join(f"{c} {m(V4D[c], key):.3f}" for c in rk))
         # 재판정: (변형 − ①′) 동등 ±0.02 (시험셋 macro-F1, 같은 시드), 가·다 대 ④·①′ (Welch 95% CI)
-        pairs = [("간격 400", "①′"), ("가 u1000", "①′"), ("다 u800", "①′"), ("가 u1000", "④"), ("다 u800", "④"), ("간격 400", "④")]
+        pairs = [("간격 400", "①′"), ("가 u1000", "①′"), ("다 u800", "①′"), ("가 u1000", "④"), ("다 u800", "④"), ("간격 400", "④"),
+                 ("(a) NPU 로그 근사", "④")]
         out["v4d_rejudge"] = []
         print("\n| 비교 (앞 − 뒤) | 시험셋 F1 testL (Welch 95% CI) | 동등(±0.02 안에 완전히) | 외부 F1 real31L | 외부 mAP |")
         print("|---|---|---|---|---|")
@@ -313,6 +319,20 @@ def score_all(S):
             verdict = "동등" if eq else ("못 가른다 (CI 가 0 포함, 폭 초과)" if wt[1] < 0 < wt[2] else ("유의하게 높음" if wt[1] > 0 else "유의하게 낮음"))
             out["v4d_rejudge"].append({"pair": f"{a} − {b}", "test_f1_L": list(wt), "ext_f1_real31L": list(we), "ext_map_real31L": list(wm), "equiv": eq, "verdict": verdict})
             print(f"| {a} − {b} | {fmt(wt)} | {verdict} | {fmt(we)} | {fmt(wm)} |")
+        # (a) − ④: v1 에서의 관계와 나란히 (같은 체크포인트, 시드 1~3; 원 사전 등록 값은 5시드 옛 정답 +0.003 [−0.028, +0.034], STATUS chain13)
+        A1, W1 = R.get(("v1", "(a) NPU 로그 근사")), R.get(("v1", "④"))
+        if A1 and W1 and V4D.get("(a) NPU 로그 근사"):
+            print("\n| 판 | (a) − ④ 시험셋 F1 옛 정답 test | (a) − ④ 시험셋 F1 testL | (a) − ④ 외부 F1 real31L | (a) − ④ 외부 mAP |")
+            print("|---|---|---|---|---|")
+            rows_a = {}
+            for ed, A, W in (("v1 (시드 1~3)", A1, W1), ("v4+D (시드 1~3)", V4D["(a) NPU 로그 근사"], V4D["④"])):
+                wo = V.welch([r["test_f1_old"] for r in W], [r["test_f1_old"] for r in A])
+                wl = V.welch([r["test_f1_L"] for r in W], [r["test_f1_L"] for r in A])
+                we = V.welch([r["ext_f1_real31L"] for r in W], [r["ext_f1_real31L"] for r in A])
+                wm = V.welch([r["ext_map_real31L"] for r in W], [r["ext_map_real31L"] for r in A])
+                rows_a[ed] = {"test_old": list(wo), "test_L": list(wl), "ext_f1": list(we), "ext_map": list(wm)}
+                print(f"| {ed} | {fmt(wo)} | {fmt(wl)} | {fmt(we)} | {fmt(wm)} |")
+            out["a_vs_wave"] = rows_a
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=1)
     print("저장:", OUT)
