@@ -29,7 +29,9 @@ import matplotlib.pyplot as plt                              # noqa: E402
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 판별 점 CSV / 출력 / 그림 제목 꼬리표
 EDITIONS = {
-    "v21": ("curve-points-v21.csv", "curve-v21.png", "dataset v2.1 (main)"),
+    # v4+D (2026-10-11 결정, 본 표): 정답은 청취 확정 testL. 지연·에너지는 v2.1 시드 1 보드 실측 그대로 (구조 동일)
+    "v4d": ("curve-points-v4d.csv", "curve-v4d.png", "dataset v4+D, listened test labels (main)"),
+    "v21": ("curve-points-v21.csv", "curve-v21.png", "dataset v2.1 (appendix)"),
     "v1": ("curve-points.csv", "curve-draft.png", "dataset v1 (appendix)"),
 }
 
@@ -55,9 +57,11 @@ HALIGN = {"h400": "right", "h500": "center", "h500m32": "center", "u800": "right
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--v1", action="store_true", help="v1 부록 그림 (기본은 v2.1 본 그림)")
+    ap.add_argument("--v1", action="store_true", help="v1 부록 그림")
+    ap.add_argument("--edition", choices=sorted(EDITIONS), default=None,
+                    help="그릴 판 (기본 v4d — 본 그림; --v1 은 v1 의 약칭)")
     args = ap.parse_args()
-    src_name, out_name, edition = EDITIONS["v1" if args.v1 else "v21"]
+    src_name, out_name, edition = EDITIONS[args.edition or ("v1" if args.v1 else "v4d")]
     src = os.path.join(REPO, "docs", "results", src_name)
     out = os.path.join(REPO, "docs", "figures", out_name)
     rows = list(csv.DictReader(open(src, encoding="utf-8")))

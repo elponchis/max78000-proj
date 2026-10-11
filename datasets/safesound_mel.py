@@ -287,7 +287,11 @@ for _name, _scheme in (("SafeSoundMelIncV2", "loginc"),
 for _name, _scheme, _kd in (("SafeSoundMelH400V4", "log_h400", None),
                             ("SafeSoundMelH400V4D", "log_h400", "full"),
                             ("SafeSoundMelH400V4Dh", "log_h400", "half"),
-                            ("SafeSoundMelIncV4", "loginc", None)):
+                            ("SafeSoundMelIncV4", "loginc", None),
+                            # chain29 (2026-10-11): 후보 가·다·①′ 를 간격 400 의 v4+D 와 같은 설정으로 — 표현(scheme)만 다르다
+                            ("SafeSoundMelIncV4D", "loginc", "full"),
+                            ("SafeSoundMelU1000V4D", "log_u1000", "full"),
+                            ("SafeSoundMelU800V4D", "log_u800", "full")):
     datasets.append({
         "name": _name,
         "input": (1,) + MF.scheme_shape(_scheme),

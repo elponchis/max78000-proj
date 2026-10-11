@@ -32,14 +32,16 @@ COND_G_PP = -0.05                       # G: 시험셋 glass recall 점 추정 �
 HALF_GAIN = 0.02                        # v4+D − v4+D½: 점 추정 ≥ +0.02 이고 CI 하한 > −0.02
 HALF_LO = -0.02
 OUT = os.path.join(E.WORK, "v4_eval.json")
-CONFIGS = [("④", "wave"), ("간격 400", "mel_h400")]
-# 판 → (④ 접두, 간격 400 접두). 시드 1~3.
-EDITIONS = [("v1", "safesound-v1cpu", "safesound-melh400-v1"),
-            ("v2.1", "safesound-v21-wave", "safesound-v21-melh400"),
-            ("v3.1", "safesound-v31-wave", "safesound-v31-melh400"),
-            ("v4", "safesound-v4-wave", "safesound-v4-melh400"),
-            ("v4+D", "safesound-v4d-wave", "safesound-v4d-melh400"),
-            ("v4+D½", None, "safesound-v4dh-melh400")]
+# (표시 이름, eval_confusion 구성 키). 가·다·①′ 는 v4+D 에만 있다 (chain29, 2026-10-11 결정).
+CONFIGS = [("④", "wave"), ("간격 400", "mel_h400"), ("가 u1000", "mel_u1000"), ("다 u800", "mel_u800"), ("①′", "mel_inc")]
+# 판 → (④ 접두, 간격 400 접두, 가 접두, 다 접두, ①′ 접두). 시드 1~3. None = 그 판에 없는 구성.
+EDITIONS = [("v1", "safesound-v1cpu", "safesound-melh400-v1", None, None, None),
+            ("v2.1", "safesound-v21-wave", "safesound-v21-melh400", None, None, None),
+            ("v3.1", "safesound-v31-wave", "safesound-v31-melh400", None, None, None),
+            ("v4", "safesound-v4-wave", "safesound-v4-melh400", None, None, None),
+            ("v4+D", "safesound-v4d-wave", "safesound-v4d-melh400", "safesound-v4d-melu1000", "safesound-v4d-melu800", "safesound-v4d-melinc"),
+            ("v4+D½", None, "safesound-v4dh-melh400", None, None, None)]
+EQUIV = 0.02                            # 재판정 "동등": (변형 − ①′) CI 가 [−0.02, +0.02] 안에 완전히 (curve-design.md)
 COMPARE = [("v3.1 − v2.1", "v2.1", "v3.1"), ("v4 − v3.1", "v3.1", "v4"), ("v4+D − v4", "v4", "v4+D")]
 # *L = 청취 주 정답(B 재청취), *L_Bfirst = 외부 유리만 B 첫 판정으로 바꾼 민감도 정답 (label-audit.md 7.3)
 LABEL_SETS = ("real31", "real31L", "real31L_Bfirst", "v1eq", "v1eqL", "v1eqL_Bfirst")
@@ -150,9 +152,9 @@ def score_all(S):
     print("\n외부 양성:", out["labels"]["ext_n_pos"], " 음성:", out["labels"]["ext_n_neg"])
     print("겹침 통계:", S["overlay"], " 시험셋 glass:", S["test_glass"], " 시험셋 창:", out["labels"]["test_n"])
     R = {}
-    for ed, pw, pm in EDITIONS:
+    for ed, *pres in EDITIONS:
         out["editions"][ed] = {}
-        for (cname, config), pre in zip(CONFIGS, (pw, pm)):
+        for (cname, config), pre in zip(CONFIGS, pres):
             if pre is None:
                 continue
             cks = seeds_of(pre)
@@ -170,7 +172,7 @@ def score_all(S):
     # ── 표 1: 판·구성별 옛 정답 → 새 정답
     print("\n| 판 | 구성 | n | 시험셋 F1 old → testL | 시험셋 glass recall old → L | 시험셋 glass F1 old → L | 외부 F1 real31 → real31L | 외부 F1 v1eq → v1eqL | 외부 glass recall real31 → L | 외부 scream recall real31 → L | 외부 mAP real31 → L | 외부 발화 창 |")
     print("|---|---|---:|---|---|---|---|---|---|---|---|---:|")
-    for ed, _pw, _pm in EDITIONS:
+    for ed, *_p in EDITIONS:
         for cname, _cfg in CONFIGS:
             rs = R.get((ed, cname))
             if not rs:
@@ -186,7 +188,7 @@ def score_all(S):
     # ── 표 1b: 외부 유리가 들어가는 지표 — B 재청취(주) 와 B 첫 판정(민감도) 나란히
     print("\n| 판 | 구성 | n | 외부 F1 real31L (주) / B첫 | 외부 mAP real31L (주) / B첫 | 외부 glass recall L (주) / B첫 | 외부 glass AP L (주) / B첫 | 맞춤 5창 F1 L (주) / B첫 | 외부 F1 v1eqL (주) / B첫 |")
     print("|---|---|---:|---|---|---|---|---|---|")
-    for ed, _pw, _pm in EDITIONS:
+    for ed, *_p in EDITIONS:
         for cname, _cfg in CONFIGS:
             rs = R.get((ed, cname))
             if not rs:
@@ -201,7 +203,9 @@ def score_all(S):
     # ── 구성 순위: 외부 F1·mAP(real31L) 로 판을 정렬 — 두 정답에서 순위가 다른 곳 표시
     out["ranking"] = {}
     for cname, _cfg in CONFIGS:
-        eds = [ed for ed, _a, _b in EDITIONS if (ed, cname) in R]
+        eds = [ed for ed, *_p in EDITIONS if (ed, cname) in R]
+        if len(eds) < 2:
+            continue
         for key in ("ext_f1", "ext_map"):
             rk = {tag: sorted(eds, key=lambda e: -m(R[(e, cname)], f"{key}_real31{tag}")) for tag in ("L", "L_Bfirst")}
             same = rk["L"] == rk["L_Bfirst"]
@@ -267,6 +271,48 @@ def score_all(S):
         res["test_f1_L"] = list(wt)
         print(f"   시험셋 F1 (testL) {m(Rh, 'test_f1_L'):.4f} → {m(Rf, 'test_f1_L'):.4f} {fmt(wt)}")
         out["compare"].append(res)
+
+    # ── v4+D 다섯 구성 — 구성 표·순위·재판정 (curve-design.md 의 사전 등록 항목을 testL / real31L 로 다시)
+    V4D = {c: R.get(("v4+D", c)) for c, _cfg in CONFIGS}
+    have = [c for c, _cfg in CONFIGS if V4D[c]]
+    if len(have) >= 2:
+        out["v4d_configs"] = {}
+        print("\n## v4+D 다섯 구성 (시드 1~3 평균 ± sd; testL / real31L)")
+        print("| 구성 | n | 시험셋 F1 testL | 외부 F1 real31L | 외부 mAP | 시험셋 recall siren/glass/scream/dog | 외부 recall siren/glass/scream/dog | 외부 배경 발화 | 배경+배경 |")
+        print("|---|---:|---|---|---|---|---|---:|---:|")
+        for c in have:
+            rs = V4D[c]
+            sd = lambda k: float(np.std([r[k] for r in rs], ddof=1)) if len(rs) > 1 else 0.0
+            out["v4d_configs"][c] = {"n": len(rs), "test_f1_L": [m(rs, "test_f1_L"), sd("test_f1_L")],
+                                     "ext_f1_real31L": [m(rs, "ext_f1_real31L"), sd("ext_f1_real31L")],
+                                     "ext_map_real31L": [m(rs, "ext_map_real31L"), sd("ext_map_real31L")],
+                                     "test_recall_L": [m(rs, "test_recall_L", i) for i in range(4)],
+                                     "ext_recall_real31L": [m(rs, "ext_recall_real31L", i) for i in range(4)],
+                                     "ext_fire_n": m(rs, "ext_fire_n"), "bgbg_fire": m(rs, "bgbg_fire")}
+            print(f"| {c} | {len(rs)} | {m(rs, 'test_f1_L'):.4f} ± {sd('test_f1_L'):.4f} | {m(rs, 'ext_f1_real31L'):.4f} ± {sd('ext_f1_real31L'):.4f} | "
+                  f"{m(rs, 'ext_map_real31L'):.4f} ± {sd('ext_map_real31L'):.4f} | "
+                  + "/".join(f"{100 * m(rs, 'test_recall_L', i):.1f}" for i in range(4)) + " | "
+                  + "/".join(f"{100 * m(rs, 'ext_recall_real31L', i):.1f}" for i in range(4))
+                  + f" | {m(rs, 'ext_fire_n'):.1f} | {100 * m(rs, 'bgbg_fire'):.2f}% |")
+        for key, lab in (("test_f1_L", "시험셋 F1 testL"), ("ext_f1_real31L", "외부 F1 real31L"), ("ext_map_real31L", "외부 mAP")):
+            rk = sorted(have, key=lambda c: -m(V4D[c], key))
+            out["v4d_configs"][f"rank_{key}"] = rk
+            print(f"  순위 ({lab}): " + " > ".join(f"{c} {m(V4D[c], key):.3f}" for c in rk))
+        # 재판정: (변형 − ①′) 동등 ±0.02 (시험셋 macro-F1, 같은 시드), 가·다 대 ④·①′ (Welch 95% CI)
+        pairs = [("간격 400", "①′"), ("가 u1000", "①′"), ("다 u800", "①′"), ("가 u1000", "④"), ("다 u800", "④"), ("간격 400", "④")]
+        out["v4d_rejudge"] = []
+        print("\n| 비교 (앞 − 뒤) | 시험셋 F1 testL (Welch 95% CI) | 동등(±0.02 안에 완전히) | 외부 F1 real31L | 외부 mAP |")
+        print("|---|---|---|---|---|")
+        for a, b in pairs:
+            if not (V4D.get(a) and V4D.get(b)):
+                continue
+            wt = V.welch([r["test_f1_L"] for r in V4D[b]], [r["test_f1_L"] for r in V4D[a]])
+            we = V.welch([r["ext_f1_real31L"] for r in V4D[b]], [r["ext_f1_real31L"] for r in V4D[a]])
+            wm = V.welch([r["ext_map_real31L"] for r in V4D[b]], [r["ext_map_real31L"] for r in V4D[a]])
+            eq = bool(wt[1] >= -EQUIV and wt[2] <= EQUIV)
+            verdict = "동등" if eq else ("못 가른다 (CI 가 0 포함, 폭 초과)" if wt[1] < 0 < wt[2] else ("유의하게 높음" if wt[1] > 0 else "유의하게 낮음"))
+            out["v4d_rejudge"].append({"pair": f"{a} − {b}", "test_f1_L": list(wt), "ext_f1_real31L": list(we), "ext_map_real31L": list(wm), "equiv": eq, "verdict": verdict})
+            print(f"| {a} − {b} | {fmt(wt)} | {verdict} | {fmt(we)} | {fmt(wm)} |")
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=1)
     print("저장:", OUT)
