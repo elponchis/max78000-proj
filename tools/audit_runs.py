@@ -73,6 +73,12 @@ GROUPS = {
                                       "safesound-v4dh-melh400", "safesound-v4dh-melh400-s2", "safesound-v4dh-melh400-s3"],
     "chain27 v3.1 1단계 (3시드)": ["safesound-v31-wave", "safesound-v31-wave-s2", "safesound-v31-wave-s3",
                                  "safesound-v31-melh400", "safesound-v31-melh400-s2", "safesound-v31-melh400-s3"],
+    "chain29 v4+D 가·다·①′ (3시드)": ["safesound-v4d-melu1000", "safesound-v4d-melu1000-s2", "safesound-v4d-melu1000-s3",
+                                    "safesound-v4d-melu800", "safesound-v4d-melu800-s2", "safesound-v4d-melu800-s3",
+                                    "safesound-v4d-melinc", "safesound-v4d-melinc-s2", "safesound-v4d-melinc-s3"],
+    "chain30 (a) v4+D 주 lr 0.0003 / 보조 lr 0.001 (3시드)": [
+        "safesound-v4d-logstage", "safesound-v4d-logstage-s2", "safesound-v4d-logstage-s3",
+        "safesound-v4d-logstage-lr1e3", "safesound-v4d-logstage-lr1e3-s2", "safesound-v4d-logstage-lr1e3-s3"],
 }
 
 # 로컬에 학습 로그가 없는 실행. Colab 에서 체크포인트만 가져왔다.

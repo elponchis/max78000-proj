@@ -323,3 +323,19 @@ recall: siren 37.4 / glass 41.9 / scream 46.8 / dog_bark 64.0 (%).
 `docs/figures/curve-v21.png` (`tools/plot_curve.py --points docs/results/curve-points-v21.csv
 --out docs/figures/curve-v21.png`). 점: 위 5개 + M4 CMSIS-NN·단순 C (④ 가중치, 정확도는
 ④ 와 비트 일치). v1 그림 `curve-draft.png` 는 부록이다 (13점, v1 수치만).
+
+## v4+D 결과 — 본 표·본 그림 (2026-10-13)
+
+본 표가 v4+D·testL 로 바뀌었다 (`STATUS.md` ★ 표 v4+D, `eval-baseline-change.md` 5.6). 그림은 `docs/figures/curve-v4d.png`
+(`curve-points-v4d.csv`; 지연·에너지는 v2.1 시드 1 실측 그대로 — 구조·연산이 같다).
+
+| 구성 | macro-F1 @300/h testL (시드 1~3 평균 ± sd) | 변형 − ①′ (Welch 95% CI) | 판정 (±0.02 동등) | 판단 1회 (실측) |
+|---|---|---|---|---|
+| ④ `wave` | 0.647 ± 0.020 | — | — | 2.54 ms |
+| 가 `u1000` | 0.727 ± 0.011 | -0.090 [-0.115, -0.066] | 유의하게 낮음 | 2.93 ms |
+| 다 `u800` | 0.733 ± 0.019 | -0.085 [-0.132, -0.038] | 유의하게 낮음 | 3.66 ms |
+| 간격 400 `h400` | 0.804 ± 0.006 | -0.014 [-0.027, -0.001] | **동등 미통과** (CI 가 폭을 벗어남) | 9.42 ms |
+| ①′ `melinc` | 0.818 ± 0.003 | — | — | 15.06 ms |
+
+"동등" 을 통과한 변형은 v4+D 에도 없다 (v1 h400 통과 → v2.1·v4+D 미통과). 곡선의 서술은 "간격 400 은 ①′ 보다 0.014 낮고
+에너지 0.63배" 다. (a) 는 별도 행이고 곡선에 넣지 않는다 (`v4-distill-design.md` 10.10).

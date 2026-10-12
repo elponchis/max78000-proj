@@ -30,7 +30,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 판별 점 CSV / 출력 / 그림 제목 꼬리표
 EDITIONS = {
     # v4+D (2026-10-11 결정, 본 표): 정답은 청취 확정 testL. 지연·에너지는 v2.1 시드 1 보드 실측 그대로 (구조 동일)
-    "v4d": ("curve-points-v4d.csv", "curve-v4d.png", "dataset v4+D, listened test labels (main)"),
+    "v4d": ("curve-points-v4d.csv", "curve-v4d.png", "dataset v4+D, testL (main)"),
     "v21": ("curve-points-v21.csv", "curve-v21.png", "dataset v2.1 (appendix)"),
     "v1": ("curve-points.csv", "curve-draft.png", "dataset v1 (appendix)"),
 }

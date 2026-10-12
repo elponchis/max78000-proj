@@ -136,12 +136,20 @@ def fmt(t):
 
 
 def seeds_of(prefix, n=K):
+    """완주한 시드의 체크포인트만. QAT 체크포인트는 학습 도중(에폭 60부터)에도 생기므로
+    `compare_runs.run_finished` 로 최종 테스트 단계가 있는지 확인하고, 진행 중인 실행은 알리고 건너뛴다."""
+    import compare_runs as CR
     cks = []
     for s in range(1, n + 1):
         try:
-            cks.append(E.checkpoint(prefix, s))
+            ck = E.checkpoint(prefix, s)
         except SystemExit:
             break
+        done, why = CR.run_finished(ck)
+        if not done:
+            print(f"  [미완주 건너뜀] {prefix} 시드 {s}: {why}", flush=True)
+            break
+        cks.append(ck)
     return cks
 
 
