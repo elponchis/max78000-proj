@@ -668,7 +668,7 @@ def class_weights(root=None, d_type="train", counts=None, power=1.0):
 V1_TRAIN_COUNTS = (528, 477, 491, 1934, 9577)   # siren/glass/scream/dog_bark/background
 # v3 (dataset-v3-design.md): v1 + AudioSet strong train 창. `scripts/build_v3_windows.py` 가 MANIFEST 에
 # 같은 값을 쓴다 — 빌드 뒤 MANIFEST.counts 와 다르면 여기를 갱신할 것 (가중치가 조용히 틀어진다).
-V5_TRAIN_COUNTS = (1195, 578, 429, 2366, 11971)    # v5 2026-10-14 빌드 (scream 559 − 청취 X·? 130) — MANIFEST 와 같아야 한다 (kat_v3 --edition v5)
+V5_TRAIN_COUNTS = (1195, 578, 417, 2366, 11971)    # v5 2026-10-14 재빌드 (scream 559 − 청취 X·? 142) — MANIFEST 와 같아야 한다 (kat_v3 --edition v5)
 V4_TRAIN_COUNTS = (1195, 578, 559, 2366, 11971)    # v4 2026-10-09 빌드 — MANIFEST 와 같아야 한다 (kat_v3 --edition v4)
 V31_TRAIN_COUNTS = (1195, 970, 725, 2366, 11967)   # v3.1 2026-10-08 빌드 (Yell·Shout 만 246구간 제외), MANIFEST 와 같음
 V3_TRAIN_COUNTS = (1195, 970, 1041, 2366, 11967)  # 2026-10-07 23:47 최종 빌드 (scream extra1 327구간 포함), MANIFEST 와 같음
