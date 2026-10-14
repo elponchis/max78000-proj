@@ -8,8 +8,12 @@
   --logits  프로브 로짓을 v4 라벨 창(teacher_<cls>.npy, (n,5) float32) 과 라벨 없는 창(teacher.npy) 에 쓴다.
             T=2 유효 클래스 수(exp 엔트로피 평균)·클래스별 평균 확률을 teacher.json 에 적는다.
 
+  --edition v5  루트 safesound_v5 / safesound_v5u (라벨 없는 샤드·emb.npy 는 v4u 링크, teacher.npy 만 v5 프로브로 새로 쓴다).
+  --embed-from v4  v5 라벨 창 임베딩을 v4 캐시에서 (clip_id, start_sample) 로 골라 만든다 (v5 창 ⊂ v4 창; 재계산 불필요).
+
 사용 (WSL2, 시스템 python3 — panns_inference·torch):
     python3 tools/teacher_cache.py --embed --probe --logits
+    python3 tools/teacher_cache.py --edition v5 --embed-from v4 --probe --logits
 """
 import argparse
 import csv
@@ -29,6 +33,31 @@ CLASSES = LA.CLASSES
 V4 = os.path.join(REPO, "data", "processed", "safesound_v4")
 V4U = os.path.join(REPO, "data", "processed", "safesound_v4u")
 TDIR = os.path.join(V4, "teacher")
+EDITION = "v4"
+
+
+def set_edition(ed):
+    """루트를 판(edition)에 맞춘다. 모듈 전역을 바꾸므로 main 에서 가장 먼저 부른다."""
+    global V4, V4U, TDIR, EDITION
+    EDITION = ed
+    V4 = os.path.join(REPO, "data", "processed", "safesound_" + ed)
+    V4U = os.path.join(REPO, "data", "processed", "safesound_" + ed + "u")
+    TDIR = os.path.join(V4, "teacher")
+
+
+def embed_from(src_ed):
+    """다른 판의 임베딩 캐시에서 (clip_id, start_sample) 로 골라 이 판의 emb_<cls>.npy 를 만든다 (행 순서 = 이 판의 index.csv)."""
+    src = os.path.join(REPO, "data", "processed", "safesound_" + src_ed)
+    os.makedirs(TDIR, exist_ok=True)
+    for cls in CLASSES:
+        rows_src = rows_of(src, "train", cls)
+        e_src = np.load(os.path.join(src, "teacher", f"emb_{cls}.npy"), mmap_mode="r")
+        assert e_src.shape[0] == len(rows_src), (cls, e_src.shape, len(rows_src))
+        pos = {(r["clip_id"], int(r["start_sample"])): i for i, r in enumerate(rows_src)}
+        rows = rows_of(V4, "train", cls)
+        idx = [pos[(r["clip_id"], int(r["start_sample"]))] for r in rows]          # KeyError = 이 판에만 있는 창 (있으면 안 된다)
+        np.save(os.path.join(TDIR, f"emb_{cls}.npy"), np.asarray(e_src)[idx])
+        print(f"  emb_{cls}.npy ← {src_ed} {len(rows):,}/{len(rows_src):,}창")
 KD_T = 2.0
 VAL_FRAC = 0.1
 
@@ -148,7 +177,7 @@ def probe():
     np.savez(os.path.join(TDIR, "probe.npz"), W=sd_["weight"].numpy(), b=sd_["bias"].numpy(), mu=mu, sd=sd)
     info = {"probe": {"wd": wd, "epoch": ep, "val_frac": VAL_FRAC, "val_n": int(val.sum()), "val_macro_f1_argmax": f1,
                       "train_macro_f1_argmax": macro_f1(y[~val], ptr), "val_recall": rec, "counts": counts,
-                      "class_weights": [float(x) for x in w], "data": "v4 train labeled windows only (no external, no test)"}}
+                      "class_weights": [float(x) for x in w], "data": f"{EDITION} train labeled windows only (no external, no test)"}}
     with open(os.path.join(TDIR, "teacher.json"), "w", encoding="utf-8") as f:
         json.dump(info, f, ensure_ascii=False, indent=1)
     print("저장:", os.path.join(TDIR, "probe.npz"))
@@ -190,7 +219,12 @@ def logits():
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--embed", action="store_true"); ap.add_argument("--probe", action="store_true"); ap.add_argument("--logits", action="store_true")
+    ap.add_argument("--edition", default="v4", choices=["v4", "v5"])
+    ap.add_argument("--embed-from", default=None, help="라벨 창 임베딩을 이 판의 캐시에서 골라 만든다 (예: v4)")
     a = ap.parse_args()
+    set_edition(a.edition)
+    if a.embed_from:
+        embed_from(a.embed_from)
     if a.embed:
         embed()
     if a.probe:

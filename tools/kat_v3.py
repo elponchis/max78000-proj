@@ -38,12 +38,14 @@ def read_index(root, cls):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--listen", action="store_true")
-    ap.add_argument("--edition", default="v3", choices=["v3", "v31", "v4"], help="v31/v4: 루트 safesound_v31/v4, V31/V4_TRAIN_COUNTS")
+    ap.add_argument("--edition", default="v3", choices=["v3", "v31", "v4", "v5"], help="v31/v4/v5: 루트 safesound_v31/v4/v5, V31/V4/V5_TRAIN_COUNTS")
     a = ap.parse_args()
     global V3
     if a.edition != "v3":
         V3 = os.path.join(REPO, "data", "processed", "safesound_" + a.edition)
-    COUNTS = {"v3": S.V3_TRAIN_COUNTS, "v31": S.V31_TRAIN_COUNTS, "v4": S.V4_TRAIN_COUNTS}[a.edition]
+    COUNTS = {"v3": S.V3_TRAIN_COUNTS, "v31": S.V31_TRAIN_COUNTS, "v4": S.V4_TRAIN_COUNTS, "v5": S.V5_TRAIN_COUNTS}[a.edition]
+    KD = a.edition in ("v4", "v5")                 # 제외 목록 + 교사 로짓 + 라벨 없는 창 (v5 는 v4 와 같은 구조, 루트만 다르다)
+    UROOT = os.path.join(REPO, "data", "processed", "safesound_" + a.edition + "u")
     man = json.load(open(os.path.join(V3, "MANIFEST.json"), encoding="utf-8"))
     fails = []
 
@@ -52,7 +54,7 @@ def main():
     ds3 = S.SafeSound(V3, "train", augment=False)
     n_v1_rows = 0
     excl = set()
-    if a.edition == "v4":                      # v4: 제외 목록(MANIFEST.exclude.file)을 뺀 v1 행이 앞부분이어야 한다
+    if KD:                                     # v4/v5: 제외 목록(MANIFEST.exclude.file)을 뺀 v1 행이 앞부분이어야 한다
         import csv as _csv
         with open(man["exclude"]["file"], encoding="utf-8") as f:
             excl = {(r["cls"], r["clip_id"], int(r["start_sample"])) for r in _csv.DictReader(f)}
@@ -148,8 +150,8 @@ def main():
                          (w.astype(np.int16) * 256), S.SR if hasattr(S, "SR") else 16000)
         print(f"[7] 청취용 wav → {out}")
 
-    # 8 (v4) 교사 로짓 정렬·라벨 없는 창 분리·KD 로더 타깃
-    if a.edition == "v4":
+    # 8 (v4/v5) 교사 로짓 정렬·라벨 없는 창 분리·KD 로더 타깃
+    if KD:
         import csv as _csv
         tdir = os.path.join(V3, "teacher")
         for cls in S.CLASSES:
@@ -161,7 +163,7 @@ def main():
                 sh = np.load(pth, mmap_mode="r").shape
                 if sh[0] != n:
                     fails.append(f"8 {name} 행 {sh[0]} ≠ index {n}")
-        U = os.path.join(REPO, "data", "processed", "safesound_v4u", "train", "unlabeled")
+        U = os.path.join(UROOT, "train", "unlabeled")
         rows_u = list(_csv.DictReader(open(os.path.join(U, "index.csv"), encoding="utf-8")))
         tu = np.load(os.path.join(U, "teacher.npy"), mmap_mode="r")
         if tu.shape != (len(rows_u), len(S.CLASSES)):
@@ -172,13 +174,13 @@ def main():
         if hit_u:
             fails.append(f"8 라벨 없는 창 영상 겹침 {len(hit_u)}")
         # KD 로더: 타깃 모양·라벨 없는 항목·에폭 길이, 무증강 라벨 창은 v4 로더와 비트 일치
-        kd = S.SafeSound(V3, "train", augment=False).attach_kd(tdir, os.path.join(REPO, "data", "processed", "safesound_v4u"))
+        kd = S.SafeSound(V3, "train", augment=False).attach_kd(tdir, UROOT)
         x0, t0 = kd[0]; xu, tu0 = kd[len(kd) - 1]
         if tuple(t0.shape) != (6,) or int(t0[0]) != kd.index[0][0] or int(tu0[0]) != -1 or len(kd) != 2 * len(kd.index):
             fails.append("8 KD 로더 타깃/길이 불일치")
         if not np.array_equal(x0.numpy(), ds3[0][0].numpy()):
             fails.append("8 KD 로더 라벨 창이 v4 로더와 다르다")
-        kdh = S.SafeSound(V3, "train", augment=False).attach_kd(tdir, os.path.join(REPO, "data", "processed", "safesound_v4u"), unlab_half=True)
+        kdh = S.SafeSound(V3, "train", augment=False).attach_kd(tdir, UROOT, unlab_half=True)
         print(f"[8] KD 로더 길이 {len(kd):,} (라벨 {len(kd.index):,}), 라벨 없음 전체 {len(kd._kd['unlab']):,} / 절반 {len(kdh._kd['unlab']):,}")
         if not (0.4 < len(kdh._kd["unlab"]) / len(kd._kd["unlab"]) < 0.6):
             fails.append("8 절반 분할 비율 이상")

@@ -38,13 +38,13 @@ try:                                   # ai8x-training 이 datasets 패키지로
     from . import melfeat as MF
     from .safesound import MIX_PROB as S_MIX_PROB
     from .safesound import (CLASSES, MARGIN, SafeSound, V1_TRAIN_COUNTS,
-                            V3_TRAIN_COUNTS, V31_TRAIN_COUNTS, V4_TRAIN_COUNTS, class_weights)
+                            V3_TRAIN_COUNTS, V31_TRAIN_COUNTS, V4_TRAIN_COUNTS, V5_TRAIN_COUNTS, class_weights)
 except ImportError:                    # tools/ 가 단독 모듈로 import 할 때
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import melfeat as MF
     from safesound import MIX_PROB as S_MIX_PROB
     from safesound import (CLASSES, MARGIN, SafeSound, V1_TRAIN_COUNTS,
-                           V3_TRAIN_COUNTS, V31_TRAIN_COUNTS, V4_TRAIN_COUNTS, class_weights)
+                           V3_TRAIN_COUNTS, V31_TRAIN_COUNTS, V4_TRAIN_COUNTS, V5_TRAIN_COUNTS, class_weights)
 
 __all__ = ["CLASSES", "SafeSoundMel", "safesound_mel_get_datasets",
            "V1_TRAIN_COUNTS", "MF"]
@@ -164,8 +164,8 @@ def _mel_loader(scheme, subset_frac=None, clip_prob=0.0, cls=None, mix_prob=0.0,
                       scheme=scheme,
                       cache=cache if os.path.isfile(cache) else None)
                    if load_test else None)
-        if kd and train_ds is not None:          # v4+D / v4+D½ (safesound.attach_kd)
-            train_ds.attach_kd(os.path.join(root, "teacher"), os.path.join(data_dir, "SafeSoundV4U"),
+        if kd and train_ds is not None:          # v4+D / v4+D½ / v5+D (safesound.attach_kd) — 라벨 없는 창 루트 = <root_name>U
+            train_ds.attach_kd(os.path.join(root, "teacher"), os.path.join(data_dir, root_name + "U"),
                                unlab_half=(kd == "half"))
         return train_ds, test_ds
     get_datasets.__name__ = (f"safesound_mel_{scheme}"
@@ -298,6 +298,17 @@ for _name, _scheme, _kd in (("SafeSoundMelH400V4", "log_h400", None),
         "output": tuple(CLASSES),
         "weight": class_weights(counts=list(V4_TRAIN_COUNTS)),
         "loader": _mel_loader(_scheme, mix_prob=S_MIX_PROB, mix_bg=True, root_name="SafeSoundV4", kd=_kd),
+    })
+
+# v5+D — v4 + scream 청취 제외·고함 정의 분리, 교사는 v5 라벨 프로브 (scream-plan.md 9절). 루트 SafeSoundV5 (+ SafeSoundV5U, teacher/)
+for _name, _scheme in (("SafeSoundMelH400V5D", "log_h400"), ("SafeSoundMelIncV5D", "loginc"),
+                       ("SafeSoundMelU1000V5D", "log_u1000"), ("SafeSoundMelU800V5D", "log_u800")):
+    datasets.append({
+        "name": _name,
+        "input": (1,) + MF.scheme_shape(_scheme),
+        "output": tuple(CLASSES),
+        "weight": class_weights(counts=list(V5_TRAIN_COUNTS)),
+        "loader": _mel_loader(_scheme, mix_prob=S_MIX_PROB, mix_bg=True, root_name="SafeSoundV5", kd="full"),
     })
 
 # v3.1 — v3 에서 Yell·Shout 만 있는 AudioSet 구간 제외 (dataset-v3.1-design.md). 루트 SafeSoundV31

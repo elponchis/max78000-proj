@@ -399,3 +399,32 @@ X 창을 배경 하드 네거티브로 옮기지 않는 이유: 시험셋에서�
 - 위험: 학습 비명이 429창으로 줄고 가중치가 7.7 로 오른다 → 비명 오경보 증가(D), 또는 시험셋 비명 recall 하락(E). AudioSet ? 19창 제거는 겹친
   소리(실배치에 가까운 창)를 줄이므로 외부 recall 에 해가 될 수도 있다.
 - 바꾸지 않는 것: 증강, 문턱값 출처, 외부 세트(평가만), (3) 별도 문턱값(쓰지 않는다), 사전 등록 기준(시작 뒤 불변).
+
+### 9.7 사용자 승인과 추가 규칙 (2026-10-14) — **사전 등록 확정**
+
+1. **시험셋 비명 정답은 청취로 확정한다 (testL-S3).** 시험셋 비명 중 `Screaming` 보유 159창 + 학습 `Screaming`·`Yell`·`Shout` 동반 30창의
+   청취 세트 `T_test_scream` 을 만들었다 (9.8). 판정이 오면 **testL-S3** (시험셋 비명 225창 전부 청취 판정: O 양성, X·? 평가 제외, 배경 아님)을
+   만들어 **v5 의 주 시험셋 정답으로 학습 시작 전에 고정**한다. 학습 동반 30창의 X·? 는 v5 제외 목록에 더한다 (빌드·교사 다시 — 20분).
+2. **X 창은 제외(배경으로 옮기지 않음), ? 도 제외.** 배경 하드 네거티브 안은 이번에 하지 않는다.
+3. **v5 는 마지막 데이터·학습 변경이다.** 통과하든 실패하든 v5 이후 데이터·학습 변경은 하지 않는다. 통과하면 본 표를 v5+D 로 바꿀지
+   사용자가 결정하고, 실패하면 본 표는 v4+D 를 유지하고 비명은 한계로 적는다. **v4+D 도 testL-S3 정답으로 다시 채점**해 v5 와 같은 정답으로 비교한다.
+4. 비명 가중치 5.96 → 7.71 의 영향은 **외부 배경 발화(조건 D)** 로 감시한다. 가중치 공식은 바꾸지 않는다.
+5. 청취 결과 전에 exclude_v5 생성·빌드·KAT·교사 프로브 재학습까지는 진행한다. **chain31 시작은 testL-S3 고정 뒤** (`run_chain31.sh` 가
+   `data_listened_test_scream.csv` 없으면 시작하지 않는다).
+
+### 9.8 준비 기록 (2026-10-14 21:3x, 학습 전)
+
+| 단계 | 결과 |
+|---|---|
+| 청취 세트 `T_test_scream` (`tools/build_audit_test_scream.py`, 시드 78007) | `~/safesound-external/audit_test_scream/` — 시험셋 `Screaming` 보유 159 + 학습 `Screaming`+`Yell`/`Shout` 30 + 대조 15 (이전 세트와 겹치지 않음, 후보 65) = **204창** (약 27분), 7.3 MB. 저장소에 없다. |
+| 제외 목록 `exclude_v5.csv` (`tools/make_exclude_v5.py`) | v4 558 + 청취 X·? 학습 창 **130** = 688행 (`data/label_audit/`, git 제외 — `data_listened_scream.csv` 에서 재생성) |
+| v5 빌드 (`build_v3_windows.py --scream-screaming-only --tag dataset-v5 --exclude exclude_v5.csv --force-bg DaMvU_MSjoo_20000,e4wSf2mkCLw_230000`) | 21:34, 제외 688 전부 적용 (v1 scream 157 = v4 56 + 101, AudioSet scream 139 = v4 110 + 29). **`V5_TRAIN_COUNTS = (1195, 578, 429, 2366, 11971)`**, 가중치 (2.768, 5.723, **7.711**, 1.398, 0.276). test 는 v1 링크. |
+| v5 ⊂ v4 검사 | 다섯 클래스 모두 v5 창이 v4 에 있고 샤드 행·note 비트 일치 (scream 429/559, 나머지 전수) |
+| 라벨 없는 창 `safesound_v5u` | v4u 의 index·샤드·임베딩을 링크, **교사 로짓(`teacher.npy`)만 v5 프로브로 새로** |
+| 교사 (`teacher_cache.py --edition v5 --embed-from v4 --probe --logits`) | 임베딩은 v4 캐시에서 골라 냄(재계산 없음). 프로브 **wd 0.01, epoch 240, 검증 1,606창 macro-F1 0.8636** (v4 0.8626); 검증 recall siren 0.88 / glass 1.00 / **scream 0.982** / dog 0.946 / bg 0.901. 교사 argmax = 라벨: scream 0.998. **T=2 유효 클래스 2.56 (라벨) / 2.84 (라벨 없음)** ≥ 1.5. 라벨 없는 창 argmax: siren 10,903 / glass 3,857 / **scream 3,002** (v4 4,169) / dog 8,999 / bg 67,263 — 고함을 비명에서 뺀 교사가 라벨 없는 창에서도 비명을 덜 부른다. |
+| KAT `kat_v3.py --edition v5` | **8개 전부 통과** (v1 행 12,610 비트 일치·제외 창 없음, 창 수 = MANIFEST = `V5_TRAIN_COUNTS`, 영상 분리, 베드, test 링크, 혼합 풀 9,278, 교사 정렬, KD 로더 33,078) |
+| 로더 등록 | `SafeSoundV5`, `SafeSoundV5D`, `SafeSoundMel{H400,Inc,U1000,U800}V5D` (가중치 v5 창 수; 라벨 없는 창 루트 = `<root>U`) |
+| 체인 | `scripts/run_chain31.sh` 작성 — chain29 와 같은 인자, 순서 ④ → 다 → 가 → 간격 400 → ①′, **미시작** |
+
+남은 것: 사용자 청취(204창) → `verdict_T_test_scream.csv` → testL-S3 생성·커밋(학습 30창의 X·? 가 있으면 exclude_v5 갱신 → 재빌드·교사·KAT) →
+v4+D 재채점(testL-S3) → chain31 시작.

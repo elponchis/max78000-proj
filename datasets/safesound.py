@@ -559,10 +559,11 @@ def safesound_v4_get_datasets(data, load_train=True, load_test=True):
                                   mix_bg=True, root_name="SafeSoundV4")
 
 
-def _attach_v4_kd(train_ds, data_dir, half):
+def _attach_v4_kd(train_ds, data_dir, half, root_name="SafeSoundV4"):
+    """교사 로짓 = <root_name>/teacher, 라벨 없는 창 = <root_name>U (v4: SafeSoundV4U, v5: SafeSoundV5U — 샤드는 v4u 링크, 교사 로짓만 다르다)."""
     if train_ds is not None:
-        root = os.path.join(data_dir, "SafeSoundV4")
-        train_ds.attach_kd(os.path.join(root, "teacher"), os.path.join(data_dir, "SafeSoundV4U"), unlab_half=half)
+        root = os.path.join(data_dir, root_name)
+        train_ds.attach_kd(os.path.join(root, "teacher"), os.path.join(data_dir, root_name + "U"), unlab_half=half)
     return train_ds
 
 
@@ -576,6 +577,18 @@ def safesound_v4dh_get_datasets(data, load_train=True, load_test=True):
     """v4+D½ — 라벨 없는 창을 영상 절반만 (fsid 해시 < 0.5). 에폭당 표본 수는 D 와 같다."""
     tr, te = safesound_v4_get_datasets(data, load_train, load_test)
     return _attach_v4_kd(tr, data[0], True), te
+
+
+def safesound_v5_get_datasets(data, load_train=True, load_test=True):
+    """v5 — v4 에서 scream 만: 청취 X·? 130창 제외 + 고함 정의 분리 (scream-plan.md 9.1). 나머지 전부 v4 와 같다."""
+    return safesound_get_datasets(data, load_train, load_test, mix_prob=MIX_PROB,
+                                  mix_bg=True, root_name="SafeSoundV5")
+
+
+def safesound_v5d_get_datasets(data, load_train=True, load_test=True):
+    """v5+D — v5 + v5 라벨로 다시 학습한 PANNs 프로브 교사 증류, 라벨 없는 창 전체(U, 샤드는 v4u 와 같다)."""
+    tr, te = safesound_v5_get_datasets(data, load_train, load_test)
+    return _attach_v4_kd(tr, data[0], False, root_name="SafeSoundV5"), te
 
 
 def safesound_norm2_get_datasets(data, load_train=True, load_test=True):
@@ -655,6 +668,7 @@ def class_weights(root=None, d_type="train", counts=None, power=1.0):
 V1_TRAIN_COUNTS = (528, 477, 491, 1934, 9577)   # siren/glass/scream/dog_bark/background
 # v3 (dataset-v3-design.md): v1 + AudioSet strong train 창. `scripts/build_v3_windows.py` 가 MANIFEST 에
 # 같은 값을 쓴다 — 빌드 뒤 MANIFEST.counts 와 다르면 여기를 갱신할 것 (가중치가 조용히 틀어진다).
+V5_TRAIN_COUNTS = (1195, 578, 429, 2366, 11971)    # v5 2026-10-14 빌드 (scream 559 − 청취 X·? 130) — MANIFEST 와 같아야 한다 (kat_v3 --edition v5)
 V4_TRAIN_COUNTS = (1195, 578, 559, 2366, 11971)    # v4 2026-10-09 빌드 — MANIFEST 와 같아야 한다 (kat_v3 --edition v4)
 V31_TRAIN_COUNTS = (1195, 970, 725, 2366, 11967)   # v3.1 2026-10-08 빌드 (Yell·Shout 만 246구간 제외), MANIFEST 와 같음
 V3_TRAIN_COUNTS = (1195, 970, 1041, 2366, 11967)  # 2026-10-07 23:47 최종 빌드 (scream extra1 327구간 포함), MANIFEST 와 같음
@@ -666,6 +680,14 @@ V3_TRAIN_COUNTS = (1195, 970, 1041, 2366, 11967)  # 2026-10-07 23:47 최종 빌�
 # 균형 샘플러(WeightedRandomSampler)도 대안이지만 ai8x 의 train.py 가 DataLoader 를
 # 직접 만들기 때문에 패치가 필요하다. 가중 손실이 같은 목적을 패치 없이 달성한다.
 datasets = [
+    {   # v5 — v4 + scream 청취 제외·고함 정의 분리 (scream-plan.md 9절). 가중치는 v5 창 수.
+        "name": "SafeSoundV5", "input": (128, 128), "output": tuple(CLASSES),
+        "weight": class_weights(counts=list(V5_TRAIN_COUNTS)), "loader": safesound_v5_get_datasets,
+    },
+    {   # v5+D — 증류 (v5 라벨 프로브 교사, 라벨 없는 창 전체 U)
+        "name": "SafeSoundV5D", "input": (128, 128), "output": tuple(CLASSES),
+        "weight": class_weights(counts=list(V5_TRAIN_COUNTS)), "loader": safesound_v5d_get_datasets,
+    },
     {   # v4 — 정리만 (v4-distill-design.md 2절). 가중치는 v4 창 수.
         "name": "SafeSoundV4", "input": (128, 128), "output": tuple(CLASSES),
         "weight": class_weights(counts=list(V4_TRAIN_COUNTS)), "loader": safesound_v4_get_datasets,
