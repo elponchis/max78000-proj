@@ -79,6 +79,11 @@ GROUPS = {
     "chain30 (a) v4+D 주 lr 0.0003 / 보조 lr 0.001 (3시드)": [
         "safesound-v4d-logstage", "safesound-v4d-logstage-s2", "safesound-v4d-logstage-s3",
         "safesound-v4d-logstage-lr1e3", "safesound-v4d-logstage-lr1e3-s2", "safesound-v4d-logstage-lr1e3-s3"],
+    "chain31 v5+D 5구성 (3시드)": ["safesound-v5d-wave", "safesound-v5d-wave-s2", "safesound-v5d-wave-s3",
+                                "safesound-v5d-melu800", "safesound-v5d-melu800-s2", "safesound-v5d-melu800-s3",
+                                "safesound-v5d-melu1000", "safesound-v5d-melu1000-s2", "safesound-v5d-melu1000-s3",
+                                "safesound-v5d-melh400", "safesound-v5d-melh400-s2", "safesound-v5d-melh400-s3",
+                                "safesound-v5d-melinc", "safesound-v5d-melinc-s2", "safesound-v5d-melinc-s3"],
 }
 
 # 로컬에 학습 로그가 없는 실행. Colab 에서 체크포인트만 가져왔다.

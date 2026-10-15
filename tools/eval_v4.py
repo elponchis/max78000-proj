@@ -45,7 +45,9 @@ EDITIONS = [("v1", "safesound-v1cpu", "safesound-melh400-v1", None, None, None, 
             ("v4", "safesound-v4-wave", "safesound-v4-melh400", None, None, None, None, None),
             ("v4+D", "safesound-v4d-wave", "safesound-v4d-melh400", "safesound-v4d-melu1000", "safesound-v4d-melu800", "safesound-v4d-melinc",
              "safesound-v4d-logstage", "safesound-v4d-logstage-lr1e3"),
-            ("v4+D½", None, "safesound-v4dh-melh400", None, None, None, None, None)]
+            ("v4+D½", None, "safesound-v4dh-melh400", None, None, None, None, None),
+            # v5+D (chain31, 2026-10-14~16): 청취 X·? 142창 제외 + 고함 정의 분리. 판정은 tools/scream_stage3.py (testL-S3) 로 — 여기서는 표에만.
+            ("v5+D", "safesound-v5d-wave", "safesound-v5d-melh400", "safesound-v5d-melu1000", "safesound-v5d-melu800", "safesound-v5d-melinc", None, None)]
 EQUIV = 0.02                            # 재판정 "동등": (변형 − ①′) CI 가 [−0.02, +0.02] 안에 완전히 (curve-design.md)
 COMPARE = [("v3.1 − v2.1", "v2.1", "v3.1"), ("v4 − v3.1", "v3.1", "v4"), ("v4+D − v4", "v4", "v4+D")]
 # *L = 청취 주 정답(B 재청취), *L_Bfirst = 외부 유리만 B 첫 판정으로 바꾼 민감도 정답 (label-audit.md 7.3)
