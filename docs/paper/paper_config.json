@@ -1,0 +1,107 @@
+{
+  "_설명": "tools/make_paper_assets.py 의 설정. 숫자는 여기(공개 전력값)와 결과 파일에만 있다. 전력값은 docs/results/energy-estimate.md 3절에서 옮겼고, 출처를 함께 적는다.",
+  "power_sources": {
+    "datasheet": {
+      "label": "(가) 데이터시트",
+      "P_cpu_mW": 8.89,
+      "P_load_mW": 11.26,
+      "P_npu_mW": 40.79,
+      "source": "MAX78000 데이터시트 19-100868 Rev 1, Electrical Characteristics. P_cpu = (22.2 µA/MHz × 100 MHz + 744 µA) × 3.0 V; P_load = P_cpu + CNN 대기 790.4 µA × 3.0 V; P_npu = CNN 동작 29 mA × 1.1 V + P_cpu. energy-estimate.md §3(가)",
+      "use_in_curve": true
+    },
+    "literature": {
+      "label": "(나) 선행연구 (Moss / Ulkar & Okman)",
+      "P_cpu_mW": 24.8,
+      "P_load_mW": 24.8,
+      "P_npu_mW": 71.7,
+      "source": "CPU·적재: Moss et al., 'Ultra-low Power DNN Accelerators for IoT: Resource Characterization of the MAX78000', SenSys '22 AIChallengeIoT — CNN 켜짐·적재 약 7.5 mA × 3.3 V (CNN 을 끈 CPU 연산 전력이 없어 과대일 수 있음). NPU: Ulkar & Okman, 'Ultra-Low Power Keyword Spotting at the Edge', arXiv:2111.04988 Table II — 3.5 ms, 251 µJ → 71.7 mW. energy-estimate.md §3(나)",
+      "use_in_curve": true
+    },
+    "moosmann": {
+      "label": "(나′) Moss / Moosmann",
+      "P_cpu_mW": 24.8,
+      "P_load_mW": 24.8,
+      "P_npu_mW": 35.6,
+      "source": "CPU·적재: Moss et al. (위와 같음). NPU: Moosmann, Giordano, Vogt, Magno, 'TinyissimoYOLO', arXiv:2306.00001 — MAX78000FTHR 5.5 ms, 196 µJ → 35.6 mW. energy-estimate.md §3(나)",
+      "use_in_curve": true
+    },
+    "datasheet_upper": {
+      "label": "(가) 데이터시트 상한",
+      "P_cpu_mW": 8.89,
+      "P_load_mW": 11.26,
+      "P_npu_mW": 169.5,
+      "source": "MAX78000 데이터시트 CNN 동작 전류 상한 146 mA × 1.1 V + P_cpu. energy-estimate.md §3(가) — 표 5 (손익분기) 에만 쓴다",
+      "use_in_curve": false
+    }
+  },
+  "energy_note": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
+  "configs": [
+    {
+      "name": "④",
+      "long": "④ 원본 파형 1D",
+      "slt": "④", "v4eval": "④", "stage3": "④",
+      "board_log": "wave", "synth_dir": "safesound_wave_v4d", "framing": null,
+      "model": "ai85safesoundnet", "model_desc": "KWS20 v3 파생 1D CNN (Conv1d), 전처리 없음 — 원파형 16,384 샘플을 128×128 로 접어 NPU 입력",
+      "preproc": "없음 (NPU 에 원파형)", "marker": "o", "estimated_latency": false
+    },
+    {
+      "name": "가 u1000",
+      "long": "후보 가 (간격 1000, 멜 32)",
+      "slt": "가 u1000", "v4eval": "가 u1000", "stage3": "가 u1000",
+      "board_log": "u1000", "synth_dir": "safesound_melu1000_v4d", "framing": "u1000",
+      "model": "ai85safesoundmelnet_p4", "model_desc": "2D CNN, 풀링 4단 (32멜×16프레임 입력)",
+      "preproc": "CPU 로그 멜 (증분)", "marker": "s", "estimated_latency": false
+    },
+    {
+      "name": "다 u800",
+      "long": "후보 다 (간격 800, 멜 32)",
+      "slt": "다 u800", "v4eval": "다 u800", "stage3": "다 u800",
+      "board_log": "u800", "synth_dir": "safesound_melu800_v4d", "framing": "u800",
+      "model": "ai85safesoundmelnet_p4", "model_desc": "2D CNN, 풀링 4단 (32멜×20프레임 입력)",
+      "preproc": "CPU 로그 멜 (증분)", "marker": "^", "estimated_latency": false
+    },
+    {
+      "name": "간격 400",
+      "long": "프레임 간격 400 (멜 64)",
+      "slt": "간격 400", "v4eval": "간격 400", "stage3": "간격 400",
+      "board_log": "h400", "synth_dir": "safesound_melh400_v4d", "framing": "h400",
+      "model": "ai85safesoundmelnet", "model_desc": "2D CNN, 풀링 5단 (64멜×40프레임 입력)",
+      "preproc": "CPU 로그 멜 (증분)", "marker": "D", "estimated_latency": false
+    },
+    {
+      "name": "①′",
+      "long": "①′ 로그 멜 (간격 250, 증분)",
+      "slt": "①′", "v4eval": "①′", "stage3": "①′",
+      "board_log": "melinc", "synth_dir": "safesound_melinc_v4d", "framing": "inc",
+      "model": "ai85safesoundmelnet", "model_desc": "2D CNN, 풀링 5단 (64멜×64프레임 입력)",
+      "preproc": "CPU 로그 멜 (증분, V1 float32 rfft + LUT 로그)", "marker": "v", "estimated_latency": false
+    },
+    {
+      "name": "(a)",
+      "long": "(a) NPU 로그 근사 (주 실행 lr 0.0003)",
+      "slt": "(a) 주 lr 0.0003", "v4eval": "(a) NPU 로그 근사", "stage3": null,
+      "board_log": null, "synth_dir": "safesound_logstage", "framing": null,
+      "model": "ai85safesoundlogstage", "model_desc": "NPU 안에서 구간선형 로그를 근사하는 1D 구성 — 보드 미실측, 지연은 합성 사이클 추정",
+      "preproc": "없음 (NPU 안 로그 근사)", "marker": "P", "estimated_latency": true
+    }
+  ],
+  "m4": {
+    "name": "M4 CMSIS-NN",
+    "board_log": "m4cmsis",
+    "desc": "④ 와 같은 가중치·같은 출력 (보드 NPU 출력과 비트 일치), arm_convolve_wrapper_s8, -O2",
+    "marker": "X"
+  },
+  "editions_for_fig4": ["v1", "v2.1", "v3.1", "v4", "v4+D"],
+  "fig4_configs": ["④", "간격 400"],
+  "welch_pairs": [
+    ["가 u1000", "④"],
+    ["다 u800", "④"],
+    ["간격 400", "①′"],
+    ["가 u1000", "(a)"],
+    ["(a)", "④"]
+  ],
+  "fonts": [
+    "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+    "/mnt/c/Windows/Fonts/malgun.ttf"
+  ]
+}

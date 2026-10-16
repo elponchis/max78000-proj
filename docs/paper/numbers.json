@@ -1,0 +1,1171 @@
+{
+ "truth.testL_S3_windows": {
+  "value": 4965,
+  "unit": "창",
+  "source": "data/external_eval/scream_stage3.json",
+  "field": "truth.testL_S3_n"
+ },
+ "truth.testL_windows": {
+  "value": 5056,
+  "unit": "창",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.n.testL"
+ },
+ "truth.test_scream_positives_S3": {
+  "value": 134,
+  "unit": "창",
+  "source": "data/external_eval/scream_stage3.json",
+  "field": "truth.test_scream_n"
+ },
+ "truth.test_scream_verdicts": {
+  "value": {
+   "?": 28,
+   "X": 63,
+   "O": 134
+  },
+  "unit": "창",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.n.test_scream_verdicts"
+ },
+ "truth.ext_scream_positives_real31L": {
+  "value": 53,
+  "unit": "창",
+  "source": "data/external_eval/scream_stage3.json",
+  "field": "truth.ext_scream_n"
+ },
+ "truth.ext_positives_real31L": {
+  "value": {
+   "siren": 87,
+   "glass": 44,
+   "scream": 53,
+   "dog_bark": 87
+  },
+  "unit": "창",
+  "source": "data/external_eval/v4_eval.json",
+  "field": "labels.ext_n_pos.real31L"
+ },
+ "truth.ext_negatives_real31L": {
+  "value": 402,
+  "unit": "창",
+  "source": "data/external_eval/v4_eval.json",
+  "field": "labels.ext_n_neg.real31L"
+ },
+ "acc.④.f1_S3": {
+  "value": {
+   "mean": 0.6692632338221461,
+   "sd": 0.024522692635021777,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[④].seeds[*].testL_S3.f1"
+ },
+ "acc.④.f1_L": {
+  "value": {
+   "mean": 0.6470629331787442,
+   "sd": 0.020393449245271842,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[④].seeds[*].testL.f1"
+ },
+ "acc.④.ext_f1": {
+  "value": {
+   "mean": 0.4429866088848892,
+   "sd": 0.021080519768333656,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[④].seeds[*].ext.f1"
+ },
+ "acc.④.scream_S3": {
+  "value": {
+   "mean": 0.2835820895522388,
+   "sd": 0.08798377703396712,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[④].seeds[*].testL_S3.scream_recall"
+ },
+ "acc.④.ext_map": {
+  "value": {
+   "mean": 0.8073882361726236,
+   "sd": 0.00688165325478564,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/v4_eval.json",
+  "field": "editions.v4+D[④].seeds[*].ext_map_real31L"
+ },
+ "acc.가 u1000.f1_S3": {
+  "value": {
+   "mean": 0.7541726024987172,
+   "sd": 0.013599790455081117,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[가 u1000].seeds[*].testL_S3.f1"
+ },
+ "acc.가 u1000.f1_L": {
+  "value": {
+   "mean": 0.7274436128098632,
+   "sd": 0.010610418571220873,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[가 u1000].seeds[*].testL.f1"
+ },
+ "acc.가 u1000.ext_f1": {
+  "value": {
+   "mean": 0.5419248434978977,
+   "sd": 0.014440855028227466,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[가 u1000].seeds[*].ext.f1"
+ },
+ "acc.가 u1000.scream_S3": {
+  "value": {
+   "mean": 0.5945273631840796,
+   "sd": 0.035267280792929956,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[가 u1000].seeds[*].testL_S3.scream_recall"
+ },
+ "acc.가 u1000.ext_map": {
+  "value": {
+   "mean": 0.8440489567878351,
+   "sd": 0.011368324467809976,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/v4_eval.json",
+  "field": "editions.v4+D[가 u1000].seeds[*].ext_map_real31L"
+ },
+ "acc.다 u800.f1_S3": {
+  "value": {
+   "mean": 0.7580279738108796,
+   "sd": 0.018504166916344916,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[다 u800].seeds[*].testL_S3.f1"
+ },
+ "acc.다 u800.f1_L": {
+  "value": {
+   "mean": 0.7329847616979751,
+   "sd": 0.019496981318561944,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[다 u800].seeds[*].testL.f1"
+ },
+ "acc.다 u800.ext_f1": {
+  "value": {
+   "mean": 0.5662243771779728,
+   "sd": 0.025170529045549006,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[다 u800].seeds[*].ext.f1"
+ },
+ "acc.다 u800.scream_S3": {
+  "value": {
+   "mean": 0.5671641791044776,
+   "sd": 0.07573799675441954,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[다 u800].seeds[*].testL_S3.scream_recall"
+ },
+ "acc.다 u800.ext_map": {
+  "value": {
+   "mean": 0.8658679193622069,
+   "sd": 0.008374474464533469,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/v4_eval.json",
+  "field": "editions.v4+D[다 u800].seeds[*].ext_map_real31L"
+ },
+ "acc.간격 400.f1_S3": {
+  "value": {
+   "mean": 0.8198867021181727,
+   "sd": 0.006451272833107432,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[간격 400].seeds[*].testL_S3.f1"
+ },
+ "acc.간격 400.f1_L": {
+  "value": {
+   "mean": 0.8037229543590989,
+   "sd": 0.006128835084955347,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[간격 400].seeds[*].testL.f1"
+ },
+ "acc.간격 400.ext_f1": {
+  "value": {
+   "mean": 0.6507032814655678,
+   "sd": 0.009736314820406426,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[간격 400].seeds[*].ext.f1"
+ },
+ "acc.간격 400.scream_S3": {
+  "value": {
+   "mean": 0.7288557213930348,
+   "sd": 0.056997210136266664,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[간격 400].seeds[*].testL_S3.scream_recall"
+ },
+ "acc.간격 400.ext_map": {
+  "value": {
+   "mean": 0.8991599337458488,
+   "sd": 0.00290047352156105,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/v4_eval.json",
+  "field": "editions.v4+D[간격 400].seeds[*].ext_map_real31L"
+ },
+ "acc.①′.f1_S3": {
+  "value": {
+   "mean": 0.8356401447877037,
+   "sd": 0.0022406923091925074,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[①′].seeds[*].testL_S3.f1"
+ },
+ "acc.①′.f1_L": {
+  "value": {
+   "mean": 0.8178197542143811,
+   "sd": 0.002880368041990012,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[①′].seeds[*].testL.f1"
+ },
+ "acc.①′.ext_f1": {
+  "value": {
+   "mean": 0.6650836717324132,
+   "sd": 0.015195740455487732,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[①′].seeds[*].ext.f1"
+ },
+ "acc.①′.scream_S3": {
+  "value": {
+   "mean": 0.7238805970149254,
+   "sd": 0.012925752295290102,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[①′].seeds[*].testL_S3.scream_recall"
+ },
+ "acc.①′.ext_map": {
+  "value": {
+   "mean": 0.8976622057057954,
+   "sd": 0.012557079385053632,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/v4_eval.json",
+  "field": "editions.v4+D[①′].seeds[*].ext_map_real31L"
+ },
+ "acc.(a).f1_S3": {
+  "value": {
+   "mean": 0.7030061880824734,
+   "sd": 0.006658547204323262,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[(a) 주 lr 0.0003].seeds[*].testL_S3.f1"
+ },
+ "acc.(a).f1_L": {
+  "value": {
+   "mean": 0.6775011664200558,
+   "sd": 0.00697948269541281,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[(a) 주 lr 0.0003].seeds[*].testL.f1"
+ },
+ "acc.(a).ext_f1": {
+  "value": {
+   "mean": 0.49971769071234545,
+   "sd": 0.010585199486505992,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[(a) 주 lr 0.0003].seeds[*].ext.f1"
+ },
+ "acc.(a).scream_S3": {
+  "value": {
+   "mean": 0.3855721393034826,
+   "sd": 0.028253275352240155,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[(a) 주 lr 0.0003].seeds[*].testL_S3.scream_recall"
+ },
+ "acc.(a).ext_map": {
+  "value": {
+   "mean": 0.845151963014339,
+   "sd": 0.0054934919894273964,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/v4_eval.json",
+  "field": "editions.v4+D[(a) NPU 로그 근사].seeds[*].ext_map_real31L"
+ },
+ "latency.④": {
+  "value": {
+   "pre": 0.0,
+   "load": 1.0870199999999999,
+   "infer": 1.43943,
+   "out": 0.008039999999999999,
+   "total": 2.5344899999999995
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_wave.log",
+  "field": "load/infer/unload us max (1000회 최악)"
+ },
+ "energy.④": {
+  "value": {
+   "datasheet": 71.0447253,
+   "literature": 130.364619,
+   "moosmann": 78.401196
+  },
+  "unit": "µJ",
+  "source": "data/logs-local/board_v4d_wave.log × docs/paper/paper_config.json power_sources",
+  "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
+  "note": "추정(실측 지연 × 공개 전력)"
+ },
+ "latency.가 u1000": {
+  "value": {
+   "pre": 2.26409,
+   "load": 0.13353,
+   "infer": 0.53077,
+   "out": 0.00538,
+   "total": 2.93377
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_u1000.log",
+  "field": "load/infer/unload us max (1000회 최악); 전처리 docs/results/synthesis-check.md §14.1 'push 최악' + '링 버퍼 풀기 최악' (u1000)"
+ },
+ "energy.가 u1000": {
+  "value": {
+   "datasheet": 43.341995,
+   "literature": 97.650609,
+   "moosmann": 78.489812
+  },
+  "unit": "µJ",
+  "source": "data/logs-local/board_v4d_u1000.log × docs/paper/paper_config.json power_sources",
+  "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
+  "note": "추정(실측 지연 × 공개 전력)"
+ },
+ "latency.다 u800": {
+  "value": {
+   "pre": 2.8333,
+   "load": 0.16676,
+   "infer": 0.65338,
+   "out": 0.00551,
+   "total": 3.65895
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_u800.log",
+  "field": "load/infer/unload us max (1000회 최악); 전처리 docs/results/synthesis-check.md §14.1 'push 최악' + '링 버퍼 풀기 최악' (u800)"
+ },
+ "energy.다 u800": {
+  "value": {
+   "datasheet": 53.7791674,
+   "literature": 121.385482,
+   "moosmann": 97.798464
+  },
+  "unit": "µJ",
+  "source": "data/logs-local/board_v4d_u800.log × docs/paper/paper_config.json power_sources",
+  "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
+  "note": "추정(실측 지연 × 공개 전력)"
+ },
+ "latency.간격 400": {
+  "value": {
+   "pre": 6.18785,
+   "load": 0.66937,
+   "infer": 2.55242,
+   "out": 0.00638,
+   "total": 9.41602
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_h400.log",
+  "field": "load/infer/unload us max (1000회 최악); 전처리 docs/results/synthesis-check.md §14.1 'push 최악' + '링 버퍼 풀기 최악' (h400)"
+ },
+ "energy.간격 400": {
+  "value": {
+   "datasheet": 166.73214330000002,
+   "literature": 353.22579400000006,
+   "moosmann": 261.083432
+  },
+  "unit": "µJ",
+  "source": "data/logs-local/board_v4d_h400.log × docs/paper/paper_config.json power_sources",
+  "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
+  "note": "추정(실측 지연 × 공개 전력)"
+ },
+ "latency.①′": {
+  "value": {
+   "pre": 9.86757,
+   "load": 1.096,
+   "infer": 4.08554,
+   "out": 0.007980000000000001,
+   "total": 15.05709
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_melinc.log",
+  "field": "load/infer/unload us max (1000회 최악); 전처리 docs/results/synthesis-check.md §12.1b 'V1 float32 rfft + LUT 로그' 최악 push + §12.1 'get' 최악"
+ },
+ "energy.①′": {
+  "value": {
+   "datasheet": 266.80268870000003,
+   "literature": 565.027658,
+   "moosmann": 417.539664
+  },
+  "unit": "µJ",
+  "source": "data/logs-local/board_v4d_melinc.log × docs/paper/paper_config.json power_sources",
+  "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
+  "note": "추정(실측 지연 × 공개 전력)"
+ },
+ "latency.(a)": {
+  "value": {
+   "pre": 0.0,
+   "load": 1.0870199999999999,
+   "infer": 5.4945200000000005,
+   "out": 0.008039999999999999,
+   "total": 6.589580000000001
+  },
+  "unit": "ms",
+  "source": "data/synth/out/safesound_logstage/log.txt (Total cycles) ÷ CNN 클럭 50000000 Hz; 적재·출력은 data/logs-local/board_v4d_wave.log (④ 실측)",
+  "field": "load/infer/unload us max (1000회 최악)",
+  "note": "추정(보드 미실측)"
+ },
+ "energy.(a)": {
+  "value": {
+   "datasheet": 236.45184640000002,
+   "literature": 421.11457200000007,
+   "moosmann": 222.7624
+  },
+  "unit": "µJ",
+  "source": "data/synth/out/safesound_logstage/log.txt (Total cycles) ÷ CNN 클럭 50000000 Hz; 적재·출력은 data/logs-local/board_v4d_wave.log (④ 실측) × docs/paper/paper_config.json power_sources",
+  "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
+  "note": "추정(실측 지연 × 공개 전력) — 지연도 추정"
+ },
+ "latency.M4 CMSIS-NN": {
+  "value": {
+   "load": 0.27,
+   "infer": 225.504,
+   "total": 225.774
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_m4cmsis.log",
+  "field": "load/infer us max (1000회 최악)"
+ },
+ "energy.M4 CMSIS-NN": {
+  "value": {
+   "datasheet": 2007.7707599999999,
+   "literature": 5599.1952,
+   "moosmann": 5599.1952
+  },
+  "unit": "µJ",
+  "source": "data/logs-local/board_v4d_m4cmsis.log × docs/paper/paper_config.json power_sources",
+  "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
+  "note": "추정(실측 지연 × 공개 전력)"
+ },
+ "ratio.infer_m4cmsis_over_npu": {
+  "value": 156.66201204643505,
+  "unit": "배",
+  "source": "data/logs-local/board_v4d_m4cmsis.log, data/logs-local/board_v4d_wave.log",
+  "field": "infer us max 비"
+ },
+ "ratio.decision_m4cmsis_over_npu": {
+  "value": 89.08064344305957,
+  "unit": "배",
+  "source": "data/logs-local/board_v4d_m4cmsis.log, data/logs-local/board_v4d_wave.log",
+  "field": "(load+infer) / (load+infer+unload) 비"
+ },
+ "ratio.energy_m4cmsis_over_npu": {
+  "value": {
+   "datasheet": 28.260659064016398,
+   "literature": 42.95026705060213,
+   "moosmann": 71.41721664552158
+  },
+  "unit": "배",
+  "source": "위 energy 항목",
+  "field": "같은 전력 상수 쌍",
+  "note": "추정"
+ },
+ "preproc.first_impl_ms": {
+  "value": 47.871120000000005,
+  "unit": "ms",
+  "source": "docs/results/synthesis-check.md §10 '전처리 전체' 최악 (최적화 전 첫 구현, 일괄 64프레임)",
+  "field": "최악 사이클 ÷ 코어 클럭",
+  "note": "최적화 전 일괄 구현 (①, 2026-10-02)"
+ },
+ "preproc.inc_v1_ms": {
+  "value": 9.86757,
+  "unit": "ms",
+  "source": "docs/results/synthesis-check.md §12.1b 'V1 float32 rfft + LUT 로그' 최악 push + §12.1 'get' 최악",
+  "field": "최악 사이클 ÷ 코어 클럭",
+  "note": "①′ 증분 V1"
+ },
+ "hop_ms": {
+  "value": 250,
+  "unit": "ms",
+  "source": "tools/eval_external.py",
+  "field": "HOP_MS"
+ },
+ "hop_fraction.④": {
+  "value": 0.010137959999999998,
+  "unit": "비",
+  "source": "latency 항목",
+  "field": "판단 1회 / hop"
+ },
+ "hop_fraction.가 u1000": {
+  "value": 0.01173508,
+  "unit": "비",
+  "source": "latency 항목",
+  "field": "판단 1회 / hop"
+ },
+ "hop_fraction.다 u800": {
+  "value": 0.0146358,
+  "unit": "비",
+  "source": "latency 항목",
+  "field": "판단 1회 / hop"
+ },
+ "hop_fraction.간격 400": {
+  "value": 0.037664079999999996,
+  "unit": "비",
+  "source": "latency 항목",
+  "field": "판단 1회 / hop"
+ },
+ "hop_fraction.①′": {
+  "value": 0.06022836,
+  "unit": "비",
+  "source": "latency 항목",
+  "field": "판단 1회 / hop"
+ },
+ "hop_fraction.(a)": {
+  "value": 0.02635832,
+  "unit": "비",
+  "source": "latency 항목",
+  "field": "판단 1회 / hop"
+ },
+ "hop_fraction.M4 CMSIS-NN": {
+  "value": 0.903096,
+  "unit": "비",
+  "source": "latency 항목",
+  "field": "판단 1회 / hop"
+ },
+ "panns.test_S3": {
+  "value": {
+   "f1": 0.8447882937345893,
+   "recall": [
+    0.9795918367346939,
+    0.5857142857142857,
+    0.7388059701492538,
+    0.8505154639175257
+   ],
+   "source": "data/ceiling-panns-zs.npz"
+  },
+  "unit": "",
+  "source": "data/ceiling-panns-zs.npz",
+  "field": "zeroshot(P) → 시험셋 배경 @300/h 문턱값 → testL-S3 마스크 (이 스크립트가 다시 채점)"
+ },
+ "panns.ext_real31L_test300": {
+  "value": {
+   "f1": 0.7022860846634001,
+   "recall": [
+    0.6666666666666666,
+    0.6363636363636364,
+    0.37735849056603776,
+    0.6091954022988506
+   ],
+   "map": 0.890167496839356
+  },
+  "unit": "",
+  "source": "data/external_eval/v4_panns.json",
+  "field": "where=ext, definition=real31L, point=test300 (시험셋 문턱값 — 모델과 같은 규칙)"
+ },
+ "panns.ext_real31L_ext300": {
+  "value": {
+   "f1": 0.7587909271380391,
+   "recall": [
+    0.7816091954022989,
+    0.7272727272727273,
+    0.6226415094339622,
+    0.7126436781609196
+   ],
+   "map": 0.890167496839356
+  },
+  "unit": "",
+  "source": "data/external_eval/v4_panns.json",
+  "field": "where=ext, definition=real31L, point=ext300 (외부 배경 문턱값 — 참고)"
+ },
+ "truth.test_glass_verdicts": {
+  "value": {
+   "X": 104,
+   "?": 47,
+   "O": 70
+  },
+  "unit": "창",
+  "source": "data_listened.csv",
+  "field": "set=C_test_glass, role=target, verdict"
+ },
+ "welch.가 u1000 − ④": {
+  "value": {
+   "test_f1_S3": [
+    0.08490936867657106,
+    0.034523751802821426,
+    0.1352949855503207
+   ],
+   "test_f1_L": [
+    0.08038067963111906,
+    0.03821211513080804,
+    0.12254924413143006
+   ],
+   "ext_f1": [
+    0.09893823461300849,
+    0.0557818238605664,
+    0.14209464536545058
+   ],
+   "ext_map": [
+    0.03666072061521153,
+    0.0134252257775236,
+    0.05989621545289946
+   ]
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json (test_f1_S3·test_f1_L·ext_f1), data/external_eval/v4_eval.json (ext_map)",
+  "field": "시드 1~3 Welch 95% CI (eval_v2.welch)"
+ },
+ "welch.다 u800 − ④": {
+  "value": {
+   "test_f1_S3": [
+    0.08876473998873347,
+    0.03802266167817614,
+    0.1395068182992908
+   ],
+   "test_f1_L": [
+    0.08592182851923091,
+    0.040659428797916564,
+    0.13118422824054526
+   ],
+   "ext_f1": [
+    0.12323776829308358,
+    0.0699631865743279,
+    0.17651235001183926
+   ],
+   "ext_map": [
+    0.0584796831895833,
+    0.04084405606127075,
+    0.07611531031789584
+   ]
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json (test_f1_S3·test_f1_L·ext_f1), data/external_eval/v4_eval.json (ext_map)",
+  "field": "시드 1~3 Welch 95% CI (eval_v2.welch)"
+ },
+ "welch.간격 400 − ①′": {
+  "value": {
+   "test_f1_S3": [
+    -0.015753442669530937,
+    -0.0299477976841726,
+    -0.0015590876548892737
+   ],
+   "test_f1_L": [
+    -0.014096799855282227,
+    -0.02693903098344315,
+    -0.0012545687271213034
+   ],
+   "ext_f1": [
+    -0.014380390266845455,
+    -0.04541571384034511,
+    0.016654933306654195
+   ],
+   "ext_map": [
+    0.0014977280400534365,
+    -0.027740316340848187,
+    0.03073577242095506
+   ]
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json (test_f1_S3·test_f1_L·ext_f1), data/external_eval/v4_eval.json (ext_map)",
+  "field": "시드 1~3 Welch 95% CI (eval_v2.welch)"
+ },
+ "welch.가 u1000 − (a)": {
+  "value": {
+   "test_f1_S3": [
+    0.05116641441624381,
+    0.022832286485772183,
+    0.07950054234671544
+   ],
+   "test_f1_L": [
+    0.04994244638980749,
+    0.028261497831732964,
+    0.07162339494788203
+   ],
+   "ext_f1": [
+    0.04220715278555226,
+    0.012450858710177603,
+    0.07196344686092691
+   ],
+   "ext_map": [
+    -0.0011030062265039442,
+    -0.02483034547204858,
+    0.022624333019040693
+   ]
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json (test_f1_S3·test_f1_L·ext_f1), data/external_eval/v4_eval.json (ext_map)",
+  "field": "시드 1~3 Welch 95% CI (eval_v2.welch)"
+ },
+ "welch.(a) − ④": {
+  "value": {
+   "test_f1_S3": [
+    0.03374295426032725,
+    -0.022241395004443713,
+    0.08972730352509822
+   ],
+   "test_f1_L": [
+    0.030438233241311563,
+    -0.014539765766104953,
+    0.07541623224872808
+   ],
+   "ext_f1": [
+    0.05673108182745623,
+    0.012955740619594355,
+    0.10050642303531811
+   ],
+   "ext_map": [
+    0.03776372684171547,
+    0.02337128418906711,
+    0.05215616949436384
+   ]
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json (test_f1_S3·test_f1_L·ext_f1), data/external_eval/v4_eval.json (ext_map)",
+  "field": "시드 1~3 Welch 95% CI (eval_v2.welch)"
+ },
+ "editions.ext_f1_real31L": {
+  "value": {
+   "④": {
+    "v1": {
+     "mean": 0.297049228859905,
+     "sd": 0.00926596084469448,
+     "n": 3
+    },
+    "v2.1": {
+     "mean": 0.3310756554200736,
+     "sd": 0.03209810956086319,
+     "n": 3
+    },
+    "v3.1": {
+     "mean": 0.38200315980079624,
+     "sd": 0.023563616016389823,
+     "n": 3
+    },
+    "v4": {
+     "mean": 0.37031067128093714,
+     "sd": 0.01928492242294128,
+     "n": 3
+    },
+    "v4+D": {
+     "mean": 0.4429866088848892,
+     "sd": 0.021080519768333656,
+     "n": 3
+    }
+   },
+   "간격 400": {
+    "v1": {
+     "mean": 0.41752272242584665,
+     "sd": 0.007074662493532504,
+     "n": 3
+    },
+    "v2.1": {
+     "mean": 0.47883016103498105,
+     "sd": 0.016474688974736883,
+     "n": 3
+    },
+    "v3.1": {
+     "mean": 0.5701174805635,
+     "sd": 0.04072735047799325,
+     "n": 3
+    },
+    "v4": {
+     "mean": 0.6021608014350588,
+     "sd": 0.014419615939312617,
+     "n": 3
+    },
+    "v4+D": {
+     "mean": 0.6507032814655678,
+     "sd": 0.009736314820406426,
+     "n": 3
+    }
+   }
+  },
+  "unit": "",
+  "source": "data/external_eval/v4_eval.json",
+  "field": "editions[판][구성].seeds[*].ext_f1_real31L — 전부 real31L 로 다시 채점한 값"
+ },
+ "breakeven": {
+  "value": {
+   "④ (NPU) < M4 CMSIS-NN": {
+    "C_X": 1.09506,
+    "N_X": 1.43943,
+    "C_Y": 225.774,
+    "N_Y": 0.0,
+    "condition": "r < 156.1",
+    "r_star": 156.0888268272858,
+    "by_source": {
+     "datasheet": {
+      "r": 4.58830146231721,
+      "E_X": 71.0447253,
+      "E_Y": 2007.7707599999999
+     },
+     "literature": {
+      "r": 2.8911290322580645,
+      "E_X": 130.364619,
+      "E_Y": 5599.1952
+     },
+     "moosmann": {
+      "r": 1.435483870967742,
+      "E_X": 78.401196,
+      "E_Y": 5599.1952
+     },
+     "datasheet_upper": {
+      "r": 19.06636670416198,
+      "E_X": 256.3137606,
+      "E_Y": 2007.7707599999999
+     }
+    }
+   },
+   "가 u1000 < ④": {
+    "C_X": 2.403,
+    "N_X": 0.53077,
+    "C_Y": 1.09506,
+    "N_Y": 1.43943,
+    "condition": "r > 1.44",
+    "r_star": 1.4394162833182929,
+    "by_source": {
+     "datasheet": {
+      "r": 4.58830146231721,
+      "E_X": 43.341995,
+      "E_Y": 71.0447253
+     },
+     "literature": {
+      "r": 2.8911290322580645,
+      "E_X": 97.650609,
+      "E_Y": 130.364619
+     },
+     "moosmann": {
+      "r": 1.435483870967742,
+      "E_X": 78.489812,
+      "E_Y": 78.401196
+     },
+     "datasheet_upper": {
+      "r": 19.06636670416198,
+      "E_X": 111.6574017,
+      "E_Y": 256.3137606
+     }
+    }
+   },
+   "다 u800 < ④": {
+    "C_X": 3.00557,
+    "N_X": 0.65338,
+    "C_Y": 1.09506,
+    "N_Y": 1.43943,
+    "condition": "r > 2.43",
+    "r_star": 2.430519687042809,
+    "by_source": {
+     "datasheet": {
+      "r": 4.58830146231721,
+      "E_X": 53.7791674,
+      "E_Y": 71.0447253
+     },
+     "literature": {
+      "r": 2.8911290322580645,
+      "E_X": 121.385482,
+      "E_Y": 130.364619
+     },
+     "moosmann": {
+      "r": 1.435483870967742,
+      "E_X": 97.798464,
+      "E_Y": 78.401196
+     },
+     "datasheet_upper": {
+      "r": 19.06636670416198,
+      "E_X": 137.8757072,
+      "E_Y": 256.3137606
+     }
+    }
+   },
+   "간격 400 < ①′": {
+    "C_X": 6.8636,
+    "N_X": 2.55242,
+    "C_Y": 10.97155,
+    "N_Y": 4.08554,
+    "condition": "항상 성립 (r > 0 이면)",
+    "r_star": -2.679470621999583,
+    "by_source": {
+     "datasheet": {
+      "r": 4.58830146231721,
+      "E_X": 166.73214330000002,
+      "E_Y": 266.80268870000003
+     },
+     "literature": {
+      "r": 2.8911290322580645,
+      "E_X": 353.22579400000006,
+      "E_Y": 565.027658
+     },
+     "moosmann": {
+      "r": 1.435483870967742,
+      "E_X": 261.083432,
+      "E_Y": 417.539664
+     },
+     "datasheet_upper": {
+      "r": 19.06636670416198,
+      "E_X": 495.2541215,
+      "E_Y": 792.6525421
+     }
+    }
+   },
+   "(a) < ④": {
+    "C_X": 1.09506,
+    "N_X": 5.4945200000000005,
+    "C_Y": 1.09506,
+    "N_Y": 1.43943,
+    "condition": "성립하지 않음 (r > 0 이면)",
+    "r_star": -0.0,
+    "by_source": {
+     "datasheet": {
+      "r": 4.58830146231721,
+      "E_X": 236.45184640000002,
+      "E_Y": 71.0447253
+     },
+     "literature": {
+      "r": 2.8911290322580645,
+      "E_X": 421.11457200000007,
+      "E_Y": 130.364619
+     },
+     "moosmann": {
+      "r": 1.435483870967742,
+      "E_X": 222.7624,
+      "E_Y": 78.401196
+     },
+     "datasheet_upper": {
+      "r": 19.06636670416198,
+      "E_X": 943.6515156000002,
+      "E_Y": 256.3137606
+     }
+    }
+   }
+  },
+  "unit": "",
+  "source": "latency 항목 × paper_config.json power_sources",
+  "field": "E = C·P_cpu + N·P_npu (P_load ≈ P_cpu 단순화); 성립 여부는 전력 상수 전부 넣은 값으로",
+  "note": "추정"
+ },
+ "listening": {
+  "value": {
+   "A_ext_scream/전체": {
+    "n": 130,
+    "O": 72,
+    "X": 44,
+    "?": 14,
+    "contrast_n": 15,
+    "contrast_O": 13
+   },
+   "A_ext_scream/v1+실사용": {
+    "n": 25,
+    "O": 19,
+    "X": 6,
+    "?": 0,
+    "contrast_n": 15,
+    "contrast_O": 13
+   },
+   "A_ext_scream/v1만": {
+    "n": 56,
+    "O": 19,
+    "X": 31,
+    "?": 6,
+    "contrast_n": 15,
+    "contrast_O": 13
+   },
+   "A_ext_scream/실사용만": {
+    "n": 49,
+    "O": 34,
+    "X": 7,
+    "?": 8,
+    "contrast_n": 15,
+    "contrast_O": 13
+   },
+   "B_ext_glass/전체": {
+    "n": 74,
+    "O": 44,
+    "X": 20,
+    "?": 10,
+    "contrast_n": 15,
+    "contrast_O": 9
+   },
+   "B_ext_glass/전체/verdict_first": {
+    "n": 74,
+    "O": 32,
+    "X": 31,
+    "?": 11,
+    "contrast_n": 15,
+    "contrast_O": 7
+   },
+   "C_test_glass/전체": {
+    "n": 221,
+    "O": 70,
+    "X": 104,
+    "?": 47,
+    "contrast_n": 15,
+    "contrast_O": 14
+   },
+   "S_train_scream/전체": {
+    "n": 380,
+    "O": 190,
+    "X": 135,
+    "?": 55,
+    "contrast_n": 15,
+    "contrast_O": 15
+   },
+   "S_train_scream/audioset_train": {
+    "n": 124,
+    "O": 95,
+    "X": 10,
+    "?": 19,
+    "contrast_n": 15,
+    "contrast_O": 15
+   },
+   "S_train_scream/screaming_train": {
+    "n": 100,
+    "O": 84,
+    "X": 4,
+    "?": 12,
+    "contrast_n": 15,
+    "contrast_O": 15
+   },
+   "S_train_scream/yellshout_test": {
+    "n": 66,
+    "O": 6,
+    "X": 49,
+    "?": 11,
+    "contrast_n": 15,
+    "contrast_O": 15
+   },
+   "S_train_scream/yellshout_train": {
+    "n": 90,
+    "O": 5,
+    "X": 72,
+    "?": 13,
+    "contrast_n": 15,
+    "contrast_O": 15
+   },
+   "T_test_scream/전체": {
+    "n": 189,
+    "O": 146,
+    "X": 21,
+    "?": 22,
+    "contrast_n": 15,
+    "contrast_O": 14
+   },
+   "T_test_scream/screaming_plus_train": {
+    "n": 30,
+    "O": 18,
+    "X": 7,
+    "?": 5,
+    "contrast_n": 15,
+    "contrast_O": 14
+   },
+   "T_test_scream/screaming_test": {
+    "n": 159,
+    "O": 128,
+    "X": 14,
+    "?": 17,
+    "contrast_n": 15,
+    "contrast_O": 14
+   }
+  },
+  "unit": "창",
+  "source": "data_listened.csv, data_listened_scream.csv, data_listened_test_scream.csv",
+  "field": "set/role/definition/verdict 열 집계 (대조 창 = role contrast, PANNs ≥ 0.50 학습 창, 일관성 점검용)"
+ },
+ "_meta": {
+  "generated_by": "tools/make_paper_assets.py",
+  "basis": "데이터 v4+D · 정답 testL-S3 / real31L · 지연 v4+D 시드 1 보드 실측 · 에너지 추정(실측 지연 × 공개 전력)",
+  "config": "docs/paper/paper_config.json",
+  "figures": {
+   "fig1_test": [
+    "docs/paper/fig1_acc_energy_test.png",
+    "docs/paper/fig1_acc_energy_test.svg"
+   ],
+   "fig1_ext": [
+    "docs/paper/fig1_acc_energy_ext.png",
+    "docs/paper/fig1_acc_energy_ext.svg"
+   ],
+   "fig2": [
+    "docs/paper/fig2_latency_breakdown.png",
+    "docs/paper/fig2_latency_breakdown.svg"
+   ],
+   "fig3": [
+    "docs/paper/fig3_recall_by_class.png",
+    "docs/paper/fig3_recall_by_class.svg"
+   ],
+   "fig4": [
+    "docs/paper/fig4_edition_ext_f1.png",
+    "docs/paper/fig4_edition_ext_f1.svg"
+   ]
+  },
+  "tables": {
+   "table1_configs": "docs/paper/table1_configs.csv",
+   "table2_main": "docs/paper/table2_main.csv",
+   "table3_welch": "docs/paper/table3_welch.csv",
+   "table4_npu_vs_cmsis": "docs/paper/table4_npu_vs_cmsis.csv",
+   "table5_breakeven": "docs/paper/table5_breakeven.csv",
+   "table6_listening": "docs/paper/table6_listening.csv"
+  },
+  "xlsx": "docs/paper/paper_tables.xlsx",
+  "font": "NanumGothic"
+ }
+}
