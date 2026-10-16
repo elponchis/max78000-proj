@@ -289,6 +289,17 @@ def main():
         C = json.load(f)
     PS = C["power_sources"]
     curve_src = [k for k, v in PS.items() if v.get("use_in_curve")]
+    # 표시 이름 (내부 이름 → 논문 표기) — paper_config.json display 절 한 곳에서만 읽는다
+    D = C["display"]
+    DN = {k: v["name"] for k, v in D["configs"].items()}          # 긴 이름 (표)
+    DS = {k: v["short"] for k, v in D["configs"].items()}         # 짧은 이름 (축 눈금)
+    DT = {k: v["tag"] for k, v in D["configs"].items()}           # 점 옆 이름 (그림 1)
+    DG = {k: v["group"] for k, v in D["configs"].items()}
+    GC = {g: v["color"] for g, v in D["groups"].items()}
+    GL = {g: v["label"] for g, v in D["groups"].items()}
+    M4N, M4S = D["m4"]["name"], D["m4"]["short"]
+    TR, PN, EDN = D["truth"], D["panns"], D["editions"]
+    assert set(DN) == {c["name"] for c in C["configs"]}, "display.configs 와 configs 의 이름이 다르다"
 
     # ── 결과 JSON
     slt = load_json("scream_listened_test.json")
@@ -442,84 +453,97 @@ def main():
     markers = {c["name"]: c["marker"] for c in C["configs"]}
     est = {c["name"]: c["estimated_latency"] for c in C["configs"]}
 
-    # 그림 1 — 정확도-에너지 (시험셋 testL-S3 / 외부 F1)
-    for tag, key, ylab in (("test", "f1_S3", "시험셋 macro-F1 (testL-S3, 오경보 300회/h)"), ("ext", "ext_f1", "외부 세트 F1 (real31L, 시험셋 문턱값)")):
-        fig, ax = plt.subplots(figsize=(5.2, 3.6))
+    # 그림 1 — 정확도-에너지, 좌: 시험 데이터 / 우: 외부 데이터. 색 = 전처리 위치, 마커 = 구성, 점 옆 이름, CPU log-mel 은 에너지 순으로 선
+    fig, axes = plt.subplots(1, 2, figsize=(7.6, 3.5))
+    allE = [LAT[n]["E"][k] for n in names for k in curve_src]
+    ticks = [t for t in (20, 30, 50, 70, 100, 150, 200, 300, 500, 700, 1000) if min(allE) * 0.85 <= t <= max(allE) * 1.15]
+    cpu_names = sorted([n for n in names if DG[n] == "cpu"], key=lambda n: LAT[n]["E"]["datasheet"])
+    for ax, key, ylab in ((axes[0], "f1_S3", f"macro-F1 — {TR['testL_S3']}"), (axes[1], "ext_f1", f"F1 — {TR['real31L']}")):
+        xs_c = [LAT[n]["E"]["datasheet"] for n in cpu_names]
+        ys_c = [mean_sd(ACC[n][key])[0] for n in cpu_names]
+        ax.plot(xs_c, ys_c, "-", color=GC["cpu"], lw=1.0, alpha=0.6, zorder=1)
         for name in names:
-            L = LAT[name]
+            L = LAT[name]; col = GC[DG[name]]
             es = [L["E"][k] for k in curve_src]
             x = L["E"]["datasheet"]
             mu, sd = mean_sd(ACC[name][key])
             ax.errorbar([x], [mu], yerr=[[sd], [sd]], xerr=[[x - min(es)], [max(es) - x]], fmt=markers[name],
-                        mfc="white" if est[name] else "black", mec="black", ecolor="0.4", color="black", ms=7, capsize=2, lw=0.9,
-                        label=name + (" (지연 추정)" if est[name] else ""))
+                        mfc="white" if est[name] else col, mec=col, ecolor=col, color=col, ms=7, capsize=2, lw=0.9, zorder=3)
+            dsp = D["configs"][name]
+            ax.annotate(DT[name] + ("*" if est[name] else ""), (x, mu), textcoords="offset points", xytext=dsp.get("offset", [7, -11]),
+                        ha=dsp.get("ha", "left"), fontsize=8, color=col)
+        # CPU log-mel 묶음 이름은 선의 가운데 위에
+        xm = math.sqrt(xs_c[1] * xs_c[2]); ym = (ys_c[1] + ys_c[2]) / 2
+        ax.annotate(GL["cpu"], (xm, ym), textcoords="offset points", xytext=(-4, 14), ha="right", fontsize=8, color=GC["cpu"])
         ax.set_xscale("log")
         ax.margins(y=0.12)
-        allE = [LAT[n]["E"][k] for n in names for k in curve_src]
-        ticks = [t for t in (20, 30, 50, 70, 100, 150, 200, 300, 500, 700, 1000) if min(allE) * 0.85 <= t <= max(allE) * 1.15]
+        ax.set_xlim(min(allE) * 0.72, max(allE) * 1.25)
         ax.set_xticks(ticks)
         ax.set_xticklabels([str(t) for t in ticks])
         ax.xaxis.set_minor_formatter(plt.NullFormatter())
-        ax.set_xlabel("판단 1회 추정 에너지 (μJ, 로그축) — 추정(실측 지연 × 공개 전력)")
+        ax.set_xlabel("판단 1회 추정 에너지 (μJ, 로그축)")
         ax.set_ylabel(ylab)
         ax.grid(True, which="both", lw=0.3, color="0.85")
-        ax.legend(loc="upper left", frameon=False)
-        ax.set_title("마커 = (가) 데이터시트 전력, 가로 막대 = 공개 전력값 범위, 세로 막대 = 시드 표준편차 (n=%d)" % ACC["④"]["n"], fontsize=8)
-        figs[f"fig1_{tag}"] = save(fig, f"fig1_acc_energy_{tag}")
+    fig.tight_layout()
+    figs["fig1"] = save(fig, "fig1_acc_energy")
 
     # 그림 2 — 판단 1회 지연 분해
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.6, 3.4), gridspec_kw={"width_ratios": [5, 1.3]})
     segs = [("pre", "CPU 전처리", "white", "////"), ("load", "입력 적재(+출력)", "0.75", ""), ("infer", "NPU 추론", "0.35", "")]
     xs = np.arange(len(names))
-    for ax, items, labels in ((ax1, [LAT[n] for n in names], names), (ax2, [LAT_M4], [C["m4"]["name"]])):
+    for ax, items, labels in ((ax1, [LAT[n] for n in names], [DS[n] + ("\n(추정)" if est[n] else "") for n in names]), (ax2, [LAT_M4], [M4S])):
         bottom = np.zeros(len(items))
         for key, lab, col, hatch in segs:
             vals = np.array([(L["load"] + L["out"]) if key == "load" else L[key] for L in items])
             if ax is ax2 and key == "infer":
-                lab = "M4 추론 (CMSIS-NN)"
+                lab = "CPU 추론"
             ax.bar(np.arange(len(items)), vals, bottom=bottom, color=col, edgecolor="black", hatch=hatch, lw=0.8, width=0.6, label=lab)
             bottom += vals
         for i, L in enumerate(items):
             ax.text(i, bottom[i], f"{L['total']:.2f}", ha="center", va="bottom", fontsize=8)
         ax.set_xticks(np.arange(len(items)))
-        ax.set_xticklabels([l + ("\n(추정)" if l in est and est[l] else "") for l in labels], fontsize=8)
+        ax.set_xticklabels(labels, fontsize=7.5)
         ax.grid(True, axis="y", lw=0.3, color="0.85")
-    ax1.set_ylabel("판단 1회 지연 (ms, 1000회 최악)")
-    ax1.axhline(hop_ms * 0.1, color="black", ls=":", lw=0.8)
-    ax1.text(len(names) - 0.5, hop_ms * 0.1, f"hop 의 10% ({hop_ms * 0.1:.0f} ms)", ha="right", va="bottom", fontsize=7)
-    ax1.set_ylim(0, hop_ms * 0.1 * 1.12)
+    ax1.set_ylabel("판단 1회 지연 (ms)")
     ax2.axhline(hop_ms, color="black", ls="--", lw=0.8)
-    ax2.text(0, hop_ms, f"hop {hop_ms:.0f} ms", ha="center", va="bottom", fontsize=7)
+    ax2.text(0, hop_ms, f"판단 주기 {hop_ms:.0f} ms", ha="center", va="bottom", fontsize=7)
     ax2.set_ylim(0, hop_ms * 1.15)
     h1, l1 = ax1.get_legend_handles_labels()
-    ax1.legend(h1, l1, loc="center left", frameon=False)
-    ax2.set_title("M4 대조군 (별도 축)", fontsize=8)
-    fig.suptitle("판단 1회 지연 분해 — MAX78000FTHR 실측 (v4+D 시드 1, POR 직후, 코어 100 MHz / CNN 50 MHz); (a) 는 합성 사이클 추정", fontsize=8)
+    ax1.legend(h1, l1, loc="upper left", frameon=False)
+    fig.tight_layout()
     figs["fig2"] = save(fig, "fig2_latency_breakdown")
 
-    # 그림 3 — 클래스별 재현율 (시험셋 testL-S3 / 외부 real31L) + PANNs 점선
-    fig, axes = plt.subplots(1, 2, figsize=(7.4, 3.4), sharey=True)
-    width = 0.8 / len(names)
-    for ax, key, title, pr in ((axes[0], "rec_S3", "시험셋 testL-S3 (오경보 300회/h)", pt["recall"]),
-                               (axes[1], "ext_rec", "외부 세트 real31L (시험셋 문턱값)", p_ext["recall"][:4])):
-        for j, name in enumerate(names):
-            R = ACC[name][key]
-            mu, sd = R.mean(axis=0), (R.std(axis=0, ddof=1) if len(R) > 1 else np.zeros(4))
-            ax.bar(np.arange(4) + (j - (len(names) - 1) / 2) * width, 100 * mu, width=width, yerr=100 * sd, capsize=1.5,
-                   color=str(0.25 + 0.6 * j / max(1, len(names) - 1)), edgecolor="black", hatch=HATCH[j % len(HATCH)], lw=0.6, label=name)
-        for k in range(4):
-            ax.hlines(100 * pr[k], k - 0.45, k + 0.45, colors="black", linestyles="--", lw=1.2, label="PANNs CNN14 zero-shot" if k == 0 else None)
-        ax.set_xticks(np.arange(4))
-        ax.set_xticklabels(CLS_KO)
-        ax.set_title(title, fontsize=9)
-        ax.grid(True, axis="y", lw=0.3, color="0.85")
-        ax.set_ylim(0, 100)
-    axes[0].set_ylabel("재현율 (%)")
-    axes[1].legend(loc="upper right", frameon=False, ncol=2, fontsize=7)
-    fig.suptitle("클래스별 재현율 — v4+D 시드 1~3 평균 (막대 = 시드 표준편차), 점선 = PANNs 기준선 (같은 정답·같은 문턱값 규칙)", fontsize=8)
-    figs["fig3"] = save(fig, "fig3_recall_by_class")
+    # 그림 3 — 클래스별 재현율 (시험 데이터 / 외부 데이터) + 대형 모델 점선. 논문판(3구성) 과 부록판(전체)
+    def fig3(sel, fname):
+        fig, axes = plt.subplots(1, 2, figsize=(7.4, 3.3), sharey=True)
+        width = 0.8 / len(sel)
+        for ax, key, title, pr in ((axes[0], "rec_S3", TR["testL_S3"], pt["recall"]), (axes[1], "ext_rec", TR["real31L"], p_ext["recall"][:4])):
+            for j, name in enumerate(sel):
+                R = ACC[name][key]
+                mu, sd = R.mean(axis=0), (R.std(axis=0, ddof=1) if len(R) > 1 else np.zeros(4))
+                ax.bar(np.arange(4) + (j - (len(sel) - 1) / 2) * width, 100 * mu, width=width, yerr=100 * sd, capsize=1.5,
+                       color=str(0.3 + 0.55 * j / max(1, len(sel) - 1)), edgecolor="black", hatch=HATCH[j % len(HATCH)], lw=0.6, label=DN[name])
+            for k in range(4):
+                ax.hlines(100 * pr[k], k - 0.45, k + 0.45, colors="black", linestyles="--", lw=1.2, label=PN if k == 0 else None)
+            ax.set_xticks(np.arange(4))
+            ax.set_xticklabels(CLS_KO)
+            ax.set_title(title, fontsize=9)
+            ax.grid(True, axis="y", lw=0.3, color="0.85")
+            ax.set_ylim(0, 100)
+        axes[0].set_ylabel("재현율 (%)")
+        if len(sel) <= 3:
+            axes[1].legend(loc="upper right", frameon=False, ncol=1, fontsize=7)
+            fig.tight_layout()
+        else:                                   # 부록 전체판 — 범례를 그림 아래에
+            h, l = axes[1].get_legend_handles_labels()
+            fig.legend(h, l, loc="lower center", ncol=4, frameon=False, fontsize=7, bbox_to_anchor=(0.5, -0.02))
+            fig.tight_layout(rect=(0, 0.1, 1, 1))
+        return save(fig, fname)
 
-    # 그림 4 — 데이터·정답 개선 단계별 외부 F1 (real31L)
+    figs["fig3"] = fig3(C["fig3_paper_configs"], "fig3_recall_by_class")
+    figs["fig3_all"] = fig3(names, "fig3_recall_by_class_all")
+
+    # 그림 4 — 데이터·정답 개선 단계별 외부 F1
     fig, ax = plt.subplots(figsize=(5.0, 3.2))
     eds = C["editions_for_fig4"]
     ED = {}
@@ -531,14 +555,16 @@ def main():
             mu, sd = mean_sd([s["ext_f1_real31L"] for s in seeds])
             mus.append(mu); sds.append(sd); ns.append(len(seeds))
         ED[name] = {ed: {"mean": m, "sd": s, "n": n} for ed, m, s, n in zip(eds, mus, sds, ns)}
-        ax.errorbar(np.arange(len(eds)), mus, yerr=sds, fmt=mk + ls, color="black", mfc="white" if mk == "D" else "black", capsize=2, lw=1, label=name)
+        ax.errorbar(np.arange(len(eds)), mus, yerr=sds, fmt=mk + ls, color=GC[DG[name]], mfc="white" if mk == "D" else GC[DG[name]],
+                    capsize=2, lw=1, label=DN[name])
     num("editions.ext_f1_real31L", ED, "", src_v4e, "editions[판][구성].seeds[*].ext_f1_real31L — 전부 real31L 로 다시 채점한 값")
     ax.set_xticks(np.arange(len(eds)))
-    ax.set_xticklabels(eds)
-    ax.set_xlabel("데이터·정답 개선 단계 (같은 외부 세트 real31L 로 채점, 시험셋 문턱값)")
-    ax.set_ylabel("외부 세트 F1 (real31L)")
+    ax.set_xticklabels([EDN[e] for e in eds], fontsize=8)
+    ax.set_xlabel("데이터 개선 단계 (누적)")
+    ax.set_ylabel(f"F1 — {TR['real31L']}")
     ax.grid(True, lw=0.3, color="0.85")
-    ax.legend(frameon=False)
+    ax.legend(frameon=False, loc="upper left")
+    fig.tight_layout()
     figs["fig4"] = save(fig, "fig4_edition_ext_f1")
 
     # ── 표
@@ -556,19 +582,19 @@ def main():
             fr = (hop, round(hop / sr * 1e3, 2), nfft, nmel, nfr, new_frames)
         else:
             fr = ("—", "—", "—", "—", "—", "—")
-        rows1.append([c["name"], c["preproc"], *fr, c["model"], c["model_desc"], syn["layers"], syn["macc"],
+        rows1.append([DN[c["name"]], c["preproc"], *fr, c["model"], c["model_desc"], syn["layers"], syn["macc"],
                       round(syn["weight_bytes"] / 1024, 1), round(100 * syn["weight_bytes"] / syn["weight_total"], 1), syn["cycles"],
                       f"{syn['dir']}/log.txt·cnn.h; datasets/melfeat.py INC_SPECS"])
-    rows1.append([C["m4"]["name"], "없음", "—", "—", "—", "—", "—", "—", "CMSIS-NN (④ 가중치)", C["m4"]["desc"], LAT["④"]["synth"]["layers"],
+    rows1.append([M4N, "없음", "—", "—", "—", "—", "—", "—", f"CMSIS-NN ({DN['④']} 가중치)", C["m4"]["desc"], LAT["④"]["synth"]["layers"],
                   LAT["④"]["synth"]["macc"], round(LAT["④"]["synth"]["weight_bytes"] / 1024, 1), "— (Flash)", "—", LAT_M4["src"]])
     tables["table1_configs"] = write_table("table1_configs", hdr1, rows1,
                                            ["표 1 구성 정의. 프레임 간격·n_fft·멜 수는 datasets/melfeat.py, MAC·가중치·사이클은 ai8x-synthesis 로그 (data/synth/out/*_v4d).",
                                             f"프레임 간격 ms = 샘플 ÷ {sr} Hz. 판단당 새 프레임 = hop {hop_ms:.0f} ms 동안 들어오는 프레임 수."])
 
-    hdr2 = ["구성", "n", "CPU 전처리 (ms)", "입력 적재 (ms)", "추론 (ms)", "출력 (ms)", "판단 1회 (ms)", "hop 대비 (%)", "지연 출처"] + \
+    hdr2 = ["구성", "n", "CPU 전처리 (ms)", "입력 적재 (ms)", "추론 (ms)", "출력 (ms)", "판단 1회 (ms)", "판단 주기 대비 (%)", "지연 출처"] + \
            [f"에너지 {PS[k]['label']} (µJ, 추정)" for k in curve_src] + ["에너지 범위 (µJ, 추정)",
-            "시험셋 macro-F1 testL-S3 (주)", "시험셋 macro-F1 testL (부록)", "외부 F1 real31L", "외부 mAP real31L",
-            "시험셋 recall testL-S3 siren/glass/scream/dog (%)", "외부 recall real31L siren/glass/scream/dog (%)", "외부 배경 264창 발화 (창)", "배경+배경 발화율 (%)"]
+            f"macro-F1 {TR['testL_S3']} (주)", f"macro-F1 {TR['testL']}", f"F1 {TR['real31L']}", f"mAP {TR['real31L']}",
+            f"재현율 {TR['testL_S3']} 사이렌/유리/비명/개 (%)", f"재현율 {TR['real31L']} 사이렌/유리/비명/개 (%)", "외부 배경 264창 발화 (창)", "배경+배경 발화율 (%)"]
     rows2 = []
 
     def acc_cells(name):
@@ -582,20 +608,21 @@ def main():
         L = LAT[c["name"]]
         es = [L["E"][k] for k in curve_src]
         tag = " (추정)" if L["est"] else ""
-        rows2.append([c["name"], ACC[c["name"]]["n"], f"{L['pre']:.3f}" if L["pre"] else "—", f"{L['load']:.3f}", f"{L['infer']:.3f}{tag}", f"{L['out']:.3f}",
+        rows2.append([DN[c["name"]], ACC[c["name"]]["n"], f"{L['pre']:.3f}" if L["pre"] else "—", f"{L['load']:.3f}", f"{L['infer']:.3f}{tag}", f"{L['out']:.3f}",
                       f"{L['total']:.2f}{tag}", f"{100 * L['total'] / hop_ms:.1f}", L["src"]] + [f"{e:.0f}" for e in es] +
                      [f"{min(es):.0f} ~ {max(es):.0f}"] + acc_cells(c["name"]))
     es = [LAT_M4["E"][k] for k in curve_src]
-    rows2.append([C["m4"]["name"], ACC["④"]["n"], "—", f"{LAT_M4['load']:.3f}", f"{LAT_M4['infer']:.2f}", "—", f"{LAT_M4['total']:.2f}",
+    same = f"{DN['④']} 와 같다"
+    rows2.append([M4N, ACC["④"]["n"], "—", f"{LAT_M4['load']:.3f}", f"{LAT_M4['infer']:.2f}", "—", f"{LAT_M4['total']:.2f}",
                   f"{100 * LAT_M4['total'] / hop_ms:.1f}", LAT_M4["src"]] + [f"{e:.0f}" for e in es] + [f"{min(es):.0f} ~ {max(es):.0f}"] +
-                 ["④ 와 같다 (같은 가중치·출력)"] * 4 + ["④ 와 같다"] * 2 + ["④ 와 같다"] * 2)
+                 [same + " (같은 가중치·출력)"] * 4 + [same] * 4)
     tables["table2_main"] = write_table("table2_main", hdr2, rows2,
-                                        ["표 2 주 결과. 데이터 v4+D, 시드 1~3 평균 ± 표준편차. 정답: 시험셋 testL-S3 (주; testL 은 부록 열), 외부 real31L. 오경보 300회/h (시험셋 배경에서 잡은 문턱값, 외부에도 같은 문턱값).",
+                                        [f"표 2 주 결과. 데이터 v4+D, 시드 1~3 평균 ± 표준편차. 정답: {TR['testL_S3']} (주; 청취 전 정답은 부록 열), {TR['real31L']}. 오경보 300회/h (시험 데이터 배경에서 잡은 문턱값, 외부에도 같은 문턱값).",
                                          "지연: MAX78000FTHR, v4+D 시드 1 체크포인트, POR 직후, 1000회 최악값, 코어 100 MHz / CNN 50 MHz, 바쁜 대기, 슬립·유휴·가중치 적재 미포함.",
                                          "에너지: " + C["energy_note"] + " 전력값·출처는 docs/paper/paper_config.json.",
-                                         "(a) 는 보드 미실측 — 적재·출력은 ④ 실측, 추론은 합성 사이클 ÷ CNN 클럭 (추정)."])
+                                         f"{DN['(a)']} 는 보드 미실측 — 적재·출력은 {DN['④']} 실측, 추론은 합성 사이클 ÷ CNN 클럭 (추정)."])
 
-    hdr3 = ["비교 (앞 − 뒤)", "n", "시험셋 macro-F1 testL-S3 (주)", "외부 F1 real31L", "외부 mAP real31L", "시험셋 macro-F1 testL (부록)"]
+    hdr3 = ["비교 (앞 − 뒤)", "n", f"macro-F1 {TR['testL_S3']} (주)", f"F1 {TR['real31L']}", f"mAP {TR['real31L']}", f"macro-F1 {TR['testL']}"]
     rows3 = []
 
     def fci(t, nd=3):
@@ -603,12 +630,12 @@ def main():
         return f"{d:+.{nd}f} [{lo:+.{nd}f}, {hi:+.{nd}f}]"
 
     for (a_name, b_name), row in WEL.items():
-        rows3.append([f"{a_name} − {b_name}", f"{ACC[a_name]['n']} / {ACC[b_name]['n']}", fci(row["test_f1_S3"]), fci(row["ext_f1"]), fci(row["ext_map"]), fci(row["test_f1_L"])])
+        rows3.append([f"{DN[a_name]} − {DN[b_name]}", f"{ACC[a_name]['n']} / {ACC[b_name]['n']}", fci(row["test_f1_S3"]), fci(row["ext_f1"]), fci(row["ext_map"]), fci(row["test_f1_L"])])
     tables["table3_welch"] = write_table("table3_welch", hdr3, rows3,
                                          ["표 3 핵심 비교. 같은 시드 1~3, Welch 95% CI (tools/eval_v2.welch). CI 가 0 을 포함하면 '못 가른다'.",
-                                          "(a) 는 주 실행 (lr 0.0003 + 미세조정 스케줄) — 보조 실행은 판정에 쓰지 않는다 (STATUS.md)."])
+                                          f"{DN['(a)']} 는 주 실행 (lr 0.0003 + 미세조정 스케줄) — 보조 실행은 판정에 쓰지 않는다 (STATUS.md)."])
 
-    hdr4 = ["구간", "NPU ④ (ms)", "M4 CMSIS-NN (ms)", "배율 (M4 / NPU)", "hop 대비 NPU (%)", "hop 대비 M4 (%)", "출처"]
+    hdr4 = ["구간", f"NPU 추론 — {DN['④']} (ms)", f"{M4N} (ms)", "배율 (CPU / NPU)", "판단 주기 대비 NPU (%)", "판단 주기 대비 CPU (%)", "출처"]
     rows4 = [["추론만", f"{L4['infer']:.3f}", f"{LAT_M4['infer']:.2f}", f"{LAT_M4['infer'] / L4['infer']:.1f}", f"{100 * L4['infer'] / hop_ms:.1f}",
               f"{100 * LAT_M4['infer'] / hop_ms:.1f}", f"{L4['src']}, {LAT_M4['src']}"],
              ["판단 1회 (적재 + 추론 + 출력)", f"{L4['total']:.2f}", f"{LAT_M4['total']:.2f}", f"{LAT_M4['total'] / L4['total']:.1f}",
@@ -617,7 +644,7 @@ def main():
         rows4.append([f"판단 1회 에너지 {PS[k]['label']} (µJ, 추정)", f"{L4['E'][k]:.0f}", f"{LAT_M4['E'][k]:.0f}", f"{LAT_M4['E'][k] / L4['E'][k]:.0f}", "—", "—",
                       f"{rel(CFG_PATH)} power_sources.{k}"])
     tables["table4_npu_vs_cmsis"] = write_table("table4_npu_vs_cmsis", hdr4, rows4,
-                                                ["표 4 NPU 대 M4 CMSIS-NN. 같은 ④ 가중치·같은 출력 (보드 NPU 출력과 비트 일치, 1000회 불일치 0). 1000회 최악값.",
+                                                [f"표 4 NPU 추론 대 {M4N}. 같은 가중치({DN['④']})·같은 출력 (보드 NPU 출력과 비트 일치, 1000회 불일치 0). 1000회 최악값.",
                                                  "CMSIS-NN: arm_convolve_wrapper_s8 (SINGLE_ROUNDING), -O2, 코어 100 MHz, NPU 꺼짐, TMR0 1 µs. 에너지는 추정(실측 지연 × 공개 전력)."])
 
     # 표 5 — 손익분기 전력비. E = C·P_cpu + N·P_npu (C = 전처리 + 적재 + 출력 시간, N = NPU 추론 시간; P_load ≈ P_cpu 로 둔 단순화).
@@ -627,11 +654,11 @@ def main():
 
     hdr5 = ["비교 (X 가 Y 보다 에너지가 적다)", "C_X (ms)", "N_X (ms)", "C_Y (ms)", "N_Y (ms)", "성립 조건 (r = P_npu / P_cpu)", "손익분기 r*"] + \
            [f"{PS[k]['label']}: r = {PS[k]['P_npu_mW']}/{PS[k]['P_cpu_mW']} → 성립?" for k in PS] + ["비고"]
-    pairs5 = [("④ (NPU)", LAT["④"], False, "M4 CMSIS-NN", LAT_M4, True, "NPU 가 M4 소프트웨어 추론보다 에너지가 적은 조건"),
-              ("가 u1000", LAT["가 u1000"], False, "④", LAT["④"], False, "CPU 전처리 + 작은 NPU 가 원파형 NPU 보다 적은 조건"),
-              ("다 u800", LAT["다 u800"], False, "④", LAT["④"], False, "〃"),
-              ("간격 400", LAT["간격 400"], False, "①′", LAT["①′"], False, "전처리·추론 둘 다 짧다"),
-              ("(a)", LAT["(a)"], False, "④", LAT["④"], False, "(a) 지연은 추정 (보드 미실측)")]
+    pairs5 = [(f"{DN['④']} (NPU 추론)", LAT["④"], False, M4N, LAT_M4, True, "NPU 추론이 CPU 추론보다 에너지가 적은 조건"),
+              (DN["가 u1000"], LAT["가 u1000"], False, DN["④"], LAT["④"], False, "CPU 전처리 + 작은 NPU 가 원본 파형 NPU 보다 적은 조건"),
+              (DN["다 u800"], LAT["다 u800"], False, DN["④"], LAT["④"], False, "〃"),
+              (DN["간격 400"], LAT["간격 400"], False, DN["①′"], LAT["①′"], False, "전처리·추론 둘 다 짧다"),
+              (DN["(a)"], LAT["(a)"], False, DN["④"], LAT["④"], False, f"{DN['(a)']} 지연은 추정 (보드 미실측)")]
     rows5 = []
     BRK = {}
     for xn, X, xm4, yn, Y, ym4, note in pairs5:
@@ -690,9 +717,40 @@ def main():
 
     xlsx = write_xlsx(tables)
 
+    # ── 캡션 (그림 안에는 긴 설명을 두지 않는다)
+    n_seed = ACC["④"]["n"]
+    cond = (f"지연은 MAX78000FTHR 에서 v4+D 시드 1 가중치로 1000회 측정한 최악값 (전원 투입 직후, 코어 100 MHz / CNN 50 MHz, 바쁜 대기; 슬립·유휴·가중치 적재 미포함). "
+            f"에너지는 전부 추정(실측 지연 × 공개 전력)이며 측정값이 아니다 — E = 전처리 시간·P_cpu + (적재 + 출력)·P_load + 추론·P_npu, 전력값과 출처는 paper_config.json.")
+    acc_cond = (f"정확도는 데이터 v4+D, 시드 1~{n_seed} 평균 (막대 = 시드 표준편차), 오경보 300회/h 가 되는 문턱값을 {TR['testL_S3']} 배경에서 잡고 {TR['real31L']} 에도 같은 문턱값을 썼다. "
+                f"{TR['testL_S3']} 정답은 사람 청취로 확정한 것(유리 70창·비명 134창 양성, 채점 창 {truth['testL_S3_n']:,}), {TR['real31L']} 정답도 청취 확정 (비명 양성 {truth['ext_scream_n']}, 배경 구간 264창).")
+    cap = [
+        "# 그림 캡션 (tools/make_paper_assets.py 가 생성 — 그림 안의 설명은 전부 여기로 옮겼다)", "",
+        f"## 그림 1 — 판단 1회 추정 에너지와 정확도 (`{figs['fig1'][0]}`)", "",
+        f"왼쪽은 {TR['testL_S3']} 의 macro-F1, 오른쪽은 {TR['real31L']} 의 F1 이다. 색은 전처리 위치 — 검정 {GL['none']}, 주황 {GL['npu']}, 파랑 {GL['cpu']} — 이고 "
+        f"흑백 인쇄를 위해 마커 모양도 구성마다 다르다. 마커 위치는 {PS['datasheet']['label']} 전력 기준 에너지, 가로 막대는 공개 전력값 범위 "
+        f"({' / '.join(PS[k]['label'] for k in curve_src)}), 세로 막대는 시드 표준편차 (n={n_seed}). CPU log-mel 네 점은 프레임 간격 (62.5 / 50 / 25 / 16 ms) 을 "
+        f"에너지 순으로 이었다. 별표(*)가 붙은 {DN['(a)']} 는 보드에서 재지 않았고 지연을 합성 사이클로 추정한 점이다 (빈 마커). {acc_cond} {cond}", "",
+        f"## 그림 2 — 판단 1회 지연 분해 (`{figs['fig2'][0]}`)", "",
+        f"왼쪽은 NPU 로 추론하는 여섯 구성의 판단 1회 지연을 CPU 전처리 / 입력 적재(+출력) / NPU 추론으로 나눈 것이다 (막대 위 숫자 = 합계 ms). "
+        f"{DN['(a)']} 는 추정 (적재·출력은 {DN['④']} 실측, 추론은 합성 사이클 ÷ CNN 클럭). 오른쪽은 같은 가중치를 CMSIS-NN 으로 Cortex-M4F 에서 돌린 "
+        f"{M4N} 으로, 축이 다르며 점선은 판단 주기 {hop_ms:.0f} ms 다 ({M4N} 은 주기의 {100 * LAT_M4['total'] / hop_ms:.0f}% 를 추론에 쓴다). {cond}", "",
+        f"## 그림 3 — 클래스별 재현율 (`{figs['fig3'][0]}`, 부록 전체판 `{figs['fig3_all'][0]}`)", "",
+        f"왼쪽 {TR['testL_S3']}, 오른쪽 {TR['real31L']}. 막대는 구성별 시드 평균 ± 표준편차, 점선은 {PN} (CNN14 zero-shot) 을 같은 정답·같은 문턱값 규칙으로 "
+        f"채점한 기준선이다 (시험 F1 {pt['f1']:.3f}, 외부 F1 {p_ext['f1']:.3f}). 논문판은 {', '.join(DN[n] for n in C['fig3_paper_configs'])} 세 구성, "
+        f"부록판은 여섯 구성 전부. {acc_cond}", "",
+        f"## 그림 4 — 데이터 개선 단계별 외부 데이터 F1 (`{figs['fig4'][0]}`)", "",
+        f"학습 데이터를 단계적으로 고치면서 ({' → '.join(EDN[e] for e in eds)}, 누적) {DN['④']} 과 {DN['간격 400']} 두 구성을 각 단계에서 3시드씩 학습하고, "
+        f"모든 단계를 **같은** {TR['real31L']} 와 같은 청취 확정 정답으로 다시 채점한 F1 이다 (문턱값은 각 단계의 시험 데이터 배경 300회/h). "
+        f"막대 = 시드 표준편차. 단계 이름 — 초기 데이터: FSD50K·UrbanSound8K·ESC-50 원본 ID 단위 분할; +배경 혼합: 배경음 혼합 증강; "
+        f"+AudioSet 추가: AudioSet 창 추가 수집; +라벨 정정: 청취·태거 기반 라벨 정리; +증류: PANNs 선형 프로브 교사로 라벨 없는 창까지 증류 (v4+D, 본 표).", "",
+    ]
+    with open(os.path.join(OUT, "captions.md"), "w", encoding="utf-8") as f:
+        f.write("\n".join(cap))
+
     # ── numbers.json
     NUMBERS["_meta"] = {"generated_by": "tools/make_paper_assets.py", "basis": "데이터 v4+D · 정답 testL-S3 / real31L · 지연 v4+D 시드 1 보드 실측 · 에너지 추정(실측 지연 × 공개 전력)",
-                        "config": rel(CFG_PATH), "figures": figs, "tables": {k: f"docs/paper/{k}.csv" for k in tables}, "xlsx": xlsx, "font": fam}
+                        "config": rel(CFG_PATH), "display_names": {"configs": DN, "m4": M4N, "truth": TR, "panns": PN, "editions": EDN},
+                        "figures": figs, "captions": "docs/paper/captions.md", "tables": {k: f"docs/paper/{k}.csv" for k in tables}, "xlsx": xlsx, "font": fam}
     with open(os.path.join(OUT, "numbers.json"), "w", encoding="utf-8") as f:
         json.dump(NUMBERS, f, ensure_ascii=False, indent=1, default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o))
 

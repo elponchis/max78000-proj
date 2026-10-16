@@ -848,7 +848,7 @@
  },
  "breakeven": {
   "value": {
-   "④ (NPU) < M4 CMSIS-NN": {
+   "원본 파형 (전처리 없음) (NPU 추론) < CPU 추론 (Cortex-M4F)": {
     "C_X": 1.09506,
     "N_X": 1.43943,
     "C_Y": 225.774,
@@ -878,7 +878,7 @@
      }
     }
    },
-   "가 u1000 < ④": {
+   "CPU log-mel, 간격 62.5 ms (멜 32) < 원본 파형 (전처리 없음)": {
     "C_X": 2.403,
     "N_X": 0.53077,
     "C_Y": 1.09506,
@@ -908,7 +908,7 @@
      }
     }
    },
-   "다 u800 < ④": {
+   "CPU log-mel, 간격 50 ms < 원본 파형 (전처리 없음)": {
     "C_X": 3.00557,
     "N_X": 0.65338,
     "C_Y": 1.09506,
@@ -938,7 +938,7 @@
      }
     }
    },
-   "간격 400 < ①′": {
+   "CPU log-mel, 간격 25 ms < CPU log-mel, 간격 16 ms": {
     "C_X": 6.8636,
     "N_X": 2.55242,
     "C_Y": 10.97155,
@@ -968,7 +968,7 @@
      }
     }
    },
-   "(a) < ④": {
+   "NPU 근사 log < 원본 파형 (전처리 없음)": {
     "C_X": 1.09506,
     "N_X": 5.4945200000000005,
     "C_Y": 1.09506,
@@ -1135,14 +1135,34 @@
   "generated_by": "tools/make_paper_assets.py",
   "basis": "데이터 v4+D · 정답 testL-S3 / real31L · 지연 v4+D 시드 1 보드 실측 · 에너지 추정(실측 지연 × 공개 전력)",
   "config": "docs/paper/paper_config.json",
+  "display_names": {
+   "configs": {
+    "④": "원본 파형 (전처리 없음)",
+    "(a)": "NPU 근사 log",
+    "가 u1000": "CPU log-mel, 간격 62.5 ms (멜 32)",
+    "다 u800": "CPU log-mel, 간격 50 ms",
+    "간격 400": "CPU log-mel, 간격 25 ms",
+    "①′": "CPU log-mel, 간격 16 ms"
+   },
+   "m4": "CPU 추론 (Cortex-M4F)",
+   "truth": {
+    "testL_S3": "시험 데이터",
+    "testL": "시험 데이터 (청취 전 정답, 부록)",
+    "real31L": "외부 데이터 (AudioSet)"
+   },
+   "panns": "대형 모델 (PANNs)",
+   "editions": {
+    "v1": "초기 데이터",
+    "v2.1": "+배경 혼합",
+    "v3.1": "+AudioSet 추가",
+    "v4": "+라벨 정정",
+    "v4+D": "+증류"
+   }
+  },
   "figures": {
-   "fig1_test": [
-    "docs/paper/fig1_acc_energy_test.png",
-    "docs/paper/fig1_acc_energy_test.svg"
-   ],
-   "fig1_ext": [
-    "docs/paper/fig1_acc_energy_ext.png",
-    "docs/paper/fig1_acc_energy_ext.svg"
+   "fig1": [
+    "docs/paper/fig1_acc_energy.png",
+    "docs/paper/fig1_acc_energy.svg"
    ],
    "fig2": [
     "docs/paper/fig2_latency_breakdown.png",
@@ -1152,11 +1172,16 @@
     "docs/paper/fig3_recall_by_class.png",
     "docs/paper/fig3_recall_by_class.svg"
    ],
+   "fig3_all": [
+    "docs/paper/fig3_recall_by_class_all.png",
+    "docs/paper/fig3_recall_by_class_all.svg"
+   ],
    "fig4": [
     "docs/paper/fig4_edition_ext_f1.png",
     "docs/paper/fig4_edition_ext_f1.svg"
    ]
   },
+  "captions": "docs/paper/captions.md",
   "tables": {
    "table1_configs": "docs/paper/table1_configs.csv",
    "table2_main": "docs/paper/table2_main.csv",

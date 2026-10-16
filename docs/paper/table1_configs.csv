@@ -1,10 +1,10 @@
 ﻿# 표 1 구성 정의. 프레임 간격·n_fft·멜 수는 datasets/melfeat.py, MAC·가중치·사이클은 ai8x-synthesis 로그 (data/synth/out/*_v4d).
 # 프레임 간격 ms = 샘플 ÷ 16000 Hz. 판단당 새 프레임 = hop 250 ms 동안 들어오는 프레임 수.
 구성,전처리 위치,프레임 간격 (샘플),프레임 간격 (ms),n_fft,멜 수,프레임 수,판단당 새 프레임,모델,모델 요약,합성 층 수,MAC,가중치 (KB),가중치 메모리 비율 (%),NPU 사이클 (합성),출처
-④,없음 (NPU 에 원파형),—,—,—,—,—,—,ai85safesoundnet,"KWS20 v3 파생 1D CNN (Conv1d), 전처리 없음 — 원파형 16,384 샘플을 128×128 로 접어 NPU 입력",9,8341248,161.5,37.4,71718,data/synth/out/safesound_wave_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
-가 u1000,CPU 로그 멜 (증분),1000,62.5,512,32,16,4,ai85safesoundmelnet_p4,"2D CNN, 풀링 4단 (32멜×16프레임 입력)",7,2393344,152.5,35.3,26337,data/synth/out/safesound_melu1000_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
-다 u800,CPU 로그 멜 (증분),800,50.0,512,32,20,5,ai85safesoundmelnet_p4,"2D CNN, 풀링 4단 (32멜×20프레임 입력)",7,2872576,152.5,35.3,32467,data/synth/out/safesound_melu800_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
-간격 400,CPU 로그 멜 (증분),400,25.0,512,64,40,10,ai85safesoundmelnet,"2D CNN, 풀링 5단 (64멜×40프레임 입력)",7,11683072,152.5,35.3,127411,data/synth/out/safesound_melh400_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
-①′,"CPU 로그 멜 (증분, V1 float32 rfft + LUT 로그)",250,15.62,512,64,64,16,ai85safesoundmelnet,"2D CNN, 풀링 5단 (64멜×64프레임 입력)",7,18942464,153.8,35.6,204029,data/synth/out/safesound_melinc_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
-(a),없음 (NPU 안 로그 근사),—,—,—,—,—,—,ai85safesoundlogstage,"NPU 안에서 구간선형 로그를 근사하는 1D 구성 — 보드 미실측, 지연은 합성 사이클 추정",11,18581248,239.6,55.5,274726,data/synth/out/safesound_logstage/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
-M4 CMSIS-NN,없음,—,—,—,—,—,—,CMSIS-NN (④ 가중치),"④ 와 같은 가중치·같은 출력 (보드 NPU 출력과 비트 일치), arm_convolve_wrapper_s8, -O2",9,8341248,161.5,— (Flash),—,data/logs-local/board_v4d_m4cmsis.log
+원본 파형 (전처리 없음),없음 (NPU 에 원파형),—,—,—,—,—,—,ai85safesoundnet,"KWS20 v3 파생 1D CNN (Conv1d), 전처리 없음 — 원파형 16,384 샘플을 128×128 로 접어 NPU 입력",9,8341248,161.5,37.4,71718,data/synth/out/safesound_wave_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
+"CPU log-mel, 간격 62.5 ms (멜 32)",CPU 로그 멜 (증분),1000,62.5,512,32,16,4,ai85safesoundmelnet_p4,"2D CNN, 풀링 4단 (32멜×16프레임 입력)",7,2393344,152.5,35.3,26337,data/synth/out/safesound_melu1000_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
+"CPU log-mel, 간격 50 ms",CPU 로그 멜 (증분),800,50.0,512,32,20,5,ai85safesoundmelnet_p4,"2D CNN, 풀링 4단 (32멜×20프레임 입력)",7,2872576,152.5,35.3,32467,data/synth/out/safesound_melu800_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
+"CPU log-mel, 간격 25 ms",CPU 로그 멜 (증분),400,25.0,512,64,40,10,ai85safesoundmelnet,"2D CNN, 풀링 5단 (64멜×40프레임 입력)",7,11683072,152.5,35.3,127411,data/synth/out/safesound_melh400_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
+"CPU log-mel, 간격 16 ms","CPU 로그 멜 (증분, V1 float32 rfft + LUT 로그)",250,15.62,512,64,64,16,ai85safesoundmelnet,"2D CNN, 풀링 5단 (64멜×64프레임 입력)",7,18942464,153.8,35.6,204029,data/synth/out/safesound_melinc_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
+NPU 근사 log,없음 (NPU 안 로그 근사),—,—,—,—,—,—,ai85safesoundlogstage,"NPU 안에서 구간선형 로그를 근사하는 1D 구성 — 보드 미실측, 지연은 합성 사이클 추정",11,18581248,239.6,55.5,274726,data/synth/out/safesound_logstage/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
+CPU 추론 (Cortex-M4F),없음,—,—,—,—,—,—,CMSIS-NN (원본 파형 (전처리 없음) 가중치),"④ 와 같은 가중치·같은 출력 (보드 NPU 출력과 비트 일치), arm_convolve_wrapper_s8, -O2",9,8341248,161.5,— (Flash),—,data/logs-local/board_v4d_m4cmsis.log

@@ -91,6 +91,27 @@
     "desc": "④ 와 같은 가중치·같은 출력 (보드 NPU 출력과 비트 일치), arm_convolve_wrapper_s8, -O2",
     "marker": "X"
   },
+  "display": {
+    "_설명": "내부 이름 → 논문 표기. 그림·표·캡션은 전부 여기서 읽는다 (2026-10-16 지시). group: none = 전처리 없음, npu = NPU 전처리, cpu = CPU 전처리.",
+    "configs": {
+      "④":        {"name": "원본 파형 (전처리 없음)",              "short": "원본 파형",                 "tag": "원본 파형",      "group": "none", "offset": [7, -11]},
+      "(a)":      {"name": "NPU 근사 log",                       "short": "NPU 근사 log",              "tag": "NPU 근사 log",   "group": "npu",  "offset": [7, -11]},
+      "가 u1000": {"name": "CPU log-mel, 간격 62.5 ms (멜 32)",  "short": "CPU log-mel\n간격 62.5 ms", "tag": "62.5 ms",        "group": "cpu",  "offset": [0, -15], "ha": "center"},
+      "다 u800":  {"name": "CPU log-mel, 간격 50 ms",            "short": "CPU log-mel\n간격 50 ms",   "tag": "50 ms",          "group": "cpu",  "offset": [7, -11]},
+      "간격 400": {"name": "CPU log-mel, 간격 25 ms",            "short": "CPU log-mel\n간격 25 ms",   "tag": "25 ms",          "group": "cpu",  "offset": [7, -11]},
+      "①′":       {"name": "CPU log-mel, 간격 16 ms",            "short": "CPU log-mel\n간격 16 ms",   "tag": "16 ms",          "group": "cpu",  "offset": [7, 5]}
+    },
+    "m4": {"name": "CPU 추론 (Cortex-M4F)", "short": "CPU 추론\n(Cortex-M4F)"},
+    "groups": {
+      "none": {"label": "전처리 없음", "color": "#000000"},
+      "npu":  {"label": "NPU 전처리", "color": "#D55E00"},
+      "cpu":  {"label": "CPU 전처리 (log-mel)", "color": "#0072B2"}
+    },
+    "truth": {"testL_S3": "시험 데이터", "testL": "시험 데이터 (청취 전 정답, 부록)", "real31L": "외부 데이터 (AudioSet)"},
+    "panns": "대형 모델 (PANNs)",
+    "editions": {"v1": "초기 데이터", "v2.1": "+배경 혼합", "v3.1": "+AudioSet 추가", "v4": "+라벨 정정", "v4+D": "+증류"}
+  },
+  "fig3_paper_configs": ["④", "가 u1000", "①′"],
   "editions_for_fig4": ["v1", "v2.1", "v3.1", "v4", "v4+D"],
   "fig4_configs": ["④", "간격 400"],
   "welch_pairs": [

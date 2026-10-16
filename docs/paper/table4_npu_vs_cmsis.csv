@@ -1,6 +1,6 @@
-﻿# 표 4 NPU 대 M4 CMSIS-NN. 같은 ④ 가중치·같은 출력 (보드 NPU 출력과 비트 일치, 1000회 불일치 0). 1000회 최악값.
+﻿# 표 4 NPU 추론 대 CPU 추론 (Cortex-M4F). 같은 가중치(원본 파형 (전처리 없음))·같은 출력 (보드 NPU 출력과 비트 일치, 1000회 불일치 0). 1000회 최악값.
 # CMSIS-NN: arm_convolve_wrapper_s8 (SINGLE_ROUNDING), -O2, 코어 100 MHz, NPU 꺼짐, TMR0 1 µs. 에너지는 추정(실측 지연 × 공개 전력).
-구간,NPU ④ (ms),M4 CMSIS-NN (ms),배율 (M4 / NPU),hop 대비 NPU (%),hop 대비 M4 (%),출처
+구간,NPU 추론 — 원본 파형 (전처리 없음) (ms),CPU 추론 (Cortex-M4F) (ms),배율 (CPU / NPU),판단 주기 대비 NPU (%),판단 주기 대비 CPU (%),출처
 추론만,1.439,225.50,156.7,0.6,90.2,"data/logs-local/board_v4d_wave.log, data/logs-local/board_v4d_m4cmsis.log"
 판단 1회 (적재 + 추론 + 출력),2.53,225.77,89.1,1.0,90.3,〃
 "판단 1회 에너지 (가) 데이터시트 (µJ, 추정)",71,2008,28,—,—,docs/paper/paper_config.json power_sources.datasheet

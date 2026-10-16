@@ -14,10 +14,14 @@ testL 값은 부록 열에 나란히 둔다. 공개 전력값과 출처는 `pape
 
 | 산출물 | 내용 |
 |---|---|
-| `fig1_acc_energy_test.*` / `fig1_acc_energy_ext.*` | 정확도–에너지 곡선 (x = 판단 1회 추정 에너지 μJ 로그축, y = 시험셋 F1 testL-S3 / 외부 F1). 마커 = (가) 데이터시트, 가로 막대 = 공개 전력값 범위, 세로 막대 = 시드 sd. (a) 는 빈 마커(지연 추정) |
-| `fig2_latency_breakdown.*` | 판단 1회 지연 분해 (CPU 전처리 / 입력 적재(+출력) / NPU 추론), M4 CMSIS-NN 은 별도 축 |
-| `fig3_recall_by_class.*` | 클래스별 재현율 묶음 막대 (testL-S3, real31L), PANNs CNN14 zero-shot 점선 (같은 정답·같은 문턱값 규칙) |
-| `fig4_edition_ext_f1.*` | 데이터·정답 개선 단계별 외부 F1 (v1 → v2.1 → v3.1 → v4 → v4+D, 전부 real31L 로 채점), ④ 와 간격 400 |
+| `fig1_acc_energy.*` | 정확도–에너지 곡선, 좌 시험 데이터 / 우 외부 데이터 (x = 판단 1회 추정 에너지 μJ 로그축). 색 = 전처리 위치, 마커 = 구성, 점 옆 이름, CPU log-mel 네 점은 에너지 순 선. 마커 = (가) 데이터시트, 가로 막대 = 공개 전력값 범위, 세로 막대 = 시드 sd. NPU 근사 log 는 빈 마커 + * (지연 추정) |
+| `fig2_latency_breakdown.*` | 판단 1회 지연 분해 (CPU 전처리 / 입력 적재(+출력) / NPU 추론), CPU 추론 (Cortex-M4F) 은 별도 축 + 판단 주기 250 ms |
+| `fig3_recall_by_class.*` (논문판 3구성) / `fig3_recall_by_class_all.*` (부록 전체) | 클래스별 재현율 묶음 막대 (시험 데이터, 외부 데이터), 대형 모델 (PANNs) 점선 (같은 정답·같은 문턱값 규칙) |
+| `fig4_edition_ext_f1.*` | 데이터 개선 단계별 외부 데이터 F1 (초기 데이터 → +배경 혼합 → +AudioSet 추가 → +라벨 정정 → +증류, 전부 같은 외부 데이터로 채점), 원본 파형과 CPU log-mel 간격 25 ms |
+| `captions.md` | 그림별 캡션 — 그림 안에 넣지 않은 설명 전부 |
+
+**표기 이름**: 내부 이름(④, 가 u1000, testL-S3, real31L, v4+D …)과 논문 표기의 대응은 `paper_config.json` 의 `display` 절 한 곳에만 있고
+스크립트가 거기서 읽는다. `numbers.json` 의 키는 내부 이름이고 `_meta.display_names` 에 대응표가 있다.
 | `table1_configs.csv` | 구성 정의 (프레임 간격, n_fft, 멜 수, 모델, 가중치 KB, NPU 사이클) |
 | `table2_main.csv` | 주 결과 (구간별 지연, 추정 에너지 범위, 시험셋 F1 testL-S3 + 부록 testL, 외부 F1·mAP, 평균 ± sd, n) |
 | `table3_welch.csv` | 핵심 비교 Welch 95% CI (가 − ④, 다 − ④, 간격 400 − ①′, 가 − (a), (a) − ④) |
