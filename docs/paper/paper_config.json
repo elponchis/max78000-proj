@@ -96,12 +96,12 @@
     "configs": {
       "④":        {"name": "원본 파형 (전처리 없음)",              "short": "원본 파형",                 "tag": "원본 파형",      "group": "none", "offset": [7, -11]},
       "(a)":      {"name": "NPU 근사 log",                       "short": "NPU 근사 log",              "tag": "NPU 근사 log",   "group": "npu",  "offset": [7, -11]},
-      "가 u1000": {"name": "CPU log-mel, 간격 62.5 ms (멜 32)",  "short": "CPU log-mel\n간격 62.5 ms", "tag": "62.5 ms",        "group": "cpu",  "offset": [0, -15], "ha": "center"},
+      "가 u1000": {"name": "CPU log-mel, 간격 62.5 ms (멜 32)",  "short": "CPU log-mel\n간격 62.5 ms", "tag": "62.5 ms",        "group": "cpu",  "offset": [0, -24], "ha": "center"},
       "다 u800":  {"name": "CPU log-mel, 간격 50 ms",            "short": "CPU log-mel\n간격 50 ms",   "tag": "50 ms",          "group": "cpu",  "offset": [7, -11]},
       "간격 400": {"name": "CPU log-mel, 간격 25 ms",            "short": "CPU log-mel\n간격 25 ms",   "tag": "25 ms",          "group": "cpu",  "offset": [7, -11]},
       "①′":       {"name": "CPU log-mel, 간격 16 ms",            "short": "CPU log-mel\n간격 16 ms",   "tag": "16 ms",          "group": "cpu",  "offset": [7, 5]}
     },
-    "m4": {"name": "CPU 추론 (Cortex-M4F)", "short": "CPU 추론\n(Cortex-M4F)"},
+    "m4": {"name": "CPU 추론 (Cortex-M4F)", "short": "CPU 추론 (Cortex-M4F)\n원본 파형 모델"},
     "groups": {
       "none": {"label": "전처리 없음", "color": "#000000"},
       "npu":  {"label": "NPU 전처리", "color": "#D55E00"},

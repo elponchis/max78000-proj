@@ -458,7 +458,7 @@ def main():
     allE = [LAT[n]["E"][k] for n in names for k in curve_src]
     ticks = [t for t in (20, 30, 50, 70, 100, 150, 200, 300, 500, 700, 1000) if min(allE) * 0.85 <= t <= max(allE) * 1.15]
     cpu_names = sorted([n for n in names if DG[n] == "cpu"], key=lambda n: LAT[n]["E"]["datasheet"])
-    for ax, key, ylab in ((axes[0], "f1_S3", f"macro-F1 — {TR['testL_S3']}"), (axes[1], "ext_f1", f"F1 — {TR['real31L']}")):
+    for ax, key, title in ((axes[0], "f1_S3", f"(a) {TR['testL_S3']}"), (axes[1], "ext_f1", f"(b) {TR['real31L']}")):
         xs_c = [LAT[n]["E"]["datasheet"] for n in cpu_names]
         ys_c = [mean_sd(ACC[n][key])[0] for n in cpu_names]
         ax.plot(xs_c, ys_c, "-", color=GC["cpu"], lw=1.0, alpha=0.6, zorder=1)
@@ -472,9 +472,10 @@ def main():
             dsp = D["configs"][name]
             ax.annotate(DT[name] + ("*" if est[name] else ""), (x, mu), textcoords="offset points", xytext=dsp.get("offset", [7, -11]),
                         ha=dsp.get("ha", "left"), fontsize=8, color=col)
-        # CPU log-mel 묶음 이름은 선의 가운데 위에
+        # CPU log-mel 묶음 이름은 50 ms → 25 ms 선분 가운데의 바로 왼쪽 위에
         xm = math.sqrt(xs_c[1] * xs_c[2]); ym = (ys_c[1] + ys_c[2]) / 2
-        ax.annotate(GL["cpu"], (xm, ym), textcoords="offset points", xytext=(-4, 14), ha="right", fontsize=8, color=GC["cpu"])
+        ax.annotate(GL["cpu"] + "\n(숫자 = 프레임 간격)", (xm, ym), textcoords="offset points", xytext=(-5, 3), ha="right", va="bottom",
+                    fontsize=7.5, color=GC["cpu"], linespacing=1.1)
         ax.set_xscale("log")
         ax.margins(y=0.12)
         ax.set_xlim(min(allE) * 0.72, max(allE) * 1.25)
@@ -482,13 +483,16 @@ def main():
         ax.set_xticklabels([str(t) for t in ticks])
         ax.xaxis.set_minor_formatter(plt.NullFormatter())
         ax.set_xlabel("판단 1회 추정 에너지 (μJ, 로그축)")
-        ax.set_ylabel(ylab)
+        ax.set_ylabel("macro-F1")
+        ax.set_title(title, fontsize=9, loc="left")
+        ax.annotate("더 좋음 (정확하고 에너지가 작음)", xy=(0.025, 0.975), xytext=(0.075, 0.905), xycoords="axes fraction",
+                    textcoords="axes fraction", fontsize=7, color="0.35", va="top", arrowprops=dict(arrowstyle="->", lw=0.8, color="0.35"))
         ax.grid(True, which="both", lw=0.3, color="0.85")
     fig.tight_layout()
     figs["fig1"] = save(fig, "fig1_acc_energy")
 
     # 그림 2 — 판단 1회 지연 분해
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.6, 3.4), gridspec_kw={"width_ratios": [5, 1.3]})
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.0, 3.4), gridspec_kw={"width_ratios": [5, 1.8]})
     segs = [("pre", "CPU 전처리", "white", "////"), ("load", "입력 적재(+출력)", "0.75", ""), ("infer", "NPU 추론", "0.35", "")]
     xs = np.arange(len(names))
     for ax, items, labels in ((ax1, [LAT[n] for n in names], [DS[n] + ("\n(추정)" if est[n] else "") for n in names]), (ax2, [LAT_M4], [M4S])):
@@ -500,11 +504,16 @@ def main():
             ax.bar(np.arange(len(items)), vals, bottom=bottom, color=col, edgecolor="black", hatch=hatch, lw=0.8, width=0.6, label=lab)
             bottom += vals
         for i, L in enumerate(items):
-            ax.text(i, bottom[i], f"{L['total']:.2f}", ha="center", va="bottom", fontsize=8)
+            if ax is ax2:      # CPU 추론 막대 — 숫자는 막대 안 위쪽에 (판단 주기 점선과 겹치지 않게)
+                ax.text(i, bottom[i] * 0.98, f"{L['total']:.2f}\n(NPU 대비 ×{NUMBERS['ratio.decision_m4cmsis_over_npu']['value']:.0f})",
+                        ha="center", va="top", fontsize=8, color="white")
+            else:
+                ax.text(i, bottom[i], f"{L['total']:.2f}", ha="center", va="bottom", fontsize=8)
         ax.set_xticks(np.arange(len(items)))
         ax.set_xticklabels(labels, fontsize=7.5)
         ax.grid(True, axis="y", lw=0.3, color="0.85")
     ax1.set_ylabel("판단 1회 지연 (ms)")
+    ax2.set_ylabel("판단 1회 지연 (ms)")
     ax2.axhline(hop_ms, color="black", ls="--", lw=0.8)
     ax2.text(0, hop_ms, f"판단 주기 {hop_ms:.0f} ms", ha="center", va="bottom", fontsize=7)
     ax2.set_ylim(0, hop_ms * 1.15)
@@ -741,8 +750,12 @@ def main():
         f"## 그림 4 — 데이터 개선 단계별 외부 데이터 F1 (`{figs['fig4'][0]}`)", "",
         f"학습 데이터를 단계적으로 고치면서 ({' → '.join(EDN[e] for e in eds)}, 누적) {DN['④']} 과 {DN['간격 400']} 두 구성을 각 단계에서 3시드씩 학습하고, "
         f"모든 단계를 **같은** {TR['real31L']} 와 같은 청취 확정 정답으로 다시 채점한 F1 이다 (문턱값은 각 단계의 시험 데이터 배경 300회/h). "
-        f"막대 = 시드 표준편차. 단계 이름 — 초기 데이터: FSD50K·UrbanSound8K·ESC-50 원본 ID 단위 분할; +배경 혼합: 배경음 혼합 증강; "
-        f"+AudioSet 추가: AudioSet 창 추가 수집; +라벨 정정: 청취·태거 기반 라벨 정리; +증류: PANNs 선형 프로브 교사로 라벨 없는 창까지 증류 (v4+D, 본 표).", "",
+        f"막대 = 시드 표준편차. 단계 설명:", "",
+        "- 초기 데이터: FSD50K·UrbanSound8K·ESC-50을 칩 입력 규격(16 kHz, int8)으로 재가공",
+        "- +배경 혼합: 학습 시 이벤트 창과 배경 창 모두에 다른 배경음을 SNR 0~20 dB로 섞는 증강",
+        "- +AudioSet 추가: AudioSet 학습 분할의 실제 환경 녹음 구간 추가(비명은 Screaming 구간만)",
+        "- +라벨 정정: 청취로 대부분 틀린 것이 확인된 유형의 학습 창 제외(유리·비명 중 대형 모델 점수가 매우 낮은 창)",
+        "- +증류: 대형 모델(PANNs) 기반 교사의 출력을 라벨 없는 창 약 9만 개를 포함해 함께 학습", "",
     ]
     with open(os.path.join(OUT, "captions.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(cap))
