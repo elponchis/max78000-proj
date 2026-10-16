@@ -39,11 +39,11 @@ BODY_PT = 9
 # ⚠️ 유일한 예외 — v1 데이터 시절 NPU 쪽 변형의 ④ 대비 차이 (@300/h macro-F1, Welch 95% CI).
 #    출처: docs/STATUS.md 1.3절 표 (g8-first-comparison.md, g8-d1-filterbank.md, errata-update-model.md).
 #    결과 파일(json)이 없어 여기 옮겼다. 논문에는 "v1 데이터" 임을 밝힌다.
-V1_NEG = [("멜 필터뱅크 초기화 Conv1d + Abs (D-1)", "−0.026 [−0.057, +0.006]"),
-          ("D-1 탭 256 / 512 (k=2 / k=4)", "−0.050 / −0.032"),
-          ("NPU 구간선형 로그 ((a), v1)", "+0.003 [−0.028, +0.034]"),
-          ("NPU 필터뱅크 + CPU 정수 로그 분할 ((c))", "−0.012 [−0.042, +0.018]"),
-          ("원파형 2D 재배열 (wave2D)", "−0.019")]
+V1_NEG = [("멜 필터뱅크 초기화 Conv1d + Abs (D-1)", "-0.026 [-0.057, +0.006]"),
+          ("D-1 탭 256 / 512 (k=2 / k=4)", "-0.050 / -0.032"),
+          ("NPU 구간선형 로그 ((a), v1)", "+0.003 [-0.028, +0.034]"),
+          ("NPU 필터뱅크 + CPU 정수 로그 분할 ((c))", "-0.012 [-0.042, +0.018]"),
+          ("원파형 2D 재배열 (wave2D)", "-0.019")]
 
 
 def v(key):
@@ -187,6 +187,7 @@ def build():
     # 이름
     W, A, GA, DA, H25, H16, M4 = "④", "(a)", "가 u1000", "다 u800", "간격 400", "①′", "M4 CMSIS-NN"
     n_w, n_a, n_ga, n_da, n_25, n_16 = (DN[k] for k in (W, A, GA, DA, H25, H16))
+    s_w, s_ga, s_25, s_16 = "원본 파형 구성", "CPU log-mel 62.5 ms 구성", "CPU log-mel 25 ms", "CPU log-mel 16 ms"
     tr = v("truth.testL_S3_windows")
     ext_pos, ext_neg = v("truth.ext_positives_real31L"), v("truth.ext_negatives_real31L")
     n_ext = sum(ext_pos.values()) + ext_neg
@@ -214,6 +215,23 @@ def build():
          f"전처리 위치는 가속기 친화성의 문제가 아니라 정확도–에너지 설계 변수이며, 최적점이 양 끝이 아닌 "
          f"중간에 있음을 보인다.",
          align="just", space_after=6, line=1.15)
+
+    # ── 1단 띠: 그림 1 + 표 1 ─────────────────────────────────────────
+    figure(doc, os.path.join(PAPER, "fig1_acc_energy.png"), 150,
+           f"그림 1. 판단 1회 추정 에너지(가로, 로그축)와 정확도. (a) 시험 데이터 macro-F1, (b) 외부 데이터 F1. 색은 전처리 위치, "
+           f"마커 위치는 데이터시트 전력 기준, 가로 막대는 공개 전력값 범위, 세로 막대는 시드 표준편차(n=3). "
+           f"{n_a}(*) 는 보드 미실측으로 지연을 합성 사이클로 추정한 점.")
+    rows = []
+    for key in (W, A, GA, DA, H25, H16):
+        rows.append([DN[key], f"{latency(key):.2f}" + (" (추정)" if key == A else ""),
+                     f"{energy(key):.0f} / {energy(key, 'moosmann'):.0f}",
+                     fmt_pm(key), fmt_pm(key, "ext_f1")])
+    lm4 = v("latency.M4 CMSIS-NN")["total"]
+    rows.append([CFG["display"]["m4"]["name"] + " (원파형 가중치)", f"{lm4:.2f}",
+                 f"{energy(M4):.0f} / {energy(M4, 'moosmann'):.0f}", "= 원본 파형", "= 원본 파형"])
+    table(doc, ["구성", "판단 1회 지연 (ms)", "에너지 μJ, 추정 (데이터시트 / Moosmann)", "macro-F1 시험 데이터", "F1 외부 데이터"],
+          rows, f"표 1. 주 결과. 정확도는 시드 1~3 평균 ± 표준편차, 오경보 300회/h. 지연은 보드 1,000회 최악값, 에너지는 추정(실측 지연 × 공개 전력).",
+          col_mm=[52, 26, 46, 33, 33])
 
     # ── 2단: 서론·관련 연구·방법 ──────────────────────────────────────
     new_section(doc, 2)
@@ -255,55 +273,36 @@ def build():
               f"시드 3개씩 학습했다.")
     body(doc, f"지연과 에너지. 지연은 보드에서 SysTick 으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, "
               f"코어 100 MHz, CNN 50 MHz). 에너지는 외부 계측 장비 없이 "
-              f"E = t전처리·Pcpu + (t적재 + t출력)·Pload + t추론·Pnpu 로 **추정**했으며, 전력값은 데이터시트와 동일 칩 "
+              f"E = t전처리·Pcpu + (t적재 + t출력)·Pload + t추론·Pnpu 로 추정했으며, 전력값은 데이터시트와 동일 칩 "
               f"실측 선행연구 [2–4] 두 출처를 나란히 써 범위로 보고한다. 측정값이 아님을 모든 수치에 밝힌다.")
 
-    # ── 1단 띠: 그림 1 + 표 1 ─────────────────────────────────────────
-    new_section(doc, 1)
-    figure(doc, os.path.join(PAPER, "fig1_acc_energy.png"), 150,
-           f"그림 1. 판단 1회 추정 에너지(가로, 로그축)와 정확도. (a) 시험 데이터 macro-F1, (b) 외부 데이터 F1. 색은 전처리 위치, "
-           f"마커 위치는 데이터시트 전력 기준, 가로 막대는 공개 전력값 범위, 세로 막대는 시드 표준편차(n=3). "
-           f"{n_a}(*) 는 보드 미실측으로 지연을 합성 사이클로 추정한 점.")
-    rows = []
-    for key in (W, A, GA, DA, H25, H16):
-        rows.append([DN[key], f"{latency(key):.2f}" + (" (추정)" if key == A else ""),
-                     f"{energy(key):.0f} / {energy(key, 'moosmann'):.0f}",
-                     fmt_pm(key), fmt_pm(key, "ext_f1")])
-    lm4 = v("latency.M4 CMSIS-NN")["total"]
-    rows.append([CFG["display"]["m4"]["name"] + " (원파형 가중치)", f"{lm4:.2f}",
-                 f"{energy(M4):.0f} / {energy(M4, 'moosmann'):.0f}", "= 원본 파형", "= 원본 파형"])
-    table(doc, ["구성", "판단 1회 지연 (ms)", "에너지 μJ, 추정 (데이터시트 / Moosmann)", "macro-F1 시험 데이터", "F1 외부 데이터"],
-          rows, f"표 1. 주 결과. 정확도는 시드 1~3 평균 ± 표준편차, 오경보 300회/h. 지연은 보드 1,000회 최악값, 에너지는 추정(실측 지연 × 공개 전력).",
-          col_mm=[52, 26, 46, 33, 33])
-
-    # ── 2단: 결과·결론·참고문헌 ──────────────────────────────────────
-    new_section(doc, 2)
+    # ── 결과·결론·참고문헌 (2단 계속) ────────────────────────────────
     heading(doc, "4. 결  과")
-    body(doc, f"전처리 제거의 비용. {n_w} 는 {n_16} 보다 시험 macro-F1 이 {f1(H16)[0]-f1(W)[0]:.3f}, 외부 F1 이 "
+    body(doc, f"전처리 제거의 비용. {s_w}은 {s_16} 구성보다 시험 macro-F1 이 {f1(H16)[0]-f1(W)[0]:.3f}, 외부 F1 이 "
               f"{f1(H16,'ext_f1')[0]-f1(W,'ext_f1')[0]:.3f} 낮다(표 1). 음성 키워드에서 손실이 없던 선택이 환경음에서는 "
               f"큰 비용을 치른다. 같은 가중치를 CPU 로 돌린 CMSIS-NN 대조군과 비교하면 NPU 추론은 추론만 "
               f"{r_inf:.0f}배, 판단 1회 {r_dec:.0f}배 빠르고 CPU 추론은 판단 주기의 {hop_m4:.0f}% 를 추론에 쓴다(그림 2).")
-    body(doc, f"NPU 로 옮긴 전처리는 되찾지 못한다. {n_a} 는 {n_w} 대비 {welch('(a) − ④')} 로 CI 가 0 을 포함하고, "
+    body(doc, f"NPU 로 옮긴 전처리는 되찾지 못한다. {n_a} 는 {s_w} 대비 {welch('(a) − ④')} 로 CI 가 0 을 포함하고, "
               f"로그 근사 층 때문에 NPU 사이클이 3.8배 늘어 추정 에너지는 {energy(A)/energy(W):.1f}배다. 앞선 라운드(v1 데이터)에서 "
               f"시험한 변형들도 같았다: " + "; ".join(f"{a} {b}" for a, b in V1_NEG) + ". 지원하지 않는 비선형을 "
               f"합성곱으로 흉내 내는 순간 NPU 는 CPU 보다 비싸진다.")
-    body(doc, f"최적점은 중간에 있다. {n_ga} 는 {n_w} 보다 시험 macro-F1 {welch('가 u1000 − ④')}, 외부 F1 "
+    body(doc, f"최적점은 중간에 있다. {s_ga}은 {s_w}보다 시험 macro-F1 {welch('가 u1000 − ④')}, 외부 F1 "
               f"{welch('가 u1000 − ④', 'ext_f1')} 로 유의하게 높고, 판단 1회 지연은 {latency(GA):.2f} ms 대 {latency(W):.2f} ms 로 "
               f"비슷하며, 추정 에너지는 데이터시트 기준 {energy(GA):.0f} 대 {energy(W):.0f} μJ 로 적고 Moosmann 기준 "
               f"{energy(GA,'moosmann'):.0f} 대 {energy(W,'moosmann'):.0f} μJ 로 같다. 이유는 그림 2 에 있다. 로그 멜이 16,384 샘플을 "
               f"512 값으로 줄이므로 NPU 추론이 {v('latency.④')['infer']:.2f} ms 에서 {lat_ga['infer']:.2f} ms 로 줄고, "
               f"CPU 전처리 {lat_ga['pre']:.2f} ms 가 그 차이보다 작다. 전처리는 병목이 아니라 데이터 축소 단계였고, "
               f"NPU 가 원시 샘플 전량을 처리하는 순간 그 이득이 사라진다. 프레임 간격을 좁힐수록 정확도는 오르지만 "
-              f"({n_25} {fmt_pm(H25)}, {n_16} {fmt_pm(H16)}) 전처리가 지연의 2/3 를 차지해 에너지가 {energy(H16)/energy(GA):.0f}배가 된다. "
-              f"{n_25} 와 {n_16} 의 차이는 {welch('간격 400 − ①′')} 로 작지만 0 을 포함하지 않았다.")
+              f"({s_25} {fmt_pm(H25)}, {s_16} {fmt_pm(H16)}) 전처리가 지연의 2/3 를 차지해 에너지가 {energy(H16)/energy(GA):.0f}배가 된다. "
+              f"{s_25} 와 {s_16} 의 차이는 {welch('간격 400 − ①′')} 로 작지만 0 을 포함하지 않았다.")
     body(doc, f"대형 모델 기준선. 같은 정답·같은 문턱값 규칙으로 PANNs(CNN14) 를 채점하면 시험 macro-F1 {pann:.3f} 이다. "
-              f"{n_16} 은 그 {100*f1(H16)[0]/pann:.0f}% 에 이른다.")
+              f"{s_16} 구성은 그 {100*f1(H16)[0]/pann:.0f}% 에 이른다.")
     figure(doc, os.path.join(PAPER, "fig2_latency_breakdown.png"), 88,
            "그림 2. 판단 1회 지연 분해(보드 실측, 1,000회 최악값). 왼쪽은 NPU 추론 여섯 구성(CPU 전처리 / 입력 적재 / NPU 추론), "
            "오른쪽은 같은 가중치의 CPU 추론(Cortex-M4F, CMSIS-NN)과 판단 주기 250 ms.")
 
     heading(doc, "5. 한계와 결론")
-    body(doc, "한계. 에너지는 직접 계측하지 않은 추정값이며 전력 출처에 따라 결론의 강도가 다르다(가 의 우위는 "
+    body(doc, "한계. 에너지는 직접 계측하지 않은 추정값이며 전력 출처에 따라 결론의 강도가 다르다(CPU log-mel 62.5 ms 구성의 우위는 "
               "'적다' 와 '같다' 사이). 시드가 3개라 신뢰구간이 넓다. 정답 청취는 저자 1인이다. 비명과 환호의 경계는 "
               "음향만으로 가를 수 없어 비명 재현율은 그 모호성을 포함한다. 시험셋 배경의 절반이 하드 네거티브라 "
               "오경보율은 실배치보다 부풀려져 있다. 음량 정규화·필터 해상도·용량 확대 등 원파형 쪽 변형을 더 시도할 "
