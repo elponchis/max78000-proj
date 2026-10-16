@@ -44,7 +44,9 @@ SCREAM = 2
 CONFIGS = [("④", "wave", "safesound-v4d-wave"), ("가 u1000", "mel_u1000", "safesound-v4d-melu1000"),
            ("다 u800", "mel_u800", "safesound-v4d-melu800"), ("간격 400", "mel_h400", "safesound-v4d-melh400"),
            ("①′", "mel_inc", "safesound-v4d-melinc"), ("(a) 주 lr 0.0003", "wave_logstage", "safesound-v4d-logstage"),
-           ("(a) 보조 lr 0.001 (참고)", "wave_logstage", "safesound-v4d-logstage-lr1e3")]
+           ("(a) 보조 lr 0.001 (참고)", "wave_logstage", "safesound-v4d-logstage-lr1e3"),
+           # ②′ NPU 에너지 적분 필터뱅크 (chain32, 2026-10-17, docs/results/fe-design.md) — 별도 행. 완주 전에는 seeds_of 가 건너뛴다
+           ("②′ fe", "wave_fe", "safesound-v4d-fe")]
 
 
 def fsd_labels():
