@@ -60,7 +60,10 @@ def main():
     ap.add_argument("--lo-q8", type=int, default=1472)
     ap.add_argument("--span-q8", type=int, default=2976)
     ap.add_argument("--verify", action="store_true")
+    # ②′ (models/ai85net-safesound-fe.py) 는 상수가 달라 경계 파일을 따로 둔다 — 이름에 상수가 들어간다
+    ap.add_argument("--out", default=OUT, help="경계 파일 경로 (기본: (c) 의 cstage_bounds.npy)")
     a = ap.parse_args()
+    out_path = a.out
 
     B, lo_lvl, hi_lvl = build(a.scale_sh, a.lo_q8, a.span_q8)
     print(f"레벨 {lo_lvl}..{hi_lvl}, 경계 {len(B)}개 "
@@ -90,9 +93,9 @@ def main():
             print("⚠️ 불일치는 `|y|·2^SH` 가 정확히 x.5 인 입력에서만 난다 — "
                   "기기에는 이 반올림이 없다 (NPU 가 int32 를 직접 준다)")
 
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    np.save(OUT, B)
-    print(f"저장: {OUT}")
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    np.save(out_path, B)
+    print(f"저장: {out_path}")
     return 0
 
 

@@ -1,0 +1,23 @@
+---
+# 구성 ②′ 1패스 — NPU 에너지 적분 필터뱅크의 **선형 부분**만. 32bit wide 출력, 활성화 없음.
+#   models/ai85net-safesound-fe.py `ai85safesoundfe_p1`, 설계 docs/results/fe-design.md
+#
+#   입력  (64, 64) int8 — 판단 1회의 새 4,096 샘플을 접기 64 로 (X[r][p] = s[64p + r])
+#   출력  (64, 57) int32 — 512탭 FIR 64개 (멜 32밴드 × cos/sin), 유효 위치 57
+#
+# 이 출력을 CPU 가 읽어 |cos|+|sin| → 8 위치 합 → log2 (CLZ+LUT) → int8 로 만들고
+# 2패스(가 의 2D CNN, synthesis/safesound-melu1000-hwc.yaml) 입력 메모리에 쓴다.
+# 2패스와 **가중치 메모리를 나눠 쓴다** — 합성 시 --weight-start 로 2패스 뒤에 둔다 ((c) 2.1 과 같다).
+arch: ai85safesoundfe_p1
+dataset: SafeSoundFEP1
+
+layers:
+  # ── fe : Conv1d k=8, 64 → 64, wide 32bit, 패딩 없음
+  - pad: 0
+    activate: None
+    out_offset: 0x2000
+    processors: 0xffffffffffffffff
+    data_format: HWC
+    operation: Conv1d
+    kernel_size: 8
+    output_width: 32
