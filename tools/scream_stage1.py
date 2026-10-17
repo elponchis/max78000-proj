@@ -46,7 +46,11 @@ CONFIGS = [("④", "wave", "safesound-v4d-wave"), ("가 u1000", "mel_u1000", "sa
            ("①′", "mel_inc", "safesound-v4d-melinc"), ("(a) 주 lr 0.0003", "wave_logstage", "safesound-v4d-logstage"),
            ("(a) 보조 lr 0.001 (참고)", "wave_logstage", "safesound-v4d-logstage-lr1e3"),
            # ②′ NPU 에너지 적분 필터뱅크 (chain32, 2026-10-17, docs/results/fe-design.md) — 별도 행. 완주 전에는 seeds_of 가 건너뛴다
-           ("②′ fe", "wave_fe", "safesound-v4d-fe")]
+           ("②′ fe", "wave_fe", "safesound-v4d-fe"),
+           # ②′ 곡선 변형 (chain33, 2026-10-17 저녁, docs/results/fe-curve-design.md)
+           ("②′ b64", "wave_fe_b64", "safesound-v4d-fe-b64"),
+           ("②′ f31", "wave_fe_f31", "safesound-v4d-fe-f31"),
+           ("②′ b64f31", "wave_fe_b64f31", "safesound-v4d-fe-b64f31")]
 
 
 def fsd_labels():

@@ -305,6 +305,10 @@ CONFIGS = {
     # (a) NPU 안 로그 근사 — 별도 모델 파일
     # ②′ NPU 에너지 적분 필터뱅크 (docs/results/fe-design.md) — 데이터는 ④ 와 같은 원파형 시험셋, 모델이 안에서 접는다
     "wave_fe": ("ai85net-safesound-fe.py", "AI85SafeSoundFE", "SafeSound"),
+    # ②′ 곡선 변형 (docs/results/fe-curve-design.md) — 같은 모델 파일, variant 인자만 다르다
+    "wave_fe_b64": ("ai85net-safesound-fe.py", "AI85SafeSoundFE", "SafeSound"),
+    "wave_fe_f31": ("ai85net-safesound-fe.py", "AI85SafeSoundFE", "SafeSound"),
+    "wave_fe_b64f31": ("ai85net-safesound-fe.py", "AI85SafeSoundFE", "SafeSound"),
     "wave_logstage": ("ai85net-safesound-logstage.py", "AI85SafeSoundLogStage",
                       "SafeSound"),
     # (c) NPU 필터뱅크 → CPU 정수 로그 → NPU 분류기.
@@ -374,6 +378,9 @@ CONFIG_KWARGS = {
     # 마디(-t_k)라 진입점에서 항상 True 로 만든다
     "wave_logstage": {},
     "wave_fe": {},
+    "wave_fe_b64": {"variant": "b64"},
+    "wave_fe_f31": {"variant": "f31"},
+    "wave_fe_b64f31": {"variant": "b64f31"},
     # cstage 도 추가 인자가 없다 (로그단 상수는 모델 파일의 모듈 상수)
     "wave_cstage": {},
     "wave_n16g4": {},

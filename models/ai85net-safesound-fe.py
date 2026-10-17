@@ -37,6 +37,23 @@ int8 로 내리고 NPU 에서 풀링하면 로그 **전에** 동적범위를 잃
 받아 CPU 가 |·|·합·로그를 하면 정밀도가 보존되고, 값이 32×4 = 128개뿐이라
 비용은 수십 μs 다 ((c) 설계 4.1절의 로그 단가로 환산 — 측정 전이므로 추정).
 
+## 변형 (2026-10-17 저녁, `docs/results/fe-curve-design.md`) — NPU 전처리 쪽 곡선
+
+②′ 한 점으로는 "NPU 전처리 곡선" 이 없다. 대역 수와 프레임 수를 늘린 변형 셋을
+같은 설계·같은 학습 설정으로 학습해 CPU log-mel 곡선과 겹쳐 본다.
+
+    fe      32 대역 × 16 프레임 (홉 64 ms)   ②′ 그대로
+    b64     64 대역 × 16 프레임 (홉 64 ms)   p1 Conv1d(64→128), 분류기 입력 1×64×16
+    f31     32 대역 × 31 프레임 (홉 32 ms)   프레임 홉 8 위치, 적분 8 위치 (60 ms 그대로), 입력 1×32×31
+    b64f31  64 대역 × 31 프레임 (홉 32 ms)   둘 다
+
+접기·탭·커널·적분 길이·로그단(SCALE_SH, SPAN_Q8)은 전부 같고, LO_Q8 만 변형마다
+학습셋 E 분포로 다시 정한다 (`tools/init_fe_fb.py --variant`). 분류기는 가 의 2D CNN
+(풀링 4단) 에 입력 모양만 바꾼 것이라 FC 입력이 256 (32 대역) 또는 512 (64 대역) 이다.
+31 프레임인 이유: 유효 위치 249 안에서 8 위치 홉·8 위치 적분이면 8·30+8 = 248 이 한계다
+(32 프레임은 패딩이 필요하다). 펌웨어는 판단마다 8 프레임을 새로 계산하므로 p1 입력을
+청크 64 위치 + 직전 7 위치(448 샘플) 로 넣어야 한다 (fe 는 57 유효 위치로 충분했다).
+
 ## 로그단 상수 — 펌웨어와 공유
 
 (c) 와 같은 논리 (`ai85net-safesound-cstage-train.py` 모듈 설명):
@@ -56,52 +73,69 @@ import torch.nn as nn
 
 import ai8x
 
-# ── 구조 상수 ────────────────────────────────────────────────────────
+# ── 구조 상수 (모든 변형 공통) ────────────────────────────────────────
 FOLD = 64                 # 접기: 위치당 샘플 수 = p1 입력 채널 수
 NPOS = 16384 // FOLD      # 256 위치 (학습 창 전체)
 KERNEL = 8                # p1 커널 → FIR 탭 = KERNEL·FOLD = 512 (32 ms)
 TAPS = KERNEL * FOLD
-NBAND = 32                # 멜 밴드 수 = 가 의 멜 수
-NCH = 2 * NBAND           # cos·sin 쌍 → p1 출력 채널 64
-NFRAME = 16               # 프레임 수 = 가 와 같다 (32 × 16 입력)
-POS_PER_FRAME = 16        # 프레임 홉 = 16 위치 = 1,024 샘플 = 64 ms
-POOL_POS = 8              # 프레임당 적분 위치 수 (960 샘플 = 60 ms)
-NVALID = NPOS - KERNEL + 1    # 249 — 마지막 프레임의 마지막 위치 16·15+7 = 247 ≤ 248 이라 패딩이 없다
-assert POS_PER_FRAME * (NFRAME - 1) + POOL_POS <= NVALID
+NVALID = NPOS - KERNEL + 1    # 249 유효 위치
 
-# ── 로그단 상수 — **펌웨어와 공유한다** (tools/init_fe_fb.py 가 정한 값) ──
+# ── 로그단 상수 — **펌웨어와 공유한다** ──────────────────────────────
 SCALE_SH = 14             # E → 정수 스케일 (2 의 거듭제곱)
-LO_Q8 = 1279              # 창 아래끝, Q8 log2 (init_fe_fb.py 2026-10-17: 학습셋 400창 E 분포 p99 16.62 − 70 dB → v≈32, 정수 해상도 지점(v≈30) 위)
-SPAN_Q8 = 2976            # 창 폭, Q8 log2 (= 70.0 dB, ① 과 같은 폭 — 고정)
+SPAN_Q8 = 2976            # 창 폭, Q8 log2 (= 70.0 dB, ① 과 같은 폭 — 모든 변형에서 고정)
 E_MIN = 2.0 ** -SCALE_SH  # STE 의 1/E 하한 (= 1 LSB)
+
+# ── 변형 표 (docs/results/fe-curve-design.md). lo_q8 은 tools/init_fe_fb.py --variant 가 정한 값 ──
+VARIANTS = {
+    "fe":     dict(n_band=32, n_frame=16, pos_per_frame=16, pool_pos=8, lo_q8=1279),   # ②′ (init_fe_fb 2026-10-17: p99 16.62 − 70 dB)
+    "b64":    dict(n_band=64, n_frame=16, pos_per_frame=16, pool_pos=8, lo_q8=1627),   # init_fe_fb 2026-10-17 저녁: p99 17.98 − 70 dB
+    "f31":    dict(n_band=32, n_frame=31, pos_per_frame=8,  pool_pos=8, lo_q8=1279),   # fe 와 같은 E 분포 (p99 16.62)
+    "b64f31": dict(n_band=64, n_frame=31, pos_per_frame=8,  pool_pos=8, lo_q8=1627),   # b64 와 같은 E 분포 (p99 17.98)
+}
+for _k, _v in VARIANTS.items():
+    # 마지막 프레임의 마지막 위치가 유효 위치 안에 있어야 패딩이 없다 (fe: 16·15+7 = 247, f31: 8·30+7 = 247)
+    assert _v["pos_per_frame"] * (_v["n_frame"] - 1) + _v["pool_pos"] <= NVALID, _k
+
+# ②′ 기본 상수 — 기존 도구(fe_board_prep.py 등)가 모듈 상수로 읽는다. VARIANTS["fe"] 와 같다.
+NBAND = VARIANTS["fe"]["n_band"]
+NCH = 2 * NBAND
+NFRAME = VARIANTS["fe"]["n_frame"]
+POS_PER_FRAME = VARIANTS["fe"]["pos_per_frame"]
+POOL_POS = VARIANTS["fe"]["pool_pos"]
+LO_Q8 = VARIANTS["fe"]["lo_q8"]
 
 _LN2 = float(np.log(2.0))
 _REPO = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))   # 심볼릭 링크를 푼다 ((c) 와 같은 이유)
-_BOUNDS_NPY = os.path.join(_REPO, "data", "synth", f"fe_bounds_sh{SCALE_SH}_lo{LO_Q8}_span{SPAN_Q8}.npy")
-_BOUNDS = None
+_BOUNDS = {}
 
 
-def _bounds():
-    """계단 경계 255개 (tools/gen_cstage_bounds.py --out …). import 시점에 읽지 않는다 ((c) 의 사고)."""
-    global _BOUNDS                                  # noqa: PLW0603
-    if _BOUNDS is None:
-        if not os.path.isfile(_BOUNDS_NPY):
+def bounds_path(lo_q8):
+    return os.path.join(_REPO, "data", "synth", f"fe_bounds_sh{SCALE_SH}_lo{lo_q8}_span{SPAN_Q8}.npy")
+
+
+def _bounds(lo_q8):
+    """계단 경계 255개 (tools/gen_cstage_bounds.py --out …). import 시점에 읽지 않는다 ((c) 의 사고). 변형(LO)마다 따로."""
+    if lo_q8 is None:
+        raise ValueError("이 변형의 LO_Q8 이 아직 없다 — `tools/init_fe_fb.py --variant <이름>` 으로 정하고 VARIANTS 에 적을 것")
+    if lo_q8 not in _BOUNDS:
+        f = bounds_path(lo_q8)
+        if not os.path.isfile(f):
             raise FileNotFoundError(
-                f"{_BOUNDS_NPY} 가 없다. `python3 tools/gen_cstage_bounds.py --scale-sh {SCALE_SH} "
-                f"--lo-q8 {LO_Q8} --span-q8 {SPAN_Q8} --out {_BOUNDS_NPY}` 를 먼저 돌릴 것")
-        b = torch.from_numpy(np.load(_BOUNDS_NPY))
+                f"{f} 가 없다. `python3 tools/gen_cstage_bounds.py --scale-sh {SCALE_SH} "
+                f"--lo-q8 {lo_q8} --span-q8 {SPAN_Q8} --out {f}` 를 먼저 돌릴 것")
+        b = torch.from_numpy(np.load(f))
         assert b.numel() == 255, "경계는 255개여야 한다 (레벨 256개)"
-        _BOUNDS = b
-    return _BOUNDS
+        _BOUNDS[lo_q8] = b
+    return _BOUNDS[lo_q8]
 
 
 class _IntLog(torch.autograd.Function):
     """E (≥ 0) → 정수 로그 → int8. 순전파는 펌웨어와 같고 (bucketize == round → CLZ+LUT → 포화), 역전파는 STE."""
 
     @staticmethod
-    def forward(ctx, e):
+    def forward(ctx, e, bounds):
         ctx.save_for_backward(e)
-        q = torch.bucketize(e.detach().double(), _bounds().to(e.device)) - 128
+        q = torch.bucketize(e.detach().double(), bounds.to(e.device)) - 128
         return q.to(e.dtype)
 
     @staticmethod
@@ -109,7 +143,7 @@ class _IntLog(torch.autograd.Function):
         (e,) = ctx.saved_tensors
         # d/dE [ (log2 E − lo) · 255/span ] = 255 / (span/256 · ln2 · E)
         denom = (SPAN_Q8 / 256.0) * _LN2 * e.clamp(min=E_MIN)
-        return g * (255.0 / denom)
+        return g * (255.0 / denom), None
 
 
 # ── 멜 필터뱅크 초기값 (모델이 스스로 만든다 — 체크포인트 없이 시드마다 분류기만 달라진다) ──
@@ -121,10 +155,11 @@ def _melfeat():
 
 
 def filterbank_init(n_band=NBAND, taps=TAPS, fold=FOLD, kernel=KERNEL):
-    """가 의 멜 32밴드와 같은 중심·폭의 **밴드폭 맞춤 Gabor** cos/sin 쌍 → (64, fold, kernel) conv 가중치.
+    """멜 n_band 밴드와 같은 중심·폭의 **밴드폭 맞춤 Gabor** cos/sin 쌍 → (2·n_band, fold, kernel) conv 가중치.
 
-    · 중심 주파수: melfeat.mel_filterbank 와 같은 식 (FMIN 20 ~ FMAX 8000, 34 경계의 안쪽 32)
+    · 중심 주파수: melfeat.mel_filterbank 와 같은 식 (FMIN 20 ~ FMAX 8000, n_band+2 경계의 안쪽 n_band)
     · 창 길이 L_b = clip(1.44·sr / 밴드폭, 64, taps) — Hann 주엽 폭이 멜 삼각 폭과 맞도록. 512탭 안에 가운데 정렬.
+      64 밴드에서는 저역의 요구 길이가 512 를 넘어 잘린다 (분해능 한계 — 학습이 보정할 수 있는지는 결과가 말한다).
     · 각 필터 L2 노름 1 (init_filterbank.py 와 같은 이유: 출력 크기가 입력 RMS 자릿수).
     · 탭 배치 t = j·fold + r → reshape(n, kernel, fold).transpose(0, 2, 1)  (init_filterbank.to_conv_weight 와 같다).
     """
@@ -142,8 +177,8 @@ def filterbank_init(n_band=NBAND, taps=TAPS, fold=FOLD, kernel=KERNEL):
         t = (np.arange(taps) - (taps - 1) / 2.0) / MF.SR
         for v in (w * np.cos(2 * np.pi * f * t), w * np.sin(2 * np.pi * f * t)):
             rows.append(v / (np.linalg.norm(v) or 1.0))
-    W = np.array(rows, dtype=np.float32)                                 # (64, 512), 2b = cos, 2b+1 = sin
-    Wc = W.reshape(NCH, kernel, fold).transpose(0, 2, 1)                 # (64, fold, kernel)
+    W = np.array(rows, dtype=np.float32)                                 # (2n, 512), 2b = cos, 2b+1 = sin
+    Wc = W.reshape(2 * n_band, kernel, fold).transpose(0, 2, 1)          # (2n, fold, kernel)
     return np.ascontiguousarray(Wc), centers, np.array(lengths)
 
 
@@ -155,7 +190,10 @@ def _melnet():
 
 
 class AI85SafeSoundFE(nn.Module):
-    """②′ 학습 모델 — p1 (NPU) → CPU 로그단 → p2 (NPU, 가 의 2D CNN) 한 덩어리. 역전파는 끝까지 흐른다."""
+    """②′ 학습 모델 — p1 (NPU) → CPU 로그단 → p2 (NPU, 가 의 2D CNN) 한 덩어리. 역전파는 끝까지 흐른다.
+
+    `variant` 가 VARIANTS 의 한 행을 고른다. 기본 "fe" 가 ②′ 다.
+    """
 
     def __init__(
             self,
@@ -164,64 +202,103 @@ class AI85SafeSoundFE(nn.Module):
             dimensions=(128, 128),  # pylint: disable=unused-argument
             bias=False,
             fb_init=True,
+            variant="fe",
             **kwargs
     ):
         super().__init__()
+        spec = VARIANTS[variant]
+        self.variant = variant
+        self.n_band, self.n_frame = spec["n_band"], spec["n_frame"]
+        self.pos_per_frame, self.pool_pos = spec["pos_per_frame"], spec["pool_pos"]
+        self.lo_q8 = spec["lo_q8"]
+        self.n_ch = 2 * self.n_band
         # p1 — 활성화 없는 wide 층 (디바이스 int32). bias 없음 (FIR).
-        self.fe = ai8x.Conv1d(FOLD, NCH, KERNEL, stride=1, padding=0, bias=False, wide=True, **kwargs)
+        self.fe = ai8x.Conv1d(FOLD, self.n_ch, KERNEL, stride=1, padding=0, bias=False, wide=True, **kwargs)
         if fb_init:
-            Wc, _, _ = filterbank_init()
+            Wc, _, _ = filterbank_init(n_band=self.n_band)
             with torch.no_grad():
                 assert tuple(self.fe.op.weight.shape) == Wc.shape, (self.fe.op.weight.shape, Wc.shape)
                 self.fe.op.weight.copy_(torch.from_numpy(Wc))
-        # p2 — 가 와 같은 모델·같은 입력 모양 (1, 32, 16), 풀링 4단
+        # p2 — 가 와 같은 모델 (풀링 4단), 입력 모양 (1, n_band, n_frame)
         self.cls = _melnet().AI85SafeSoundMelNet(num_classes=num_classes, num_channels=1,
-                                                 dimensions=(NBAND, NFRAME), bias=bias, pool6=False, **kwargs)
-        idx = (torch.arange(NFRAME) * POS_PER_FRAME)[:, None] + torch.arange(POOL_POS)[None, :]   # (16, 8)
+                                                 dimensions=(self.n_band, self.n_frame), bias=bias, pool6=False, **kwargs)
+        idx = (torch.arange(self.n_frame) * self.pos_per_frame)[:, None] + torch.arange(self.pool_pos)[None, :]   # (n_frame, pool_pos)
         self.register_buffer("_idx", idx, persistent=False)
 
     def frontend(self, x):
-        """(B, 128, 128) ④ 접기 → (B, 32, 16) 적분 밴드 에너지 E (로그 전, float). KAT·통계용으로 분리."""
+        """(B, 128, 128) ④ 접기 → (B, n_band, n_frame) 적분 밴드 에너지 E (로그 전, float). KAT·통계용으로 분리."""
         B = x.size(0)
         s = x.transpose(1, 2).reshape(B, -1)                 # x[r][c] = s[128c + r] → 샘플 순서
         x2 = s.reshape(B, NPOS, FOLD).transpose(1, 2)        # X[r][p] = s[64p + r]
-        y = self.fe(x2)                                      # (B, 64, 249) wide
+        y = self.fe(x2)                                      # (B, 2n, 249) wide
         mag = y.abs()
-        mag = mag[:, 0::2] + mag[:, 1::2]                    # (B, 32, 249)
-        return mag[:, :, self._idx].sum(-1)                  # (B, 32, 16)
+        mag = mag[:, 0::2] + mag[:, 1::2]                    # (B, n, 249)
+        return mag[:, :, self._idx].sum(-1)                  # (B, n_band, n_frame)
+
+    def intlog(self, e):
+        """E → int8 (펌웨어와 비트 동일한 정수 로그). 변형의 LO_Q8 경계를 쓴다."""
+        return _IntLog.apply(e, _bounds(self.lo_q8))
 
     def forward(self, x):  # pylint: disable=arguments-differ
         e = self.frontend(x)
         # ── 여기가 CPU 다: 정수 로그 → int8 → p2 입력 규약 [-1, 1) ──
-        q = _IntLog.apply(e) / 128.0
-        return self.cls(q.unsqueeze(1))                      # (B, 1, 32, 16)
+        q = self.intlog(e) / 128.0
+        return self.cls(q.unsqueeze(1))                      # (B, 1, n_band, n_frame)
 
 
 class AI85SafeSoundFEP1(nn.Module):
-    """②′ 1패스 합성용 — p1 한 층. 입력 (64, L) int8, 출력 (64, L−7) int32. L = 64 (판단 1회, 4,096 샘플)."""
+    """②′ 1패스 합성용 — p1 한 층. 입력 (64, L) int8, 출력 (2·n_band, L−7) int32. L = 64 (fe, 판단 1회 4,096 샘플) / 71 (f31)."""
 
-    def __init__(self, num_classes=5, num_channels=FOLD, dimensions=(64, 1), bias=False, **kwargs):  # pylint: disable=unused-argument
+    def __init__(self, num_classes=5, num_channels=FOLD, dimensions=(64, 1), bias=False, variant="fe", **kwargs):  # pylint: disable=unused-argument
         super().__init__()
-        self.fe = ai8x.Conv1d(FOLD, NCH, KERNEL, stride=1, padding=0, bias=False, wide=True, **kwargs)
+        self.fe = ai8x.Conv1d(FOLD, 2 * VARIANTS[variant]["n_band"], KERNEL, stride=1, padding=0, bias=False, wide=True, **kwargs)
 
     def forward(self, x):  # pylint: disable=arguments-differ
         return self.fe(x)
 
 
 def ai85safesoundfe(pretrained=False, **kwargs):
-    """②′ 학습 모델 (멜 Gabor 초기값 내장)."""
+    """②′ 학습 모델 (멜 Gabor 초기값 내장) — 32 대역 × 16 프레임."""
     assert not pretrained
-    return AI85SafeSoundFE(**kwargs)
+    return AI85SafeSoundFE(variant="fe", **kwargs)
+
+
+def ai85safesoundfe_b64(pretrained=False, **kwargs):
+    """변형 b64 — 64 대역 × 16 프레임."""
+    assert not pretrained
+    return AI85SafeSoundFE(variant="b64", **kwargs)
+
+
+def ai85safesoundfe_f31(pretrained=False, **kwargs):
+    """변형 f31 — 32 대역 × 31 프레임 (홉 32 ms)."""
+    assert not pretrained
+    return AI85SafeSoundFE(variant="f31", **kwargs)
+
+
+def ai85safesoundfe_b64f31(pretrained=False, **kwargs):
+    """변형 b64f31 — 64 대역 × 31 프레임."""
+    assert not pretrained
+    return AI85SafeSoundFE(variant="b64f31", **kwargs)
 
 
 def ai85safesoundfe_p1(pretrained=False, **kwargs):
-    """②′ 1패스 — 합성 확인용."""
+    """②′ 1패스 (64 출력 채널) — 합성 확인용."""
     assert not pretrained
-    return AI85SafeSoundFEP1(**kwargs)
+    return AI85SafeSoundFEP1(variant="fe", **kwargs)
+
+
+def ai85safesoundfe_p1_b64(pretrained=False, **kwargs):
+    """b64·b64f31 의 1패스 (128 출력 채널) — 합성 확인용."""
+    assert not pretrained
+    return AI85SafeSoundFEP1(variant="b64", **kwargs)
 
 
 # ⚠️ 이 목록에 넣지 않으면 `train.py --model …` 이 받지 않는다.
 models = [
     {'name': 'ai85safesoundfe', 'min_input': 1, 'dim': 1},      # 데이터셋 입력이 ④ 와 같은 (128, 128) 1D 접기다
+    {'name': 'ai85safesoundfe_b64', 'min_input': 1, 'dim': 1},
+    {'name': 'ai85safesoundfe_f31', 'min_input': 1, 'dim': 1},
+    {'name': 'ai85safesoundfe_b64f31', 'min_input': 1, 'dim': 1},
     {'name': 'ai85safesoundfe_p1', 'min_input': 1, 'dim': 1},
+    {'name': 'ai85safesoundfe_p1_b64', 'min_input': 1, 'dim': 1},
 ]

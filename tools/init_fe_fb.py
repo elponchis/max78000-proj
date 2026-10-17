@@ -37,6 +37,7 @@ def main():
     ap.add_argument("--data", default=os.path.expanduser("~/ai8x-training/data/SafeSoundV4"))
     ap.add_argument("--n", type=int, default=400, help="창 결정에 쓸 학습셋 표본 수")
     ap.add_argument("--verify", action="store_true")
+    ap.add_argument("--variant", default="fe", help="VARIANTS 의 행 (fe / b64 / f31 / b64f31)")
     a = ap.parse_args()
 
     sys.path.insert(0, a.ai8x)
@@ -47,13 +48,14 @@ def main():
 
     m = load(os.path.join(REPO, "models/ai85net-safesound-fe.py"), "fe")
     torch.manual_seed(0)
-    net = m.ai85safesoundfe()
+    net = m.AI85SafeSoundFE(variant=a.variant)
     net.eval()
-    Wc, centers, lengths = m.filterbank_init()
-    W = Wc.transpose(0, 2, 1).reshape(m.NCH, m.TAPS)          # (64, 512) 시간순 탭
-    print(f"p1: Conv1d({m.FOLD}→{m.NCH}, k={m.KERNEL}) = {m.TAPS}탭 FIR, 홉 {m.FOLD} 샘플 ({1000*m.FOLD/MF.SR:.0f} ms); "
-          f"밴드 {m.NBAND} ({centers[0]:.0f}~{centers[-1]:.0f} Hz), 창 길이 {lengths.min()}~{lengths.max()}탭; "
-          f"프레임 홉 {m.POS_PER_FRAME*m.FOLD} 샘플, 적분 {m.POOL_POS} 위치 = {(m.POOL_POS-1)*m.FOLD+m.TAPS} 샘플")
+    NCH, NBAND = net.n_ch, net.n_band
+    Wc, centers, lengths = m.filterbank_init(n_band=NBAND)
+    W = Wc.transpose(0, 2, 1).reshape(NCH, m.TAPS)            # (2n, 512) 시간순 탭
+    print(f"[{a.variant}] p1: Conv1d({m.FOLD}→{NCH}, k={m.KERNEL}) = {m.TAPS}탭 FIR, 홉 {m.FOLD} 샘플 ({1000*m.FOLD/MF.SR:.0f} ms); "
+          f"밴드 {NBAND} ({centers[0]:.0f}~{centers[-1]:.0f} Hz), 창 길이 {lengths.min()}~{lengths.max()}탭; "
+          f"프레임 {net.n_frame}개, 홉 {net.pos_per_frame*m.FOLD} 샘플, 적분 {net.pool_pos} 위치 = {(net.pool_pos-1)*m.FOLD+m.TAPS} 샘플")
 
     # ── 1. 접기·탭 배치 검산 ───────────────────────────────────────────
     rng = np.random.default_rng(1)
@@ -63,8 +65,8 @@ def main():
         B = x.size(0)
         ss = x.transpose(1, 2).reshape(B, -1)
         x2 = ss.reshape(B, m.NPOS, m.FOLD).transpose(1, 2)
-        y = net.fe(x2)[0].numpy()                                               # (64, 249)
-    ref = np.stack([[np.dot(W[o], s[m.FOLD*p:m.FOLD*p + m.TAPS]) for p in range(m.NVALID)] for o in range(m.NCH)])
+        y = net.fe(x2)[0].numpy()                                               # (2n, 249)
+    ref = np.stack([[np.dot(W[o], s[m.FOLD*p:m.FOLD*p + m.TAPS]) for p in range(m.NVALID)] for o in range(NCH)])
     err = np.abs(y - ref).max() / (np.abs(ref).max() + 1e-12)
     print(f"1) 접기 검산: p1 출력 대 직접 FIR 최대 상대 오차 {err:.2e} → {'OK' if err < 1e-4 else '불일치!'}")
     assert err < 1e-4
@@ -77,7 +79,7 @@ def main():
         xs = np.clip(np.round(100 * np.sin(2 * np.pi * f_hz * tt)), -128, 127).astype(np.float32) / 128.0
         xt = torch.from_numpy(xs).reshape(-1, 128).transpose(1, 0).unsqueeze(0)
         with torch.no_grad():
-            e = net.frontend(xt)[0].mean(dim=1).numpy()                        # (32,)
+            e = net.frontend(xt)[0].mean(dim=1).numpy()                        # (n_band,)
         band = int(np.argmax(e))
         near = int(np.argmin(np.abs(centers - f_hz)))
         other = np.delete(e, band)
@@ -94,7 +96,7 @@ def main():
     idx = np.random.default_rng(0).choice(len(ds), min(a.n, len(ds)), replace=False)
     xs = torch.stack([ds[int(i)][0] for i in idx])
     with torch.no_grad():
-        E = net.frontend(xs).numpy()                                            # (n, 32, 16)
+        E = net.frontend(xs).numpy()                                            # (n, n_band, n_frame)
     v = np.round(E.ravel() * (1 << m.SCALE_SH))
     print(f"3) 학습셋 {len(idx)}창 E 분포 (SCALE_SH={m.SCALE_SH}): 0 비율 {100*(v == 0).mean():.2f}%, "
           f"max v {v.max():.3g} (< 2^32 {'OK' if v.max() < 2**32 else '초과!'})")
@@ -103,15 +105,19 @@ def main():
     print(f"   log2 v: p1 {p1:.2f} / p50 {p50:.2f} / p99 {p99:.2f}  (p1~p99 = {(p99-p1)*6.0206:.1f} dB)")
     lo_rec = int(round(p99 * 256)) - m.SPAN_Q8
     print(f"   권고: SPAN_Q8 = {m.SPAN_Q8} (70.0 dB 고정), LO_Q8 = {lo_rec}  (창 = [{lo_rec/256:.2f}, {p99:.2f}] log2)")
-    print(f"   현재 모델 상수: LO_Q8 = {m.LO_Q8} → {'일치' if m.LO_Q8 == lo_rec else '⚠️ 모델 파일의 LO_Q8 을 권고값으로 바꾸고 경계를 다시 만들 것'}")
-    q_lo = (lg * 256 < m.LO_Q8).mean()
-    q_hi = (lg * 256 >= m.LO_Q8 + m.SPAN_Q8).mean()
+    LO = net.lo_q8
+    if LO is None:
+        print(f"   현재 모델 상수: LO_Q8 미정 → VARIANTS['{a.variant}']['lo_q8'] = {lo_rec} 로 적고 경계를 만들 것")
+        return 0
+    print(f"   현재 모델 상수: LO_Q8 = {LO} → {'일치' if LO == lo_rec else '⚠️ 모델 파일의 LO_Q8 을 권고값으로 바꾸고 경계를 다시 만들 것'}")
+    q_lo = (lg * 256 < LO).mean()
+    q_hi = (lg * 256 >= LO + m.SPAN_Q8).mean()
     print(f"   현재 창에서 포화: 아래 {100*q_lo:.2f}% / 위 {100*q_hi:.2f}%")
 
     # ── 4. 경로 동일성 (경계 파일 필요) ──────────────────────────────────
     if a.verify:
-        q_model = m._IntLog.apply(torch.from_numpy(E)).numpy().astype(np.int64)
-        ref = to_int8(log2_q8(v.astype(np.int64).clip(0, 0xFFFFFFFF)), m.LO_Q8, m.SPAN_Q8).astype(np.int64).reshape(E.shape)
+        q_model = net.intlog(torch.from_numpy(E)).numpy().astype(np.int64)
+        ref = to_int8(log2_q8(v.astype(np.int64).clip(0, 0xFFFFFFFF)), LO, m.SPAN_Q8).astype(np.int64).reshape(E.shape)
         bad = int((q_model != ref).sum())
         print(f"4) 모델 bucketize 대 정수 경로: 불일치 {bad} / {ref.size:,} "
               f"({'OK' if bad == 0 else '정확히 x.5 인 입력만이어야 한다 — 확인할 것'})")
