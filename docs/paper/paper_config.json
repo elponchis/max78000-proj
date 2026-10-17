@@ -39,50 +39,110 @@
     {
       "name": "④",
       "long": "④ 원본 파형 1D",
-      "slt": "④", "v4eval": "④", "stage3": "④",
-      "board_log": "wave", "synth_dir": "safesound_wave_v4d", "framing": null,
-      "model": "ai85safesoundnet", "model_desc": "KWS20 v3 파생 1D CNN (Conv1d), 전처리 없음 — 원파형 16,384 샘플을 128×128 로 접어 NPU 입력",
-      "preproc": "없음 (NPU 에 원파형)", "marker": "o", "estimated_latency": false
+      "slt": "④",
+      "v4eval": "④",
+      "stage3": "④",
+      "board_log": "wave",
+      "synth_dir": "safesound_wave_v4d",
+      "framing": null,
+      "model": "ai85safesoundnet",
+      "model_desc": "KWS20 v3 파생 1D CNN (Conv1d), 전처리 없음 — 원파형 16,384 샘플을 128×128 로 접어 NPU 입력",
+      "preproc": "없음 (NPU 에 원파형)",
+      "marker": "o",
+      "estimated_latency": false
+    },
+    {
+      "name": "②′",
+      "long": "②′ NPU 에너지 적분 필터뱅크 (Gabor) + CPU 정수 로그 + 가 의 2D CNN — 두 네트워크 동시 적재",
+      "slt": "②′ fe",
+      "v4eval": null,
+      "stage3": null,
+      "fe_eval": "fe_eval.json",
+      "board_log": "fe",
+      "two_networks": true,
+      "synth_dir": "safesound_fe_p2_v4d",
+      "synth_dir_p1": "safesound_fe_p1_v4d",
+      "framing": null,
+      "model": "ai85safesoundfe",
+      "model_desc": "p1 NPU Conv1d 64→64 k=8 (512탭 Gabor 필터뱅크 cos/sin 32쌍, wide int32, 판단당 64위치) → CPU |cos|+|sin|·8위치 합·정수 로그 (32×4 값) → p2 = CPU log-mel 62.5 ms 구성과 같은 2D CNN (1×32×16). 가중치 p1 32 KB + p2 153 KB 동시 적재, 판단 주기 256 ms",
+      "preproc": "NPU 필터뱅크 (선형) + CPU 정수 로그",
+      "marker": "X",
+      "estimated_latency": false
     },
     {
       "name": "가 u1000",
       "long": "후보 가 (간격 1000, 멜 32)",
-      "slt": "가 u1000", "v4eval": "가 u1000", "stage3": "가 u1000",
-      "board_log": "u1000", "synth_dir": "safesound_melu1000_v4d", "framing": "u1000",
-      "model": "ai85safesoundmelnet_p4", "model_desc": "2D CNN, 풀링 4단 (32멜×16프레임 입력)",
-      "preproc": "CPU 로그 멜 (증분)", "marker": "s", "estimated_latency": false
+      "slt": "가 u1000",
+      "v4eval": "가 u1000",
+      "stage3": "가 u1000",
+      "board_log": "u1000",
+      "synth_dir": "safesound_melu1000_v4d",
+      "framing": "u1000",
+      "model": "ai85safesoundmelnet_p4",
+      "model_desc": "2D CNN, 풀링 4단 (32멜×16프레임 입력)",
+      "preproc": "CPU 로그 멜 (증분)",
+      "marker": "s",
+      "estimated_latency": false
     },
     {
       "name": "다 u800",
       "long": "후보 다 (간격 800, 멜 32)",
-      "slt": "다 u800", "v4eval": "다 u800", "stage3": "다 u800",
-      "board_log": "u800", "synth_dir": "safesound_melu800_v4d", "framing": "u800",
-      "model": "ai85safesoundmelnet_p4", "model_desc": "2D CNN, 풀링 4단 (32멜×20프레임 입력)",
-      "preproc": "CPU 로그 멜 (증분)", "marker": "^", "estimated_latency": false
+      "slt": "다 u800",
+      "v4eval": "다 u800",
+      "stage3": "다 u800",
+      "board_log": "u800",
+      "synth_dir": "safesound_melu800_v4d",
+      "framing": "u800",
+      "model": "ai85safesoundmelnet_p4",
+      "model_desc": "2D CNN, 풀링 4단 (32멜×20프레임 입력)",
+      "preproc": "CPU 로그 멜 (증분)",
+      "marker": "^",
+      "estimated_latency": false
     },
     {
       "name": "간격 400",
       "long": "프레임 간격 400 (멜 64)",
-      "slt": "간격 400", "v4eval": "간격 400", "stage3": "간격 400",
-      "board_log": "h400", "synth_dir": "safesound_melh400_v4d", "framing": "h400",
-      "model": "ai85safesoundmelnet", "model_desc": "2D CNN, 풀링 5단 (64멜×40프레임 입력)",
-      "preproc": "CPU 로그 멜 (증분)", "marker": "D", "estimated_latency": false
+      "slt": "간격 400",
+      "v4eval": "간격 400",
+      "stage3": "간격 400",
+      "board_log": "h400",
+      "synth_dir": "safesound_melh400_v4d",
+      "framing": "h400",
+      "model": "ai85safesoundmelnet",
+      "model_desc": "2D CNN, 풀링 5단 (64멜×40프레임 입력)",
+      "preproc": "CPU 로그 멜 (증분)",
+      "marker": "D",
+      "estimated_latency": false
     },
     {
       "name": "①′",
       "long": "①′ 로그 멜 (간격 250, 증분)",
-      "slt": "①′", "v4eval": "①′", "stage3": "①′",
-      "board_log": "melinc", "synth_dir": "safesound_melinc_v4d", "framing": "inc",
-      "model": "ai85safesoundmelnet", "model_desc": "2D CNN, 풀링 5단 (64멜×64프레임 입력)",
-      "preproc": "CPU 로그 멜 (증분, V1 float32 rfft + LUT 로그)", "marker": "v", "estimated_latency": false
+      "slt": "①′",
+      "v4eval": "①′",
+      "stage3": "①′",
+      "board_log": "melinc",
+      "synth_dir": "safesound_melinc_v4d",
+      "framing": "inc",
+      "model": "ai85safesoundmelnet",
+      "model_desc": "2D CNN, 풀링 5단 (64멜×64프레임 입력)",
+      "preproc": "CPU 로그 멜 (증분, V1 float32 rfft + LUT 로그)",
+      "marker": "v",
+      "estimated_latency": false
     },
     {
       "name": "(a)",
       "long": "(a) NPU 로그 근사 (주 실행 lr 0.0003)",
-      "slt": "(a) 주 lr 0.0003", "v4eval": "(a) NPU 로그 근사", "stage3": null,
-      "board_log": null, "synth_dir": "safesound_logstage", "framing": null,
-      "model": "ai85safesoundlogstage", "model_desc": "NPU 안에서 구간선형 로그를 근사하는 1D 구성 — 보드 미실측, 지연은 합성 사이클 추정",
-      "preproc": "없음 (NPU 안 로그 근사)", "marker": "P", "estimated_latency": true
+      "slt": "(a) 주 lr 0.0003",
+      "v4eval": "(a) NPU 로그 근사",
+      "stage3": null,
+      "board_log": null,
+      "synth_dir": "safesound_logstage",
+      "framing": null,
+      "model": "ai85safesoundlogstage",
+      "model_desc": "NPU 안에서 구간선형 로그를 근사하는 1D 구성 — 보드 미실측, 지연은 합성 사이클 추정",
+      "preproc": "없음 (NPU 안 로그 근사)",
+      "marker": "P",
+      "estimated_latency": true
     }
   ],
   "m4": {
@@ -94,32 +154,156 @@
   "display": {
     "_설명": "내부 이름 → 논문 표기. 그림·표·캡션은 전부 여기서 읽는다 (2026-10-16 지시). group: none = 전처리 없음, npu = NPU 전처리, cpu = CPU 전처리.",
     "configs": {
-      "④":        {"name": "원본 파형 (전처리 없음)",              "short": "원본 파형",                 "tag": "원본 파형",      "group": "none", "offset": [7, -11]},
-      "(a)":      {"name": "NPU 근사 log",                       "short": "NPU 근사 log",              "tag": "NPU 근사 log",   "group": "npu",  "offset": [7, -11]},
-      "가 u1000": {"name": "CPU log-mel, 간격 62.5 ms (멜 32)",  "short": "CPU log-mel\n간격 62.5 ms", "tag": "62.5 ms",        "group": "cpu",  "offset": [0, -24], "ha": "center"},
-      "다 u800":  {"name": "CPU log-mel, 간격 50 ms",            "short": "CPU log-mel\n간격 50 ms",   "tag": "50 ms",          "group": "cpu",  "offset": [7, -11]},
-      "간격 400": {"name": "CPU log-mel, 간격 25 ms",            "short": "CPU log-mel\n간격 25 ms",   "tag": "25 ms",          "group": "cpu",  "offset": [7, -11]},
-      "①′":       {"name": "CPU log-mel, 간격 16 ms",            "short": "CPU log-mel\n간격 16 ms",   "tag": "16 ms",          "group": "cpu",  "offset": [7, 5]}
+      "④": {
+        "name": "원본 파형 (전처리 없음)",
+        "short": "원본 파형",
+        "tag": "원본 파형",
+        "group": "none",
+        "offset": [
+          7,
+          -11
+        ]
+      },
+      "(a)": {
+        "name": "NPU 근사 log",
+        "short": "NPU 근사 log",
+        "tag": "NPU 근사 log",
+        "group": "npu",
+        "offset": [
+          7,
+          -11
+        ]
+      },
+      "가 u1000": {
+        "name": "CPU log-mel, 간격 62.5 ms (멜 32)",
+        "short": "CPU log-mel\n간격 62.5 ms",
+        "tag": "62.5 ms",
+        "group": "cpu",
+        "offset": [
+          0,
+          -24
+        ],
+        "ha": "center"
+      },
+      "다 u800": {
+        "name": "CPU log-mel, 간격 50 ms",
+        "short": "CPU log-mel\n간격 50 ms",
+        "tag": "50 ms",
+        "group": "cpu",
+        "offset": [
+          7,
+          -11
+        ]
+      },
+      "간격 400": {
+        "name": "CPU log-mel, 간격 25 ms",
+        "short": "CPU log-mel\n간격 25 ms",
+        "tag": "25 ms",
+        "group": "cpu",
+        "offset": [
+          7,
+          -11
+        ]
+      },
+      "①′": {
+        "name": "CPU log-mel, 간격 16 ms",
+        "short": "CPU log-mel\n간격 16 ms",
+        "tag": "16 ms",
+        "group": "cpu",
+        "offset": [
+          7,
+          5
+        ]
+      },
+      "②′": {
+        "name": "NPU 전처리 (Gabor 필터뱅크)",
+        "short": "NPU 전처리\n(Gabor)",
+        "tag": "NPU 전처리 (Gabor)",
+        "group": "npu",
+        "offset": [
+          0,
+          -27
+        ],
+        "ha": "center"
+      }
     },
-    "m4": {"name": "CPU 추론 (Cortex-M4F)", "short": "CPU 추론 (Cortex-M4F)\n원본 파형 모델"},
+    "m4": {
+      "name": "CPU 추론 (Cortex-M4F)",
+      "short": "CPU 추론 (Cortex-M4F)\n원본 파형 모델"
+    },
     "groups": {
-      "none": {"label": "전처리 없음", "color": "#000000"},
-      "npu":  {"label": "NPU 전처리", "color": "#D55E00"},
-      "cpu":  {"label": "CPU 전처리 (log-mel)", "color": "#0072B2"}
+      "none": {
+        "label": "전처리 없음",
+        "color": "#000000"
+      },
+      "npu": {
+        "label": "NPU 전처리",
+        "color": "#D55E00"
+      },
+      "cpu": {
+        "label": "CPU 전처리 (log-mel)",
+        "color": "#0072B2"
+      }
     },
-    "truth": {"testL_S3": "시험 데이터", "testL": "시험 데이터 (청취 전 정답, 부록)", "real31L": "외부 데이터 (AudioSet)"},
+    "truth": {
+      "testL_S3": "시험 데이터",
+      "testL": "시험 데이터 (청취 전 정답, 부록)",
+      "real31L": "외부 데이터 (AudioSet)"
+    },
     "panns": "대형 모델 (PANNs)",
-    "editions": {"v1": "초기 데이터", "v2.1": "+배경 혼합", "v3.1": "+AudioSet 추가", "v4": "+라벨 정정", "v4+D": "+증류"}
+    "editions": {
+      "v1": "초기 데이터",
+      "v2.1": "+배경 혼합",
+      "v3.1": "+AudioSet 추가",
+      "v4": "+라벨 정정",
+      "v4+D": "+증류"
+    }
   },
-  "fig3_paper_configs": ["④", "가 u1000", "①′"],
-  "editions_for_fig4": ["v1", "v2.1", "v3.1", "v4", "v4+D"],
-  "fig4_configs": ["④", "간격 400"],
+  "fig3_paper_configs": [
+    "④",
+    "가 u1000",
+    "①′"
+  ],
+  "editions_for_fig4": [
+    "v1",
+    "v2.1",
+    "v3.1",
+    "v4",
+    "v4+D"
+  ],
+  "fig4_configs": [
+    "④",
+    "간격 400"
+  ],
   "welch_pairs": [
-    ["가 u1000", "④"],
-    ["다 u800", "④"],
-    ["간격 400", "①′"],
-    ["가 u1000", "(a)"],
-    ["(a)", "④"]
+    [
+      "가 u1000",
+      "④"
+    ],
+    [
+      "다 u800",
+      "④"
+    ],
+    [
+      "간격 400",
+      "①′"
+    ],
+    [
+      "가 u1000",
+      "(a)"
+    ],
+    [
+      "(a)",
+      "④"
+    ],
+    [
+      "②′",
+      "④"
+    ],
+    [
+      "②′",
+      "가 u1000"
+    ]
   ],
   "fonts": [
     "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",

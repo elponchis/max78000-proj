@@ -222,6 +222,19 @@ def main():
         lg_sim = model_sim.cls(torch.tensor(q, dtype=torch.float32)[None, None])[0].numpy()
     print(f"   p2 기대 로짓(합성기) {logits}  simulate 모드 PyTorch {lg_sim.astype(np.int64).tolist()} "
           f"({'일치' if np.array_equal(np.array(logits), lg_sim.astype(np.int64)) else '다름 — 참고'}); argmax {int(np.argmax(logits))}")
+    # 두 네트워크가 층 0 에 쓰는 레지스터(사분면 0 기준 오프셋)의 합집합 — 전환 때 먼저 0 으로 지운다.
+    #   생성 코드는 0 이 아닌 레지스터만 쓰므로, 한쪽만 쓰는 레지스터(p1 의 1D·후처리, p2 의 Columns·TRAM)가 다른 쪽에 남는다 (2026-10-17 보드에서 p2 KAT 실패로 확인).
+    #   레지스터 주소 = 사분면 기준 + 0x10 + 종류·0x80 + 층·4 → 층 0 은 (addr − base − 0x10) % 0x80 == 0.
+    def l0_regs(cnn_c):
+        body = re.search(r"int cnn_configure\(void\)\s*\{(.*?)\n\}", cnn_c, re.S).group(1)
+        regs = set()
+        for a in re.findall(r"\*\(\(volatile uint32_t \*\) (0x50[159d]00[0-9a-f]{3})\)", body):
+            off = int(a, 16) & 0xFFFF
+            if (off - 0x10) % 0x80 == 0:
+                regs.add(off)
+        return regs
+    l0 = sorted(l0_regs(open(os.path.join(OUT, P1, "cnn.c")).read()) | l0_regs(open(os.path.join(OUT, P2, "cnn.c")).read()))
+    print(f"   층 0 레지스터 합집합 {len(l0)}개: {[hex(o) for o in l0]}")
     p2_layers = int(re.search(r"0x50100008\) = (0x[0-9a-f]+); // Layer count", open(os.path.join(OUT, P2, "cnn.c")).read()).group(1), 16)
     m1 = re.search(r"0x50100008\) = (0x[0-9a-f]+); // Layer count", open(os.path.join(OUT, P1, "cnn.c")).read())
     p1_layers = int(m1.group(1), 16) if m1 else 0
@@ -264,6 +277,9 @@ def main():
              f"#define FE_P1_IN_GROUPS 16", f"#define FE_P1_IN_WORDS {CH}",
              f"#define FE_P2_IN_ADDR 0x{p2_in_addr:08x}u", f"#define FE_P2_IN_WORDS {p2_in_words}",
              f"#define FE_P1_WEIGHT_BYTES {wb['p1']}", f"#define FE_P2_WEIGHT_BYTES {wb['p2']}", f"#define FE_P2_WEIGHT_END {end}",
+             f"#define FE_N_L0_REGS {len(l0)}",
+             "// 두 네트워크가 층 0 에 쓰는 레지스터 오프셋(사분면 기준) 합집합 — 전환 전에 0 으로 지운다 (fe_measure_main.c switch_to_*)",
+             "static const uint32_t FE_L0_REGS[" + str(len(l0)) + "] = { " + ", ".join(f"0x{o:04x}u" for o in l0) + " };",
              "static const uint32_t FE_P1_IN_ADDR[16] = { " + ", ".join(f"0x{a:08x}u" for a in in_addr) + " };",
              "static const uint32_t FE_P1_OUT_ADDR[16] = { " + ", ".join(f"0x{a:08x}u" for a in out_addr) + " };",
              f"// 청크 c, 그룹 g(채널 4g..4g+3), 위치 p 의 입력 워드 (LE 바이트 = 연속 샘플 4개)",

@@ -19,6 +19,9 @@
 #define FE_P1_WEIGHT_BYTES 32768
 #define FE_P2_WEIGHT_BYTES 156192
 #define FE_P2_WEIGHT_END 324
+#define FE_N_L0_REGS 11
+// 두 네트워크가 층 0 에 쓰는 레지스터 오프셋(사분면 기준) 합집합 — 전환 전에 0 으로 지운다 (fe_measure_main.c switch_to_*)
+static const uint32_t FE_L0_REGS[11] = { 0x0010u, 0x0090u, 0x0110u, 0x0310u, 0x0410u, 0x0590u, 0x0610u, 0x0690u, 0x0710u, 0x0790u, 0x0a10u };
 static const uint32_t FE_P1_IN_ADDR[16] = { 0x50400000u, 0x50408000u, 0x50410000u, 0x50418000u, 0x50800000u, 0x50808000u, 0x50810000u, 0x50818000u, 0x50c00000u, 0x50c08000u, 0x50c10000u, 0x50c18000u, 0x51000000u, 0x51008000u, 0x51010000u, 0x51018000u };
 static const uint32_t FE_P1_OUT_ADDR[16] = { 0x50402000u, 0x5040a000u, 0x50412000u, 0x5041a000u, 0x50802000u, 0x5080a000u, 0x50812000u, 0x5081a000u, 0x50c02000u, 0x50c0a000u, 0x50c12000u, 0x50c1a000u, 0x51002000u, 0x5100a000u, 0x51012000u, 0x5101a000u };
 // 청크 c, 그룹 g(채널 4g..4g+3), 위치 p 의 입력 워드 (LE 바이트 = 연속 샘플 4개)

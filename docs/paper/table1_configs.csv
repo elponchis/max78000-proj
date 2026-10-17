@@ -2,6 +2,7 @@
 # 프레임 간격 ms = 샘플 ÷ 16000 Hz. 판단당 새 프레임 = hop 250 ms 동안 들어오는 프레임 수.
 구성,전처리 위치,프레임 간격 (샘플),프레임 간격 (ms),n_fft,멜 수,프레임 수,판단당 새 프레임,모델,모델 요약,합성 층 수,MAC,가중치 (KB),가중치 메모리 비율 (%),NPU 사이클 (합성),출처
 원본 파형 (전처리 없음),없음 (NPU 에 원파형),—,—,—,—,—,—,ai85safesoundnet,"KWS20 v3 파생 1D CNN (Conv1d), 전처리 없음 — 원파형 16,384 샘플을 128×128 로 접어 NPU 입력",9,8341248,161.5,37.4,71718,data/synth/out/safesound_wave_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
+NPU 전처리 (Gabor 필터뱅크),NPU 필터뱅크 (선형) + CPU 정수 로그,—,—,—,—,—,—,ai85safesoundfe,"p1 NPU Conv1d 64→64 k=8 (512탭 Gabor 필터뱅크 cos/sin 32쌍, wide int32, 판단당 64위치) → CPU |cos|+|sin|·8위치 합·정수 로그 (32×4 값) → p2 = CPU log-mel 62.5 ms 구성과 같은 2D CNN (1×32×16). 가중치 p1 32 KB + p2 153 KB 동시 적재, 판단 주기 256 ms",8,4261120,184.5,42.7,30121,data/synth/out/safesound_fe_p1_v4d + data/synth/out/safesound_fe_p2_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
 "CPU log-mel, 간격 62.5 ms (멜 32)",CPU 로그 멜 (증분),1000,62.5,512,32,16,4,ai85safesoundmelnet_p4,"2D CNN, 풀링 4단 (32멜×16프레임 입력)",7,2393344,152.5,35.3,26337,data/synth/out/safesound_melu1000_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
 "CPU log-mel, 간격 50 ms",CPU 로그 멜 (증분),800,50.0,512,32,20,5,ai85safesoundmelnet_p4,"2D CNN, 풀링 4단 (32멜×20프레임 입력)",7,2872576,152.5,35.3,32467,data/synth/out/safesound_melu800_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS
 "CPU log-mel, 간격 25 ms",CPU 로그 멜 (증분),400,25.0,512,64,40,10,ai85safesoundmelnet,"2D CNN, 풀링 5단 (64멜×40프레임 입력)",7,11683072,152.5,35.3,127411,data/synth/out/safesound_melh400_v4d/log.txt·cnn.h; datasets/melfeat.py INC_SPECS

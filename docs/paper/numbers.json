@@ -100,6 +100,56 @@
   "source": "data/external_eval/v4_eval.json",
   "field": "editions.v4+D[④].seeds[*].ext_map_real31L"
  },
+ "acc.②′.f1_S3": {
+  "value": {
+   "mean": 0.6431328110476595,
+   "sd": 0.024931877365366544,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ fe].seeds[*].testL_S3.f1"
+ },
+ "acc.②′.f1_L": {
+  "value": {
+   "mean": 0.6193756870727413,
+   "sd": 0.025641506477431,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ fe].seeds[*].testL.f1"
+ },
+ "acc.②′.ext_f1": {
+  "value": {
+   "mean": 0.4602000928010292,
+   "sd": 0.03436432600241239,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ fe].seeds[*].ext.f1"
+ },
+ "acc.②′.scream_S3": {
+  "value": {
+   "mean": 0.29850746268656714,
+   "sd": 0.06376122197998157,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ fe].seeds[*].testL_S3.scream_recall"
+ },
+ "acc.②′.ext_map": {
+  "value": {
+   "mean": 0.7936316327760405,
+   "sd": 0.006500489290415315,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/fe_eval.json",
+  "field": "seeds[*].ext_map_real31L"
+ },
  "acc.가 u1000.f1_S3": {
   "value": {
    "mean": 0.7541726024987172,
@@ -373,6 +423,41 @@
   "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
   "note": "추정(실측 지연 × 공개 전력)"
  },
+ "latency.②′": {
+  "value": {
+   "pre": 0.83984,
+   "load": 0.5243800000000001,
+   "infer": 0.6118499999999999,
+   "out": 0.00643,
+   "total": 1.9825,
+   "detail": {
+    "load1": 0.28151,
+    "cfg1": 0.02298,
+    "infer1": 0.08031999999999999,
+    "cpu": 0.83984,
+    "load2": 0.13386,
+    "cfg2": 0.08603,
+    "infer2": 0.53153,
+    "unload": 0.00643,
+    "total": 1.98226
+   },
+   "pre_power": "load"
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_fe.log",
+  "field": "load/infer/unload us max (1000회 최악); 전처리 보드 실측 cpu 구간 (|cos|+|sin| → 8위치 합 → 정수 로그 32×4 값 → 버퍼 밀기 → 입력 워드 포장), NPU 전원 켜진 채 → P_load 로 계산; 적재 열에 네트워크 전환(cfg1+cfg2) 포함"
+ },
+ "energy.②′": {
+  "value": {
+   "datasheet": 40.390880499999994,
+   "literature": 77.86176499999999,
+   "moosmann": 55.773979999999995
+  },
+  "unit": "µJ",
+  "source": "data/logs-local/board_v4d_fe.log × docs/paper/paper_config.json power_sources",
+  "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
+  "note": "추정(실측 지연 × 공개 전력)"
+ },
  "latency.가 u1000": {
   "value": {
    "pre": 2.26409,
@@ -555,6 +640,12 @@
  },
  "hop_fraction.④": {
   "value": 0.010137959999999998,
+  "unit": "비",
+  "source": "latency 항목",
+  "field": "판단 1회 / hop"
+ },
+ "hop_fraction.②′": {
+  "value": 0.00793,
   "unit": "비",
   "source": "latency 항목",
   "field": "판단 1회 / hop"
@@ -785,62 +876,7 @@
   "source": "data/external_eval/scream_listened_test.json (test_f1_S3·test_f1_L·ext_f1), data/external_eval/v4_eval.json (ext_map)",
   "field": "시드 1~3 Welch 95% CI (eval_v2.welch)"
  },
- "neg.fe.f1_S3": {
-  "value": {
-   "mean": 0.6431328110476595,
-   "sd": 0.024931877365366544,
-   "n": 3
-  },
-  "unit": "",
-  "source": "data/external_eval/scream_listened_test.json",
-  "field": "score.configs[②′ fe].seeds[*].testL_S3.f1",
-  "note": "②′ NPU 에너지 적분 필터뱅크 — 사전 등록 미통과 부정 결과 (fe-design.md 7절). 본 표 밖"
- },
- "neg.fe.f1_L": {
-  "value": {
-   "mean": 0.6193756870727413,
-   "sd": 0.025641506477431,
-   "n": 3
-  },
-  "unit": "",
-  "source": "data/external_eval/scream_listened_test.json",
-  "field": "score.configs[②′ fe].seeds[*].testL.f1",
-  "note": "②′ NPU 에너지 적분 필터뱅크 — 사전 등록 미통과 부정 결과 (fe-design.md 7절). 본 표 밖"
- },
- "neg.fe.ext_f1": {
-  "value": {
-   "mean": 0.4602000928010292,
-   "sd": 0.03436432600241239,
-   "n": 3
-  },
-  "unit": "",
-  "source": "data/external_eval/scream_listened_test.json",
-  "field": "score.configs[②′ fe].seeds[*].ext.f1",
-  "note": "②′ NPU 에너지 적분 필터뱅크 — 사전 등록 미통과 부정 결과 (fe-design.md 7절). 본 표 밖"
- },
- "neg.fe.scream_S3": {
-  "value": {
-   "mean": 0.29850746268656714,
-   "sd": 0.06376122197998157,
-   "n": 3
-  },
-  "unit": "",
-  "source": "data/external_eval/scream_listened_test.json",
-  "field": "score.configs[②′ fe].seeds[*].testL_S3.scream_recall",
-  "note": "②′ NPU 에너지 적분 필터뱅크 — 사전 등록 미통과 부정 결과 (fe-design.md 7절). 본 표 밖"
- },
- "neg.fe.ext_fire_n": {
-  "value": {
-   "mean": 7.0,
-   "sd": 1.7320508075688772,
-   "n": 3
-  },
-  "unit": "",
-  "source": "data/external_eval/scream_listened_test.json",
-  "field": "score.configs[②′ fe].seeds[*].ext.ext_fire_n",
-  "note": "②′ NPU 에너지 적분 필터뱅크 — 사전 등록 미통과 부정 결과 (fe-design.md 7절). 본 표 밖"
- },
- "neg.fe.welch.②′ − ④": {
+ "welch.②′ − ④": {
   "value": {
    "test_f1_S3": [
     -0.026130422774486628,
@@ -856,13 +892,18 @@
     0.01721348391613997,
     -0.05299640596112691,
     0.08742337379340685
+   ],
+   "ext_map": [
+    -0.013756603396583023,
+    -0.028950540993866816,
+    0.0014373342007007704
    ]
   },
   "unit": "",
-  "source": "data/external_eval/scream_listened_test.json",
+  "source": "data/external_eval/scream_listened_test.json (test_f1_S3·test_f1_L·ext_f1), data/external_eval/v4_eval.json (ext_map)",
   "field": "시드 1~3 Welch 95% CI (eval_v2.welch)"
  },
- "neg.fe.welch.②′ − 가 u1000": {
+ "welch.②′ − 가 u1000": {
   "value": {
    "test_f1_S3": [
     -0.11103979145105769,
@@ -878,11 +919,38 @@
     -0.08172475069686852,
     -0.1549914983323264,
     -0.00845800306141066
+   ],
+   "ext_map": [
+    -0.05041732401179455,
+    -0.07372064976463363,
+    -0.027113998258955475
    ]
   },
   "unit": "",
-  "source": "data/external_eval/scream_listened_test.json",
+  "source": "data/external_eval/scream_listened_test.json (test_f1_S3·test_f1_L·ext_f1), data/external_eval/v4_eval.json (ext_map)",
   "field": "시드 1~3 Welch 95% CI (eval_v2.welch)"
+ },
+ "pareto.front": {
+  "value": {
+   "test_S3": [
+    "②′",
+    "가 u1000",
+    "다 u800",
+    "간격 400",
+    "①′"
+   ],
+   "ext": [
+    "②′",
+    "가 u1000",
+    "다 u800",
+    "간격 400",
+    "①′"
+   ]
+  },
+  "unit": "",
+  "source": "latency/energy 항목 (datasheet) × acc 항목 (시드 평균)",
+  "field": "다른 점에 지배되지 않는 구성 (에너지 ≤ 이고 정확도 ≥ 인 다른 점이 없다), 에너지 오름차순",
+  "note": "점 추정 기준"
  },
  "editions.ext_f1_real31L": {
   "value": {
@@ -1096,6 +1164,66 @@
       "E_Y": 256.3137606
      }
     }
+   },
+   "NPU 전처리 (Gabor 필터뱅크) < 원본 파형 (전처리 없음)": {
+    "C_X": 1.37065,
+    "N_X": 0.6118499999999999,
+    "C_Y": 1.09506,
+    "N_Y": 1.43943,
+    "condition": "r > 0.33",
+    "r_star": 0.33300708088643993,
+    "by_source": {
+     "datasheet": {
+      "r": 4.58830146231721,
+      "E_X": 40.390880499999994,
+      "E_Y": 71.0447253
+     },
+     "literature": {
+      "r": 2.8911290322580645,
+      "E_X": 77.86176499999999,
+      "E_Y": 130.364619
+     },
+     "moosmann": {
+      "r": 1.435483870967742,
+      "E_X": 55.773979999999995,
+      "E_Y": 78.401196
+     },
+     "datasheet_upper": {
+      "r": 19.06636670416198,
+      "E_X": 119.14209399999999,
+      "E_Y": 256.3137606
+     }
+    }
+   },
+   "NPU 전처리 (Gabor 필터뱅크) < CPU log-mel, 간격 62.5 ms (멜 32)": {
+    "C_X": 1.37065,
+    "N_X": 0.6118499999999999,
+    "C_Y": 2.403,
+    "N_Y": 0.53077,
+    "condition": "r < 12.7",
+    "r_star": 12.732486433152454,
+    "by_source": {
+     "datasheet": {
+      "r": 4.58830146231721,
+      "E_X": 40.390880499999994,
+      "E_Y": 43.341995
+     },
+     "literature": {
+      "r": 2.8911290322580645,
+      "E_X": 77.86176499999999,
+      "E_Y": 97.650609
+     },
+     "moosmann": {
+      "r": 1.435483870967742,
+      "E_X": 55.773979999999995,
+      "E_Y": 78.489812
+     },
+     "datasheet_upper": {
+      "r": 19.06636670416198,
+      "E_X": 119.14209399999999,
+      "E_Y": 111.6574017
+     }
+    }
    }
   },
   "unit": "",
@@ -1241,7 +1369,8 @@
     "가 u1000": "CPU log-mel, 간격 62.5 ms (멜 32)",
     "다 u800": "CPU log-mel, 간격 50 ms",
     "간격 400": "CPU log-mel, 간격 25 ms",
-    "①′": "CPU log-mel, 간격 16 ms"
+    "①′": "CPU log-mel, 간격 16 ms",
+    "②′": "NPU 전처리 (Gabor 필터뱅크)"
    },
    "m4": "CPU 추론 (Cortex-M4F)",
    "truth": {

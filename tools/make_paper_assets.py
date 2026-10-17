@@ -88,6 +88,37 @@ def read_board_log(tag):
     return r
 
 
+FE_SEGS = ("load1", "cfg1", "infer1", "cpu", "load2", "cfg2", "infer2", "unload", "total")
+
+
+def read_board_log_fe(tag):
+    """②′ 두 네트워크 측정 펌웨어(firmware/common/fe_measure_main.c) 로그 → 구간 8개 최악 ms. KAT 셋(p1·CPU 특징·p2) 전부 PASS 여야 한다."""
+    path = os.path.join(LOGS, f"board_v4d_{tag}.log")
+    r = {"path": rel(path)}
+    with open(path, encoding="utf-8", errors="replace") as f:
+        txt = f.read()
+    for seg in FE_SEGS:
+        m = re.search(rf"^{seg}\s+us\s+.*?max\s+([\d.]+)", txt, re.M)
+        assert m, (tag, seg)
+        r[seg] = float(m.group(1)) / 1000.0
+    r["core_hz"] = int(re.search(r"core clock (\d+) Hz", txt).group(1))
+    r["cnn_hz"] = int(re.search(r"CNN clock PCLK (\d+) Hz", txt).group(1))
+    r["n_iter"] = int(re.search(r"N_ITER (\d+)", txt).group(1))
+    r["kat"] = txt.count("PASS (bit-exact)") >= 3 and "FAIL" not in txt
+    r["mismatch"] = int(re.search(r"output mismatches: (\d+)", txt).group(1))
+    return r
+
+
+def pareto_front(pts):
+    """pts = {이름: (에너지, 정확도)} → 지배되지 않는 이름들 (에너지 ≤ 이고 정확도 ≥ 인 다른 점이 없다; 둘 다 같으면 둘 다 남긴다)."""
+    front = []
+    for n, (e, f) in pts.items():
+        dominated = any((e2 <= e and f2 >= f) and (e2 < e or f2 > f) for m, (e2, f2) in pts.items() if m != n)
+        if not dominated:
+            front.append(n)
+    return front
+
+
 # ── 2. CPU 전처리 사이클 — synthesis-check.md 의 실측 표 ─────────────────────
 def md_rows(path, section=None):
     """표 행(| 로 시작)만. section 을 주면 그 제목(예: '### 12.1b')부터 다음 제목 전까지."""
@@ -322,7 +353,12 @@ def main():
     ACC = {}
     for c in C["configs"]:
         s = slt["score"]["configs"][c["slt"]]["seeds"]
-        v = v4e["editions"]["v4+D"][c["v4eval"]]["seeds"]
+        if c["v4eval"]:
+            v = v4e["editions"]["v4+D"][c["v4eval"]]["seeds"]
+            map_src = (src_v4e, f"editions.v4+D[{c['v4eval']}].seeds[*].ext_map_real31L")
+        else:                                 # ②′: eval_v4.score_ckpt 와 같은 코드로 따로 뽑은 fe_eval.json (tools/fe_ext_eval.py)
+            v = load_json(c["fe_eval"])["seeds"]
+            map_src = (rel(os.path.join(EXT, c["fe_eval"])), "seeds[*].ext_map_real31L")
         assert len(s) == len(v), (c["name"], len(s), len(v))
         for a, b in zip(s, v):
             assert abs(a["thr"] - b["thr"]) < 1e-9, f"{c['name']}: 시드 정렬이 다르다 (thr {a['thr']} vs {b['thr']})"
@@ -349,7 +385,7 @@ def main():
             mu, sd = mean_sd(ACC[c["name"]][k])
             num(f"acc.{c['name']}.{k}", {"mean": mu, "sd": sd, "n": len(s)}, "", src_slt, fld % c["slt"])
         mu, sd = mean_sd(ACC[c["name"]]["ext_map"])
-        num(f"acc.{c['name']}.ext_map", {"mean": mu, "sd": sd, "n": len(v)}, "", src_v4e, f"editions.v4+D[{c['v4eval']}].seeds[*].ext_map_real31L")
+        num(f"acc.{c['name']}.ext_map", {"mean": mu, "sd": sd, "n": len(v)}, "", map_src[0], map_src[1])
 
     # ── 지연: 보드 로그 + 전처리 사이클 + 합성
     pre = read_preproc_cycles()
@@ -357,7 +393,18 @@ def main():
     wave_log = None
     for c in C["configs"]:
         syn = read_synth(c["synth_dir"])
-        if c["board_log"]:
+        if c.get("synth_dir_p1"):              # ②′: 두 네트워크 — 합성 수치는 p1 + p2 의 합
+            s1 = read_synth(c["synth_dir_p1"])
+            syn = {"dir": f"{s1['dir']} + {syn['dir']}", "cycles": s1["cycles"] + syn["cycles"], "macc": s1["macc"] + syn["macc"],
+                   "layers": s1["layers"] + syn["layers"], "weight_bytes": s1["weight_bytes"] + syn["weight_bytes"], "weight_total": syn["weight_total"]}
+        if c.get("two_networks"):              # ②′: 보드 실측, 구간 8개. CPU 구간은 NPU 전원이 켜진 채 돌므로 에너지는 P_load 로 (보수적)
+            b = read_board_log_fe(c["board_log"])
+            assert b["kat"] and b["mismatch"] == 0, (c["name"], b)
+            LAT[c["name"]] = {"pre": b["cpu"], "load": b["load1"] + b["load2"] + b["cfg1"] + b["cfg2"], "infer": b["infer1"] + b["infer2"],
+                              "out": b["unload"], "est": False, "pre_power": "load", "detail": {k: b[k] for k in FE_SEGS}, "src": b["path"],
+                              "pre_src": "보드 실측 cpu 구간 (|cos|+|sin| → 8위치 합 → 정수 로그 32×4 값 → 버퍼 밀기 → 입력 워드 포장), NPU 전원 켜진 채 → P_load 로 계산; 적재 열에 네트워크 전환(cfg1+cfg2) 포함",
+                              "core_hz": b["core_hz"], "cnn_hz": b["cnn_hz"], "n_iter": b["n_iter"], "synth": syn}
+        elif c["board_log"]:
             b = read_board_log(c["board_log"])
             assert b["kat"] and b["mismatch"] == 0, (c["name"], b)
             if c["board_log"] == "wave":
@@ -391,7 +438,8 @@ def main():
     def energy(L, ps, m4=False):
         if m4:
             return L["load"] * ps["P_load_mW"] + L["infer"] * ps["P_cpu_mW"]
-        return L["pre"] * ps["P_cpu_mW"] + (L["load"] + L["out"]) * ps["P_load_mW"] + L["infer"] * ps["P_npu_mW"]
+        p_pre = ps["P_load_mW"] if L.get("pre_power") == "load" else ps["P_cpu_mW"]   # ②′: CPU 구간이 NPU 전원 켜진 채 돈다
+        return L["pre"] * p_pre + (L["load"] + L["out"]) * ps["P_load_mW"] + L["infer"] * ps["P_npu_mW"]
 
     for name, L in LAT.items():
         L["E"] = {k: energy(L, PS[k]) for k in PS}
@@ -401,7 +449,8 @@ def main():
         if cid and abs(float(cp[cid]["e_datasheet_uJ"]) - LAT[c["name"]]["E"]["datasheet"]) > 1.0:
             sys.exit(f"[에러] {c['name']} 에너지(가) {LAT[c['name']]['E']['datasheet']:.1f} 가 curve-points-v4d.csv 와 1 µJ 넘게 다르다")
     for name, L in LAT.items():
-        num(f"latency.{name}", {k: L[k] for k in ("pre", "load", "infer", "out", "total")}, "ms", L["src"],
+        num(f"latency.{name}", dict({k: L[k] for k in ("pre", "load", "infer", "out", "total")},
+                                  **({"detail": L["detail"], "pre_power": "load"} if "detail" in L else {})), "ms", L["src"],
             "load/infer/unload us max (1000회 최악)" + ("; 전처리 " + L["pre_src"] if L["pre"] else ""), "추정(보드 미실측)" if L["est"] else None)
         num(f"energy.{name}", {k: L["E"][k] for k in curve_src}, "µJ", f"{L['src']} × {rel(CFG_PATH)} power_sources",
             C["energy_note"], "추정(실측 지연 × 공개 전력)" + (" — 지연도 추정" if L["est"] else ""))
@@ -446,28 +495,6 @@ def main():
         num(f"welch.{a_name} − {b_name}", row, "", f"{src_slt} (test_f1_S3·test_f1_L·ext_f1), {src_v4e} (ext_map)",
             "시드 1~3 Welch 95% CI (eval_v2.welch)")
 
-    # ── ②′ 부정 결과 (chain32, docs/results/fe-design.md 7절) — 본 표·그림에 넣지 않고 본문 한 줄용 수치만.
-    #    scream_listened_test.json 에 "②′ fe" 가 있을 때만. 비교 대상은 본 표의 ④·가 (ACC).
-    FE_KEY = "②′ fe"
-    if FE_KEY in slt["score"]["configs"]:
-        fe = slt["score"]["configs"][FE_KEY]["seeds"]
-        by_slt = {c["slt"]: c["name"] for c in C["configs"]}
-        FE = {"f1_S3": [x["testL_S3"]["f1"] for x in fe], "f1_L": [x["testL"]["f1"] for x in fe], "ext_f1": [x["ext"]["f1"] for x in fe],
-              "scream_S3": [x["testL_S3"]["scream_recall"] for x in fe], "ext_fire_n": [x["ext"]["ext_fire_n"] for x in fe]}
-        for k, fld in (("f1_S3", "testL_S3.f1"), ("f1_L", "testL.f1"), ("ext_f1", "ext.f1"), ("scream_S3", "testL_S3.scream_recall"), ("ext_fire_n", "ext.ext_fire_n")):
-            mu, sd = mean_sd(FE[k])
-            num(f"neg.fe.{k}", {"mean": mu, "sd": sd, "n": len(fe)}, "", src_slt, f"score.configs[{FE_KEY}].seeds[*].{fld}",
-                "②′ NPU 에너지 적분 필터뱅크 — 사전 등록 미통과 부정 결과 (fe-design.md 7절). 본 표 밖")
-        for base_slt in ("④", "가 u1000"):          # scream_listened_test.json 의 구성 키
-            if base_slt not in by_slt:
-                continue
-            bn = by_slt[base_slt]
-            row = {}
-            for k, lab in (("f1_S3", "test_f1_S3"), ("f1_L", "test_f1_L"), ("ext_f1", "ext_f1")):
-                d, lo, hi = V2.welch(ACC[bn][k], FE[k])
-                row[lab] = (float(d), float(lo), float(hi))
-            num(f"neg.fe.welch.②′ − {bn}", row, "", src_slt, "시드 1~3 Welch 95% CI (eval_v2.welch)")
-
     # ── 그림
     plt, fam = setup_mpl(C["fonts"])
     figs = {}
@@ -480,6 +507,7 @@ def main():
     allE = [LAT[n]["E"][k] for n in names for k in curve_src]
     ticks = [t for t in (20, 30, 50, 70, 100, 150, 200, 300, 500, 700, 1000) if min(allE) * 0.85 <= t <= max(allE) * 1.15]
     cpu_names = sorted([n for n in names if DG[n] == "cpu"], key=lambda n: LAT[n]["E"]["datasheet"])
+    PARETO = {}          # 패널(정답)별 파레토 앞면 — 점 추정(데이터시트 에너지, 시드 평균) 기준
     for ax, key, title in ((axes[0], "f1_S3", f"(a) {TR['testL_S3']}"), (axes[1], "ext_f1", f"(b) {TR['real31L']}")):
         xs_c = [LAT[n]["E"]["datasheet"] for n in cpu_names]
         ys_c = [mean_sd(ACC[n][key])[0] for n in cpu_names]
@@ -494,13 +522,21 @@ def main():
             dsp = D["configs"][name]
             ax.annotate(DT[name] + ("*" if est[name] else ""), (x, mu), textcoords="offset points", xytext=dsp.get("offset", [7, -11]),
                         ha=dsp.get("ha", "left"), fontsize=8, color=col)
+        # 파레토 앞면 (지배되지 않는 점): 큰 고리 + 점선. 점 추정 기준 (데이터시트 에너지, 시드 평균 F1)
+        pts = {n: (LAT[n]["E"]["datasheet"], mean_sd(ACC[n][key])[0]) for n in names}
+        front = pareto_front(pts)
+        PARETO[key] = sorted(front, key=lambda n: pts[n][0])
+        ax.plot([pts[n][0] for n in PARETO[key]], [pts[n][1] for n in PARETO[key]], ls=":", color="0.45", lw=0.9, zorder=2)
+        for n in front:
+            ax.plot([pts[n][0]], [pts[n][1]], marker="o", ms=14, mfc="none", mec="0.25", mew=0.8, ls="none", zorder=4)
+        # (파레토 고리 설명은 캡션에 — 축 안 글은 왼쪽 아래 점 이름과 겹친다)
         # CPU log-mel 묶음 이름은 50 ms → 25 ms 선분 가운데의 바로 왼쪽 위에
         xm = math.sqrt(xs_c[1] * xs_c[2]); ym = (ys_c[1] + ys_c[2]) / 2
         ax.annotate(GL["cpu"] + "\n(숫자 = 프레임 간격)", (xm, ym), textcoords="offset points", xytext=(-5, 3), ha="right", va="bottom",
                     fontsize=7.5, color=GC["cpu"], linespacing=1.1)
         ax.set_xscale("log")
         ax.margins(y=0.12)
-        ax.set_xlim(min(allE) * 0.72, max(allE) * 1.25)
+        ax.set_xlim(min(allE) * 0.6, max(allE) * 1.25)   # 왼쪽 여유: 가장 적은 점의 이름이 아래 가운데에 들어가게
         ax.set_xticks(ticks)
         ax.set_xticklabels([str(t) for t in ticks])
         ax.xaxis.set_minor_formatter(plt.NullFormatter())
@@ -512,9 +548,11 @@ def main():
         ax.grid(True, which="both", lw=0.3, color="0.85")
     fig.tight_layout()
     figs["fig1"] = save(fig, "fig1_acc_energy")
+    num("pareto.front", {("test_S3" if k == "f1_S3" else "ext"): v for k, v in PARETO.items()}, "",
+        "latency/energy 항목 (datasheet) × acc 항목 (시드 평균)", "다른 점에 지배되지 않는 구성 (에너지 ≤ 이고 정확도 ≥ 인 다른 점이 없다), 에너지 오름차순", "점 추정 기준")
 
     # 그림 2 — 판단 1회 지연 분해
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.0, 3.4), gridspec_kw={"width_ratios": [5, 1.8]})
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.8, 3.4), gridspec_kw={"width_ratios": [5.6, 1.6]})   # 구성 7개 — 눈금 이름이 겹치지 않게
     segs = [("pre", "CPU 전처리", "white", "////"), ("load", "입력 적재(+출력)", "0.75", ""), ("infer", "NPU 추론", "0.35", "")]
     xs = np.arange(len(names))
     for ax, items, labels in ((ax1, [LAT[n] for n in names], [DS[n] + ("\n(추정)" if est[n] else "") for n in names]), (ax2, [LAT_M4], [M4S])):
@@ -532,7 +570,7 @@ def main():
             else:
                 ax.text(i, bottom[i], f"{L['total']:.2f}", ha="center", va="bottom", fontsize=8)
         ax.set_xticks(np.arange(len(items)))
-        ax.set_xticklabels(labels, fontsize=7.5)
+        ax.set_xticklabels(labels, fontsize=6.8)
         ax.grid(True, axis="y", lw=0.3, color="0.85")
     ax1.set_ylabel("판단 1회 지연 (ms)")
     ax2.set_ylabel("판단 1회 지연 (ms)")
@@ -625,8 +663,12 @@ def main():
     hdr2 = ["구성", "n", "CPU 전처리 (ms)", "입력 적재 (ms)", "추론 (ms)", "출력 (ms)", "판단 1회 (ms)", "판단 주기 대비 (%)", "지연 출처"] + \
            [f"에너지 {PS[k]['label']} (µJ, 추정)" for k in curve_src] + ["에너지 범위 (µJ, 추정)",
             f"macro-F1 {TR['testL_S3']} (주)", f"macro-F1 {TR['testL']}", f"F1 {TR['real31L']}", f"mAP {TR['real31L']}",
-            f"재현율 {TR['testL_S3']} 사이렌/유리/비명/개 (%)", f"재현율 {TR['real31L']} 사이렌/유리/비명/개 (%)", "외부 배경 264창 발화 (창)", "배경+배경 발화율 (%)"]
+            f"재현율 {TR['testL_S3']} 사이렌/유리/비명/개 (%)", f"재현율 {TR['real31L']} 사이렌/유리/비명/개 (%)", "외부 배경 264창 발화 (창)", "배경+배경 발화율 (%)",
+            "파레토 앞면 (시험 / 외부)"]
     rows2 = []
+
+    def pareto_cell(name):
+        return " / ".join("○" if name in PARETO[k] else "—" for k in ("f1_S3", "ext_f1"))
 
     def acc_cells(name):
         A = ACC[name]
@@ -641,17 +683,20 @@ def main():
         tag = " (추정)" if L["est"] else ""
         rows2.append([DN[c["name"]], ACC[c["name"]]["n"], f"{L['pre']:.3f}" if L["pre"] else "—", f"{L['load']:.3f}", f"{L['infer']:.3f}{tag}", f"{L['out']:.3f}",
                       f"{L['total']:.2f}{tag}", f"{100 * L['total'] / hop_ms:.1f}", L["src"]] + [f"{e:.0f}" for e in es] +
-                     [f"{min(es):.0f} ~ {max(es):.0f}"] + acc_cells(c["name"]))
+                     [f"{min(es):.0f} ~ {max(es):.0f}"] + acc_cells(c["name"]) + [pareto_cell(c["name"])])
     es = [LAT_M4["E"][k] for k in curve_src]
     same = f"{DN['④']} 와 같다"
     rows2.append([M4N, ACC["④"]["n"], "—", f"{LAT_M4['load']:.3f}", f"{LAT_M4['infer']:.2f}", "—", f"{LAT_M4['total']:.2f}",
                   f"{100 * LAT_M4['total'] / hop_ms:.1f}", LAT_M4["src"]] + [f"{e:.0f}" for e in es] + [f"{min(es):.0f} ~ {max(es):.0f}"] +
-                 [same + " (같은 가중치·출력)"] * 4 + [same] * 4)
+                 [same + " (같은 가중치·출력)"] * 4 + [same] * 4 + ["—"])
     tables["table2_main"] = write_table("table2_main", hdr2, rows2,
                                         [f"표 2 주 결과. 데이터 v4+D, 시드 1~3 평균 ± 표준편차. 정답: {TR['testL_S3']} (주; 청취 전 정답은 부록 열), {TR['real31L']}. 오경보 300회/h (시험 데이터 배경에서 잡은 문턱값, 외부에도 같은 문턱값).",
                                          "지연: MAX78000FTHR, v4+D 시드 1 체크포인트, POR 직후, 1000회 최악값, 코어 100 MHz / CNN 50 MHz, 바쁜 대기, 슬립·유휴·가중치 적재 미포함.",
                                          "에너지: " + C["energy_note"] + " 전력값·출처는 docs/paper/paper_config.json.",
-                                         f"{DN['(a)']} 는 보드 미실측 — 적재·출력은 {DN['④']} 실측, 추론은 합성 사이클 ÷ CNN 클럭 (추정)."])
+                                         f"{DN['(a)']} 는 보드 미실측 — 적재·출력은 {DN['④']} 실측, 추론은 합성 사이클 ÷ CNN 클럭 (추정).",
+                                         f"{DN['②′']} 는 두 네트워크(NPU 필터뱅크 p1 + 2D CNN p2)를 동시 적재한 보드 실측 — CPU 전처리 열 = p1 출력의 |cos|+|sin|·8위치 합·정수 로그 (NPU 전원 켜진 채 → 에너지는 P_load 로), "
+                                         f"입력 적재 열 = 두 적재 + 네트워크 전환(층 레지스터 재설정), 추론 열 = p1 + p2. 판단 주기 256 ms (다른 구성 250 ms). 구간별 값은 numbers.json latency.②′.detail.",
+                                         "파레토 앞면: 점 추정(데이터시트 에너지, 시드 평균) 기준으로 에너지 ≤ 이고 정확도 ≥ 인 다른 구성이 없는 점."])
 
     hdr3 = ["비교 (앞 − 뒤)", "n", f"macro-F1 {TR['testL_S3']} (주)", f"F1 {TR['real31L']}", f"mAP {TR['real31L']}", f"macro-F1 {TR['testL']}"]
     rows3 = []
@@ -689,7 +734,9 @@ def main():
               (DN["가 u1000"], LAT["가 u1000"], False, DN["④"], LAT["④"], False, "CPU 전처리 + 작은 NPU 가 원본 파형 NPU 보다 적은 조건"),
               (DN["다 u800"], LAT["다 u800"], False, DN["④"], LAT["④"], False, "〃"),
               (DN["간격 400"], LAT["간격 400"], False, DN["①′"], LAT["①′"], False, "전처리·추론 둘 다 짧다"),
-              (DN["(a)"], LAT["(a)"], False, DN["④"], LAT["④"], False, f"{DN['(a)']} 지연은 추정 (보드 미실측)")]
+              (DN["(a)"], LAT["(a)"], False, DN["④"], LAT["④"], False, f"{DN['(a)']} 지연은 추정 (보드 미실측)"),
+              (DN["②′"], LAT["②′"], False, DN["④"], LAT["④"], False, "선형 전처리를 NPU 로 옮긴 구성이 원본 파형 NPU 보다 적은 조건 (보드 실측)"),
+              (DN["②′"], LAT["②′"], False, DN["가 u1000"], LAT["가 u1000"], False, "선형 전처리를 NPU 로 옮긴 구성이 CPU log-mel 보다 적은 조건 (보드 실측)")]
     rows5 = []
     BRK = {}
     for xn, X, xm4, yn, Y, ym4, note in pairs5:
@@ -760,15 +807,19 @@ def main():
         f"왼쪽은 {TR['testL_S3']} 의 macro-F1, 오른쪽은 {TR['real31L']} 의 F1 이다. 색은 전처리 위치 — 검정 {GL['none']}, 주황 {GL['npu']}, 파랑 {GL['cpu']} — 이고 "
         f"흑백 인쇄를 위해 마커 모양도 구성마다 다르다. 마커 위치는 {PS['datasheet']['label']} 전력 기준 에너지, 가로 막대는 공개 전력값 범위 "
         f"({' / '.join(PS[k]['label'] for k in curve_src)}), 세로 막대는 시드 표준편차 (n={n_seed}). CPU log-mel 네 점은 프레임 간격 (62.5 / 50 / 25 / 16 ms) 을 "
-        f"에너지 순으로 이었다. 별표(*)가 붙은 {DN['(a)']} 는 보드에서 재지 않았고 지연을 합성 사이클로 추정한 점이다 (빈 마커). {acc_cond} {cond}", "",
+        f"에너지 순으로 이었다. 별표(*)가 붙은 {DN['(a)']} 는 보드에서 재지 않았고 지연을 합성 사이클로 추정한 점이다 (빈 마커). "
+        f"{DN['②′']} 는 선형 전처리(512탭 Gabor 필터뱅크 + 프레임 안 에너지 적분)를 NPU 로 옮기고 정수 로그만 CPU 에 남긴 구성으로, 두 네트워크를 동시 적재한 보드 실측이다 "
+        f"(CPU 구간은 NPU 전원이 켜진 채 돌아 P_load 로 계산). 큰 고리와 점선은 파레토 앞면 — 점 추정(데이터시트 에너지, 시드 평균) 기준으로 에너지가 같거나 작으면서 "
+        f"정확도가 같거나 높은 다른 점이 없는 구성 (시험 데이터: {', '.join(DN[n] for n in PARETO['f1_S3'])}; 외부 데이터: {', '.join(DN[n] for n in PARETO['ext_f1'])}). {acc_cond} {cond}", "",
         f"## 그림 2 — 판단 1회 지연 분해 (`{figs['fig2'][0]}`)", "",
-        f"왼쪽은 NPU 로 추론하는 여섯 구성의 판단 1회 지연을 CPU 전처리 / 입력 적재(+출력) / NPU 추론으로 나눈 것이다 (막대 위 숫자 = 합계 ms). "
+        f"왼쪽은 NPU 로 추론하는 {len(names)}개 구성의 판단 1회 지연을 CPU 전처리 / 입력 적재(+출력) / NPU 추론으로 나눈 것이다 (막대 위 숫자 = 합계 ms). "
+        f"{DN['②′']} 의 CPU 전처리는 NPU 필터뱅크 출력의 |cos|+|sin|·8위치 합·정수 로그이고, 입력 적재에는 두 네트워크 전환(층 레지스터 재설정)이 들어 있다. "
         f"{DN['(a)']} 는 추정 (적재·출력은 {DN['④']} 실측, 추론은 합성 사이클 ÷ CNN 클럭). 오른쪽은 같은 가중치를 CMSIS-NN 으로 Cortex-M4F 에서 돌린 "
         f"{M4N} 으로, 축이 다르며 점선은 판단 주기 {hop_ms:.0f} ms 다 ({M4N} 은 주기의 {100 * LAT_M4['total'] / hop_ms:.0f}% 를 추론에 쓴다). {cond}", "",
         f"## 그림 3 — 클래스별 재현율 (`{figs['fig3'][0]}`, 부록 전체판 `{figs['fig3_all'][0]}`)", "",
         f"왼쪽 {TR['testL_S3']}, 오른쪽 {TR['real31L']}. 막대는 구성별 시드 평균 ± 표준편차, 점선은 {PN} (CNN14 zero-shot) 을 같은 정답·같은 문턱값 규칙으로 "
         f"채점한 기준선이다 (시험 F1 {pt['f1']:.3f}, 외부 F1 {p_ext['f1']:.3f}). 논문판은 {', '.join(DN[n] for n in C['fig3_paper_configs'])} 세 구성, "
-        f"부록판은 여섯 구성 전부. {acc_cond}", "",
+        f"부록판은 {len(names)}개 구성 전부. {acc_cond}", "",
         f"## 그림 4 — 데이터 개선 단계별 외부 데이터 F1 (`{figs['fig4'][0]}`)", "",
         f"학습 데이터를 단계적으로 고치면서 ({' → '.join(EDN[e] for e in eds)}, 누적) {DN['④']} 과 {DN['간격 400']} 두 구성을 각 단계에서 3시드씩 학습하고, "
         f"모든 단계를 **같은** {TR['real31L']} 와 같은 청취 확정 정답으로 다시 채점한 F1 이다 (문턱값은 각 단계의 시험 데이터 배경 300회/h). "

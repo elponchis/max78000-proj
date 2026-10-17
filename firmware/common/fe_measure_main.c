@@ -31,6 +31,12 @@
 #ifndef NET_NAME
 #define NET_NAME "?"
 #endif
+// -DFE_DEBUG: KAT 단계마다 UART 로 표식을 찍는다 (측정 밖, 디버그 전용 — 측정 빌드에서는 끈다)
+#ifdef FE_DEBUG
+#define DBG(...) do { printf(__VA_ARGS__); } while (0)
+#else
+#define DBG(...) do {} while (0)
+#endif
 
 volatile uint32_t cnn_time; // 완료 인터럽트가 세운다 (cnn.c 의 CNN_ISR — 두 네트워크가 같이 쓴다)
 
@@ -110,15 +116,27 @@ static inline void set_layer_count(uint32_t n)
     *((volatile uint32_t *)0x50d00008) = n;
 }
 
+// 생성 cnn_configure 는 0 이 아닌 레지스터만 쓴다 (리셋 상태를 가정). 두 네트워크가 같은 층 0 슬롯을 쓰므로
+// 한쪽만 쓰는 레지스터(p1 의 1D·후처리, p2 의 Columns·TRAM ptr)가 남는다 → 전환 전에 합집합을 0 으로 (2026-10-17 보드 KAT 로 확인).
+static inline void clear_l0_regs(void)
+{
+    static const uint32_t qbase[4] = { 0x50100000u, 0x50500000u, 0x50900000u, 0x50d00000u };
+    for (int q = 0; q < 4; q++)
+        for (int i = 0; i < FE_N_L0_REGS; i++)
+            *((volatile uint32_t *)(qbase[q] + FE_L0_REGS[i])) = 0;
+}
+
 static inline void switch_to_p1(void)
 {
     set_layer_count(FE_P1_LAYER_COUNT);
+    clear_l0_regs();
     p1_cnn_configure();
 }
 
 static inline void switch_to_p2(void)
 {
     set_layer_count(FE_P2_LAYER_COUNT);
+    clear_l0_regs();
     cnn_configure();
 }
 
@@ -200,7 +218,9 @@ int main(void)
     cnn_enable(MXC_S_GCR_PCLKDIV_CNNCLKSEL_PCLK, MXC_S_GCR_PCLKDIV_CNNCLKDIV_DIV1); // CNN 50 MHz
     cnn_init();
     cnn_load_weights();     // p2 (커널 0 ~ FE_P2_WEIGHT_END)
+    DBG("[dbg] p2 weights loaded\n");
     p1_cnn_load_weights();  // p1 (그 뒤) — 겹치지 않는다 (fe-design.md 3절)
+    DBG("[dbg] p1 weights loaded\n");
     cnn_load_bias();
     dwt_init();
     printf("measuring %s ...\n", NET_NAME);
@@ -208,33 +228,51 @@ int main(void)
     // ── 1. KAT: 창 전체 (청크 4개 → 16프레임) → p2 ────────────────────────
     int kat_p1 = CNN_FAIL, kat_p2;
     for (int c = 0; c < FE_NCHUNK; c++) {
+        DBG("[dbg] chunk %d load\n", c);
         load_chunk(c);
+        DBG("[dbg] switch p1\n");
         switch_to_p1();
+        DBG("[dbg] p1 start\n");
         run_and_wait_p1();
+        DBG("[dbg] p1 done (cnn_time %lu)\n", (unsigned long)cnn_time);
         if (c == FE_NCHUNK - 1) kat_p1 = check_words(p1_sample_output);
+        DBG("[dbg] p1 check ok, cpu frames\n");
         fe_cpu_frames(c * FE_FRAMES_PER_HOP);
+        DBG("[dbg] cpu done, stop\n");
         p1_cnn_stop();
     }
     uint32_t feat_bad = 0;
     for (int i = 0; i < FE_NBAND * FE_NFRAME; i++)
         if ((&fb[0][0])[i] != fe_q_expected[i]) feat_bad++;
     for (int i = 0; i < FE_P2_IN_WORDS; i++) p2_in[i] = (uint8_t)(&fb[0][0])[i];
+    DBG("[dbg] feat_bad %lu, load p2\n", (unsigned long)feat_bad);
     memcpy32((uint32_t *)FE_P2_IN_ADDR, p2_in, FE_P2_IN_WORDS);
+    DBG("[dbg] switch p2\n");
     switch_to_p2();
+    DBG("[dbg] p2 start\n");
     run_and_wait_p2();
+    DBG("[dbg] p2 done\n");
     kat_p2 = check_words(p2_sample_output);
+    DBG("[dbg] p2 check %d\n", kat_p2);
     cnn_unload((uint32_t *)ml_data);
+    DBG("[dbg] unload: %ld %ld %ld %ld %ld (expected %ld %ld %ld %ld %ld)\n", (long)ml_data[0], (long)ml_data[1], (long)ml_data[2],
+        (long)ml_data[3], (long)ml_data[4], (long)fe_logits_expected[0], (long)fe_logits_expected[1], (long)fe_logits_expected[2],
+        (long)fe_logits_expected[3], (long)fe_logits_expected[4]);
     softmax_q17p14_q15((const q31_t *)ml_data, CNN_NUM_OUTPUTS, ml_softmax);
+    DBG("[dbg] softmax done\n");
     cnn_stop();
     static int32_t kat_raw[CNN_NUM_OUTPUTS];
     for (int i = 0; i < CNN_NUM_OUTPUTS; i++) kat_raw[i] = ml_data[i];
+    DBG("[dbg] loop start\n");
 
     // ── 2. 판단 1회 × N_ITER ───────────────────────────────────────────────
     //   매 회 "직전 12프레임이 버퍼에 있고 새 청크(청크 3)가 들어온다" 는 상태를 재현한다 —
-    //   측정 구간 밖에서 버퍼를 기대 특징으로 되돌려 p2 입력이 매 회 같게 한다 (비트 대조가 되게).
+    //   측정 구간 밖에서 버퍼의 슬롯 4..15 에 기대 특징의 프레임 0..11 을 넣어, 4프레임 밀기 뒤 새 4프레임을 더하면
+    //   버퍼가 기대 특징(창 전체)과 같아지게 한다 → p2 입력이 매 회 같고 비트 대조가 된다.
     uint32_t bad_p1 = 0, bad_feat = 0, bad_p2 = 0;
     for (int i = 0; i < N_ITER; i++) {
-        memcpy(fb, fe_q_expected, sizeof(fb)); // 상태 복원 (측정 밖)
+        for (int b = 0; b < FE_NBAND; b++)                                     // 상태 복원 (측정 밖)
+            memcpy(fb[b] + FE_FRAMES_PER_HOP, fe_q_expected + b * FE_NFRAME, FE_NFRAME - FE_FRAMES_PER_HOP);
         uint32_t c0 = tick();
         load_chunk(FE_NCHUNK - 1);
         uint32_t c1 = tick();
@@ -272,6 +310,8 @@ int main(void)
         uint32_t tot = 0;
         for (int s = 0; s < N_SEG; s++) tot += t_seg[s][i];
         t_total[i] = tot;
+        if (i == 0 || i == N_ITER - 1) DBG("[dbg] iter %d total %lu cycles (bad p1 %lu feat %lu p2 %lu)\n", i, (unsigned long)tot,
+                                           (unsigned long)bad_p1, (unsigned long)bad_feat, (unsigned long)bad_p2);
     }
     SysTick->CTRL = 0; // 이후 MXC_Delay 금지 (measure_main.c 참조)
     cnn_disable();
