@@ -198,7 +198,7 @@ def build():
     lat_ga = v("latency.가 u1000")
 
     # ── 1단: 제목·요약 ────────────────────────────────────────────────
-    para(doc, "NPU 탑재 MCU 의 상시 음향 이벤트 감지에서 전처리 위치가 정확도와 에너지에 미치는 영향: MAX78000 실측",
+    para(doc, "[학부생논문] NPU 탑재 MCU 의 상시 음향 이벤트 감지에서 전처리 위치가 정확도와 에너지에 미치는 영향: MAX78000 실측",
          size=14, bold=True, align="center", space_after=4, line=1.2)
     para(doc, "Where Should the Front-End Go? Measured Accuracy–Energy Trade-offs of Preprocessing Placement "
               "for Always-On Acoustic Event Detection on an NPU-Equipped MCU (MAX78000)",
@@ -241,9 +241,9 @@ def build():
     heading(doc, "1. 서  론")
     body(doc, "소형 MCU 에 신경망 가속기(NPU)를 얹은 칩이 늘고 있다. MAX78000 은 Cortex-M4F 와 CNN 가속기를 "
               "한 칩에 두어 상시 동작 음향 감지에 적합하지만, 가속기는 합성곱·풀링·요소별 연산만 지원하고 "
-              "FFT·로그 같은 전처리 연산은 지원하지 않는다. 따라서 로그 멜 전처리는 CPU 가 맡거나, 아예 없애고 "
+              "FFT·로그 같은 전처리 연산은 지원하지 않는다 [1, 2]. 따라서 로그 멜 전처리는 CPU 가 맡거나, 아예 없애고 "
               "원파형을 가속기에 직접 넣어야 한다. 벤더의 음성 키워드 참조 설계는 후자를 택하며 음성에서는 정확도 "
-              "손실이 거의 없다고 알려져 있다 [1].")
+              "손실이 거의 없다고 알려져 있다 [4].")
     body(doc, "본 연구는 이 선택이 환경음(사이렌·유리 파손·비명·개 짖음) 감지에서도 성립하는지를 같은 데이터·같은 "
               "학습 설정·같은 보드에서 실측으로 답한다. 기여는 셋이다. (1) 전처리 위치를 양 끝(전부 CPU, 전부 NPU)과 "
               f"그 사이의 {len(CFG['configs'])}개 구성으로 나누어 정확도와 판단 1회 지연을 보드에서 재고 에너지를 추정한 정확도–에너지 "
@@ -253,12 +253,12 @@ def build():
               "정확도와 에너지 양쪽에서 이긴다는 관찰과, 전처리가 NPU 가 처리할 데이터량을 줄이는 단계라는 해석.")
 
     heading(doc, "2. 관련 연구")
-    body(doc, "MAX78000 의 자원·전력 특성은 Moss 등 [2] 이, 키워드 인식의 초저전력 구현은 Ulkar 와 Okman [3] 이, "
-              "물체 검출은 Moosmann 등 [4] 이 보고했다. 이들은 전처리를 고정한 채 모델을 다룬다. 원파형에서 직접 "
-              "배우는 프론트엔드로는 SincNet [5] 과 LEAF [6] 가 있으나 로그·PCEN 같은 비선형 압축을 포함하므로 "
-              "MAX78000 가속기에 그대로 올릴 수 없다. CPU 추론 대조군은 CMSIS-NN [7] 으로 구현했다. 데이터는 "
-              "FSD50K [8]·UrbanSound8K [9]·ESC-50 [10] 과 AudioSet [11] 을 썼고, 대형 모델 기준선과 증류 교사로 "
-              "PANNs [12] 를 썼다.")
+    body(doc, "MAX78000 의 자원·전력 특성은 Moss 등 [3] 이, 키워드 인식의 초저전력 구현은 Ulkar 와 Okman [4] 이, "
+              "물체 검출은 Moosmann 등 [5] 이 보고했다. 이들은 전처리를 고정한 채 모델을 다룬다. 원파형에서 직접 "
+              "배우는 프론트엔드로는 SincNet [6] 과 LEAF [7] 가 있으나 로그·PCEN 같은 비선형 압축을 포함하므로 "
+              "MAX78000 가속기에 그대로 올릴 수 없다. CPU 추론 대조군은 CMSIS-NN [8] 으로 구현했다. 데이터는 "
+              "FSD50K [9]·UrbanSound8K [10]·ESC-50 [11] 과 AudioSet [12] 을 썼고, 대형 모델 기준선과 증류 교사로 "
+              "PANNs [13] 를 썼다.")
 
     heading(doc, "3. 시스템과 실험 설계")
     body(doc, "시스템. MAX78000FTHR 단독으로 온보드 마이크 16 kHz 입력을 1.024 s 창(16,384 샘플, int8)으로 받아 "
@@ -280,8 +280,8 @@ def build():
               f"시드 3개씩 학습했다.")
     body(doc, f"지연과 에너지. 지연은 보드에서 SysTick 으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, "
               f"코어 100 MHz, CNN 50 MHz). 에너지는 외부 계측 장비 없이 "
-              f"E = t전처리·Pcpu + (t적재 + t출력)·Pload + t추론·Pnpu 로 추정했으며, 전력값은 데이터시트와 동일 칩 "
-              f"실측 선행연구 [2–4] 두 출처를 나란히 써 범위로 보고한다. 측정값이 아님을 모든 수치에 밝힌다.")
+              f"E = t전처리·Pcpu + (t적재 + t출력)·Pload + t추론·Pnpu 로 추정했으며, 전력값은 데이터시트 [1] 와 동일 칩 "
+              f"실측 선행연구 [3–5] 두 출처를 나란히 써 범위로 보고한다. 측정값이 아님을 모든 수치에 밝힌다.")
 
     # ── 결과·결론·참고문헌 (2단 계속) ────────────────────────────────
     # ②′ (NPU 전처리: Gabor 필터뱅크 + CPU 정수 로그) — 보드 실측 뒤 정식 점. 사용자 지시 (2026-10-17) 4·5항:
@@ -342,7 +342,8 @@ def build():
 
     heading(doc, "참고문헌", size=9)
     refs = [
-        "Analog Devices, \"ai8x-training: KWS20 v3 reference,\" github.com/analogdevicesinc/ai8x-training, 2023.",
+        "Maxim Integrated, \"MAX78000: Artificial Intelligence Microcontroller with Ultra-Low-Power Convolutional Neural Network Accelerator,\" Data Sheet 19-100868, Rev. 1, May 2021.",
+        "Analog Devices, \"MAX78000 User Guide,\" UG7456, Rev. 1, Mar. 2024.",
         "A. Moss, H. Lee, L. Xun, C. Min, F. Kawsar, A. Montanari, \"Ultra-low power DNN accelerators for IoT: resource characterization of the MAX78000,\" Proc. SenSys Workshop AIChallengeIoT, 2022.",
         "M. G. Ulkar, O. E. Okman, \"Ultra-low power keyword spotting at the edge,\" arXiv:2111.04988, 2021.",
         "J. Moosmann, M. Giordano, C. Vogt, M. Magno, \"TinyissimoYOLO: a quantized, low-memory and ultralow-power object detection network for microcontrollers,\" Proc. IEEE AICAS, 2023.",
