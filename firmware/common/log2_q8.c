@@ -13,11 +13,10 @@
  */
 #include <stdint.h>
 
-#if defined(__ARM_ARCH) && (__ARM_ARCH >= 7)
-#include <arm_acle.h>
-#define CLZ32(x) ((int)__clz((uint32_t)(x)))
-#elif defined(__GNUC__) || defined(__clang__)
-/* __builtin_clz 는 0 에서 정의되지 않는다. 호출 전에 v != 0 을 보장한다. */
+#if defined(__GNUC__) || defined(__clang__)
+/* Cortex-M4 (arm-none-eabi-gcc 10) 에서는 __builtin_clz 가 CLZ 명령 한 개로 컴파일된다 — arm_acle.h 의
+ * __clz 는 이 툴체인에 선언이 없어 (2026-10-17 빌드 오류) 쓰지 않는다. x86 KAT 빌드도 같은 분기.
+ * __builtin_clz 는 0 에서 정의되지 않는다. 호출 전에 v != 0 을 보장한다. */
 #define CLZ32(x) (__builtin_clz((uint32_t)(x)))
 #else
 #error "CLZ 를 제공하는 컴파일러가 필요하다"
