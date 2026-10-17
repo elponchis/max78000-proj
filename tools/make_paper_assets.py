@@ -446,6 +446,28 @@ def main():
         num(f"welch.{a_name} − {b_name}", row, "", f"{src_slt} (test_f1_S3·test_f1_L·ext_f1), {src_v4e} (ext_map)",
             "시드 1~3 Welch 95% CI (eval_v2.welch)")
 
+    # ── ②′ 부정 결과 (chain32, docs/results/fe-design.md 7절) — 본 표·그림에 넣지 않고 본문 한 줄용 수치만.
+    #    scream_listened_test.json 에 "②′ fe" 가 있을 때만. 비교 대상은 본 표의 ④·가 (ACC).
+    FE_KEY = "②′ fe"
+    if FE_KEY in slt["score"]["configs"]:
+        fe = slt["score"]["configs"][FE_KEY]["seeds"]
+        by_slt = {c["slt"]: c["name"] for c in C["configs"]}
+        FE = {"f1_S3": [x["testL_S3"]["f1"] for x in fe], "f1_L": [x["testL"]["f1"] for x in fe], "ext_f1": [x["ext"]["f1"] for x in fe],
+              "scream_S3": [x["testL_S3"]["scream_recall"] for x in fe], "ext_fire_n": [x["ext"]["ext_fire_n"] for x in fe]}
+        for k, fld in (("f1_S3", "testL_S3.f1"), ("f1_L", "testL.f1"), ("ext_f1", "ext.f1"), ("scream_S3", "testL_S3.scream_recall"), ("ext_fire_n", "ext.ext_fire_n")):
+            mu, sd = mean_sd(FE[k])
+            num(f"neg.fe.{k}", {"mean": mu, "sd": sd, "n": len(fe)}, "", src_slt, f"score.configs[{FE_KEY}].seeds[*].{fld}",
+                "②′ NPU 에너지 적분 필터뱅크 — 사전 등록 미통과 부정 결과 (fe-design.md 7절). 본 표 밖")
+        for base_slt in ("④", "가 u1000"):          # scream_listened_test.json 의 구성 키
+            if base_slt not in by_slt:
+                continue
+            bn = by_slt[base_slt]
+            row = {}
+            for k, lab in (("f1_S3", "test_f1_S3"), ("f1_L", "test_f1_L"), ("ext_f1", "ext_f1")):
+                d, lo, hi = V2.welch(ACC[bn][k], FE[k])
+                row[lab] = (float(d), float(lo), float(hi))
+            num(f"neg.fe.welch.②′ − {bn}", row, "", src_slt, "시드 1~3 Welch 95% CI (eval_v2.welch)")
+
     # ── 그림
     plt, fam = setup_mpl(C["fonts"])
     figs = {}

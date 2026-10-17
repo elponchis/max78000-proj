@@ -785,6 +785,105 @@
   "source": "data/external_eval/scream_listened_test.json (test_f1_S3·test_f1_L·ext_f1), data/external_eval/v4_eval.json (ext_map)",
   "field": "시드 1~3 Welch 95% CI (eval_v2.welch)"
  },
+ "neg.fe.f1_S3": {
+  "value": {
+   "mean": 0.6431328110476595,
+   "sd": 0.024931877365366544,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ fe].seeds[*].testL_S3.f1",
+  "note": "②′ NPU 에너지 적분 필터뱅크 — 사전 등록 미통과 부정 결과 (fe-design.md 7절). 본 표 밖"
+ },
+ "neg.fe.f1_L": {
+  "value": {
+   "mean": 0.6193756870727413,
+   "sd": 0.025641506477431,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ fe].seeds[*].testL.f1",
+  "note": "②′ NPU 에너지 적분 필터뱅크 — 사전 등록 미통과 부정 결과 (fe-design.md 7절). 본 표 밖"
+ },
+ "neg.fe.ext_f1": {
+  "value": {
+   "mean": 0.4602000928010292,
+   "sd": 0.03436432600241239,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ fe].seeds[*].ext.f1",
+  "note": "②′ NPU 에너지 적분 필터뱅크 — 사전 등록 미통과 부정 결과 (fe-design.md 7절). 본 표 밖"
+ },
+ "neg.fe.scream_S3": {
+  "value": {
+   "mean": 0.29850746268656714,
+   "sd": 0.06376122197998157,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ fe].seeds[*].testL_S3.scream_recall",
+  "note": "②′ NPU 에너지 적분 필터뱅크 — 사전 등록 미통과 부정 결과 (fe-design.md 7절). 본 표 밖"
+ },
+ "neg.fe.ext_fire_n": {
+  "value": {
+   "mean": 7.0,
+   "sd": 1.7320508075688772,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ fe].seeds[*].ext.ext_fire_n",
+  "note": "②′ NPU 에너지 적분 필터뱅크 — 사전 등록 미통과 부정 결과 (fe-design.md 7절). 본 표 밖"
+ },
+ "neg.fe.welch.②′ − ④": {
+  "value": {
+   "test_f1_S3": [
+    -0.026130422774486628,
+    -0.08219411003257933,
+    0.029933264483606073
+   ],
+   "test_f1_L": [
+    -0.027687246106002927,
+    -0.08127097121055851,
+    0.025896478998552665
+   ],
+   "ext_f1": [
+    0.01721348391613997,
+    -0.05299640596112691,
+    0.08742337379340685
+   ]
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "시드 1~3 Welch 95% CI (eval_v2.welch)"
+ },
+ "neg.fe.welch.②′ − 가 u1000": {
+  "value": {
+   "test_f1_S3": [
+    -0.11103979145105769,
+    -0.16234138795456518,
+    -0.0597381949475502
+   ],
+   "test_f1_L": [
+    -0.10806792573712198,
+    -0.16287488838492703,
+    -0.05326096308931695
+   ],
+   "ext_f1": [
+    -0.08172475069686852,
+    -0.1549914983323264,
+    -0.00845800306141066
+   ]
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "시드 1~3 Welch 95% CI (eval_v2.welch)"
+ },
  "editions.ext_f1_real31L": {
   "value": {
    "④": {
