@@ -292,7 +292,7 @@ def build():
               f"{r_inf:.0f}배, 판단 1회 {r_dec:.0f}배 빠르고 CPU 추론은 판단 주기의 {hop_m4:.0f}% 를 추론에 쓴다(그림 2).")
     body(doc, f"NPU 로 옮긴 전처리는 되찾지 못한다. {n_a} 는 {s_w} 대비 {welch('(a) − ④')} 로 CI 가 0 을 포함하고, "
               f"로그 근사 층 때문에 NPU 사이클이 3.8배 늘어 추정 에너지는 {energy(A)/energy(W):.1f}배다. 앞선 라운드(v1 데이터)에서 "
-              f"시험한 변형들도 같았다: " + "; ".join(f"{a} {b}" for a, b in V1_NEG) + ". " + fe_neg + ("지원하지 않는 비선형을 " if fe_neg else "지원하지 않는 비선형을 ")
+              f"시험한 변형들도 같았다: " + "; ".join(f"{a} {b}" for a, b in V1_NEG) + ". " + fe_neg + "지원하지 않는 비선형을 "
               f"합성곱으로 흉내 내는 순간 NPU 는 CPU 보다 비싸진다.")
     body(doc, f"최적점은 중간에 있다. {s_ga}은 {s_w}보다 시험 macro-F1 {welch('가 u1000 − ④')}, 외부 F1 "
               f"{welch('가 u1000 − ④', 'ext_f1')} 로 유의하게 높고, 판단 1회 지연은 {latency(GA):.2f} ms 대 {latency(W):.2f} ms 로 "
