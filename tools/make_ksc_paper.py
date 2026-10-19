@@ -310,6 +310,24 @@ def build():
               f"시험한 변형들도 같았다: " + "; ".join(f"{a} {b}" for a, b in V1_NEG) + ". 지원하지 않는 비선형을 "
               f"합성곱으로 흉내 내는 순간 NPU 는 CPU 보다 비싸진다.")
     body(doc, fe_neg)
+    # ②′ 곡선 변형 3종 (chain33, fe-curve-design.md 7절) — 보드 미실측이라 그림 1·표 2 에는 없다. 사용자 지시 (2026-10-19):
+    #   한 문장만, 에너지 하한(②′ 실측 구간 + 메모리 읽기 1회 더)이 CPU log-mel 62.5 ms 보다 작은 전력 출처가 있으면 명시. 사후 관찰은 넣지 않는다.
+    vf, vlb = v("variants.②′.f1_S3"), v("variants.②′.energy_lower_bound")
+    src_label = {"datasheet": "데이터시트", "literature": "선행연구", "moosmann": "Moosmann"}
+    srcs = [k for k in ("datasheet", "literature", "moosmann") if k in vlb["lb_exceeds_ga"]]
+    held = [k for k in srcs if vlb["lb_exceeds_ga"][k]]
+    flipped = [k for k in srcs if not vlb["lb_exceeds_ga"][k]]
+    pair = lambda k: f"{src_label[k]} {vlb['lb'][k]:.1f} 대 {vlb['ga'][k]:.1f} μJ"
+    var_sent = (f"대역·프레임 수를 늘린 NPU 전처리 변형 3종(보드 미실측, 그림 1·표 2 제외)은 시험 데이터 macro-F1 이 "
+                f"{vf['min']:.3f}~{vf['max']:.3f} 으로 {s_ga}({f1(GA)[0]:.3f})보다 낮고, {DN[FE]} 의 보드 실측 구간 비용으로 계산한 "
+                f"에너지 하한도 ")
+    if not flipped:
+        var_sent += f"이보다 커서({', '.join(pair(k) for k in held)}), 보드 실측 여부와 무관하게 CPU 전처리 곡선에 지배된다."
+    else:
+        var_sent += (f"{'·'.join(src_label[k] for k in held)} 전력 기준으로는 이보다 커서({', '.join(pair(k) for k in held)}) "
+                     f"보드 실측 여부와 무관하게 CPU 전처리 곡선에 지배된다. {'·'.join(src_label[k] for k in flipped)} 전력 기준으로는 "
+                     f"하한이 더 작아({', '.join(pair(k) for k in flipped)}) 하한만으로는 가르지 못한다.")
+    body(doc, var_sent)
     body(doc, f"최적점은 중간에 있다. {s_ga}은 {s_w}보다 시험 macro-F1 {welch('가 u1000 − ④')}, 외부 F1 "
               f"{welch('가 u1000 − ④', 'ext_f1')} 로 유의하게 높고, 판단 1회 지연은 {latency(GA):.2f} ms 대 {latency(W):.2f} ms 로 "
               f"비슷하며, 추정 에너지는 데이터시트 기준 {energy(GA):.0f} 대 {energy(W):.0f} μJ 로 적고 Moosmann 기준 "

@@ -574,6 +574,50 @@
   "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
   "note": "추정(실측 지연 × 공개 전력) — 지연도 추정"
  },
+ "variants.②′.f1_S3": {
+  "value": {
+   "mean": {
+    "②′ b64": 0.6873188092037333,
+    "②′ f31": 0.6547691054376502,
+    "②′ b64f31": 0.6903090383756183
+   },
+   "n": {
+    "②′ b64": 3,
+    "②′ f31": 3,
+    "②′ b64f31": 3
+   },
+   "min": 0.6547691054376502,
+   "max": 0.6903090383756183
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ b64 | ②′ f31 | ②′ b64f31].seeds[*].testL_S3.f1 (시드 평균)",
+  "note": "보드 미실측 — 그림·표 제외 (fe-curve-design.md 7절)"
+ },
+ "variants.②′.energy_lower_bound": {
+  "value": {
+   "lb": {
+    "datasheet": 49.8474789,
+    "literature": 98.689797,
+    "moosmann": 76.602012
+   },
+   "ga": {
+    "datasheet": 43.341995,
+    "literature": 97.650609,
+    "moosmann": 78.489812
+   },
+   "lb_exceeds_ga": {
+    "datasheet": true,
+    "literature": true,
+    "moosmann": false
+   },
+   "extra_read_ms": 0.83984
+  },
+  "unit": "µJ",
+  "source": "data/logs-local/board_v4d_fe.log × docs/paper/paper_config.json power_sources",
+  "field": "하한 = ②′ 추정 에너지 + ②′ cpu 구간(가속기 메모리 2,048 워드 읽기) × P_load 한 번 더; ga = 가 u1000 추정 에너지",
+  "note": "추정(실측 지연 × 공개 전력)의 하한"
+ },
  "latency.M4 CMSIS-NN": {
   "value": {
    "load": 0.27,

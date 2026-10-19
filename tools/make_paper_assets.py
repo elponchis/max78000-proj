@@ -454,6 +454,21 @@ def main():
             "load/infer/unload us max (1000회 최악)" + ("; 전처리 " + L["pre_src"] if L["pre"] else ""), "추정(보드 미실측)" if L["est"] else None)
         num(f"energy.{name}", {k: L["E"][k] for k in curve_src}, "µJ", f"{L['src']} × {rel(CFG_PATH)} power_sources",
             C["energy_note"], "추정(실측 지연 × 공개 전력)" + (" — 지연도 추정" if L["est"] else ""))
+    # ── ②′ 곡선 변형 (b64 / f31 / b64f31, chain33, docs/results/fe-curve-design.md 7절) — 보드 미실측. 그림 1·표 2 에 넣지 않는다.
+    #   사용자 지시 (2026-10-19): 본문 4절 한 문장만. 에너지 하한 = ②′ 보드 실측 에너지 + 가속기 메모리 읽기 최소 1회 더
+    #   (②′ cpu 구간 2,048 워드 × P_load). 세 전력 출처 각각으로 CPU log-mel 62.5 ms (가) 와 비교해 출처별 성립 여부를 남긴다.
+    FE_VARIANTS = ["②′ b64", "②′ f31", "②′ b64f31"]
+    if all(n in slt["score"]["configs"] for n in FE_VARIANTS) and "②′" in LAT and "가 u1000" in LAT:
+        vf1 = {n: float(np.mean([x["testL_S3"]["f1"] for x in slt["score"]["configs"][n]["seeds"]])) for n in FE_VARIANTS}
+        vn = {n: len(slt["score"]["configs"][n]["seeds"]) for n in FE_VARIANTS}
+        Lfe, Lga = LAT["②′"], LAT["가 u1000"]
+        lb = {k: Lfe["E"][k] + Lfe["detail"]["cpu"] * PS[k]["P_load_mW"] for k in curve_src}
+        num("variants.②′.f1_S3", {"mean": vf1, "n": vn, "min": min(vf1.values()), "max": max(vf1.values())}, "", src_slt,
+            "score.configs[②′ b64 | ②′ f31 | ②′ b64f31].seeds[*].testL_S3.f1 (시드 평균)", "보드 미실측 — 그림·표 제외 (fe-curve-design.md 7절)")
+        num("variants.②′.energy_lower_bound", {"lb": lb, "ga": {k: Lga["E"][k] for k in curve_src},
+                                               "lb_exceeds_ga": {k: bool(lb[k] > Lga["E"][k]) for k in curve_src}, "extra_read_ms": Lfe["detail"]["cpu"]},
+            "µJ", f"{Lfe['src']} × {rel(CFG_PATH)} power_sources",
+            "하한 = ②′ 추정 에너지 + ②′ cpu 구간(가속기 메모리 2,048 워드 읽기) × P_load 한 번 더; ga = 가 u1000 추정 에너지", "추정(실측 지연 × 공개 전력)의 하한")
     num("latency.M4 CMSIS-NN", {k: LAT_M4[k] for k in ("load", "infer", "total")}, "ms", LAT_M4["src"], "load/infer us max (1000회 최악)")
     num("energy.M4 CMSIS-NN", {k: LAT_M4["E"][k] for k in curve_src}, "µJ", f"{LAT_M4['src']} × {rel(CFG_PATH)} power_sources", C["energy_note"],
         "추정(실측 지연 × 공개 전력)")
