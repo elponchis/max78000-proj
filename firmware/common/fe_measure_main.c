@@ -31,6 +31,22 @@
 #ifndef NET_NAME
 #define NET_NAME "?"
 #endif
+// ②′ 변형 (fe-curve-design.md): b64 는 p1 출력 128 채널(32 그룹), f31 계열은 p1 입력 71 위치(직전 8 + 새 63)·홉당 8 프레임이고
+// 청크 c 의 첫 프레임 번호가 8c − 1 이다 (FE_FRAME0_OFFSET −1; KAT 의 청크 0 에서 프레임 −1 은 버린다). 옛 fe_kat.h 와의 호환 기본값.
+#ifndef FE_P1_OUT_GROUPS
+#define FE_P1_OUT_GROUPS FE_P1_IN_GROUPS
+#endif
+#ifndef FE_P1_OUT_CH
+#define FE_P1_OUT_CH (4 * FE_P1_OUT_GROUPS)
+#endif
+#ifndef FE_FRAME0_OFFSET
+#define FE_FRAME0_OFFSET 0
+#endif
+// p1 출력 배치 (합성기): 그룹 g(프로세서 4g..4g+3) 블록에 위치 p 의 워드가 FE_P1_OUT_STRIDE 개 — 64 채널은 4 (채널 4g+k),
+// 128 채널은 8 (k<4: 채널 4g+k, k≥4: 채널 64+4g+k−4; 프로세서당 2채널). tools/fe_board_prep.py 가 기대 출력으로 검증한다.
+#ifndef FE_P1_OUT_STRIDE
+#define FE_P1_OUT_STRIDE 4
+#endif
 // -DFE_DEBUG: KAT 단계마다 UART 로 표식을 찍는다 (측정 밖, 디버그 전용 — 측정 빌드에서는 끈다)
 #ifdef FE_DEBUG
 #define DBG(...) do { printf(__VA_ARGS__); } while (0)
@@ -169,17 +185,20 @@ static const uint32_t p2_sample_output[] = SAMPLE_OUTPUT;
 static void fe_cpu_frames(int first_frame)
 {
     for (int b = 0; b < FE_NBAND; b++) {
-        const int g = (2 * b) >> 2, slot = (2 * b) & 3;
+        const int c = 2 * b;                                   // cos 채널 (sin 은 c+1, 같은 블록의 다음 워드)
+        const int g = (c & 63) >> 2, slot = (c & 3) + (c >= 64 ? 4 : 0);
         const volatile int32_t *base = (const volatile int32_t *)FE_P1_OUT_ADDR[g];
         for (int f = 0; f < FE_FRAMES_PER_HOP; f++) {
-            const volatile int32_t *p = base + (FE_POS_PER_FRAME * f) * 4 + slot;
+            const int dst = first_frame + f;
+            if (dst < 0 || dst >= FE_NFRAME) continue;       // f31 계열 KAT 의 청크 0 프레임 −1 (측정 루프에서는 항상 범위 안)
+            const volatile int32_t *p = base + (FE_POS_PER_FRAME * f) * FE_P1_OUT_STRIDE + slot;
             uint32_t e = 0;
             for (int k = 0; k < FE_POOL_POS; k++) {
                 int32_t y0 = p[0], y1 = p[1];
                 e += (uint32_t)(y0 < 0 ? -y0 : y0) + (uint32_t)(y1 < 0 ? -y1 : y1);
-                p += 4;
+                p += FE_P1_OUT_STRIDE;
             }
-            fb[b][first_frame + f] = log2_q8_to_int8(log2_q8(e), FE_LO_Q8, FE_SPAN_Q8);
+            fb[b][dst] = log2_q8_to_int8(log2_q8(e), FE_LO_Q8, FE_SPAN_Q8);
         }
     }
 }
@@ -237,7 +256,7 @@ int main(void)
         DBG("[dbg] p1 done (cnn_time %lu)\n", (unsigned long)cnn_time);
         if (c == FE_NCHUNK - 1) kat_p1 = check_words(p1_sample_output);
         DBG("[dbg] p1 check ok, cpu frames\n");
-        fe_cpu_frames(c * FE_FRAMES_PER_HOP);
+        fe_cpu_frames(c * FE_FRAMES_PER_HOP + FE_FRAME0_OFFSET);
         DBG("[dbg] cpu done, stop\n");
         p1_cnn_stop();
     }
@@ -320,8 +339,8 @@ int main(void)
         printf("\n=== SafeSound NPU measure: %s ===\n", NET_NAME);
         printf("build %s %s  SystemCoreClock %lu Hz  N_ITER %d\n", __DATE__, __TIME__,
                (unsigned long)SystemCoreClock, N_ITER);
-        printf("two networks co-resident: p1 Conv1d 64->64 k8 wide (weights %lu B) + p2 (weights %lu B)\n",
-               (unsigned long)FE_P1_WEIGHT_BYTES, (unsigned long)FE_P2_WEIGHT_BYTES);
+        printf("two networks co-resident: p1 Conv1d 64->%d k8 wide, in %d pos (weights %lu B) + p2 1x%dx%d (weights %lu B)\n",
+               FE_P1_OUT_CH, FE_P1_IN_WORDS, (unsigned long)FE_P1_WEIGHT_BYTES, FE_NBAND, FE_NFRAME, (unsigned long)FE_P2_WEIGHT_BYTES);
         printf("KAT p1 sampleoutput (chunk %d): %s\n", FE_NCHUNK - 1, kat_p1 == CNN_OK ? "PASS (bit-exact)" : "FAIL");
         printf("KAT cpu feature vs host integer path: %s (%lu / %d mismatches)\n",
                feat_bad == 0 ? "PASS (bit-exact)" : "FAIL", (unsigned long)feat_bad, FE_NBAND * FE_NFRAME);

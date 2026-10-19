@@ -1,0 +1,19 @@
+---
+# ②′ 변형 b64 / b64f31 의 1패스 — 64 대역 (출력 128 채널). safesound-fe-p1-hwc.yaml 과 층 설정이 같고 arch 만 다르다.
+#   models/ai85net-safesound-fe.py `ai85safesoundfe_p1_b64`, 설계 docs/results/fe-curve-design.md
+#
+#   입력  (64, L) int8 — L = 64 (b64, 판단 1회의 새 4,096 샘플) / 71 (b64f31, 직전 8 위치 + 새 63 위치)
+#   출력  (128, L−7) int32 — 512탭 FIR 128개 (멜 64밴드 × cos/sin)
+arch: ai85safesoundfe_p1_b64
+dataset: SafeSoundFEP1
+
+layers:
+  # ── fe : Conv1d k=8, 64 → 128, wide 32bit, 패딩 없음
+  - pad: 0
+    activate: None
+    out_offset: 0x2000
+    processors: 0xffffffffffffffff
+    data_format: HWC
+    operation: Conv1d
+    kernel_size: 8
+    output_width: 32
