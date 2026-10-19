@@ -223,9 +223,11 @@ def build():
     figure(doc, os.path.join(PAPER, "fig1_acc_energy.png"), 150,
            f"그림 1. 판단 1회 추정 에너지(가로, 로그축)와 정확도. (a) 시험 데이터 macro-F1, (b) 외부 데이터 F1. 색은 전처리 위치, "
            f"마커 위치는 데이터시트 전력 기준, 가로 막대는 공개 전력값 범위, 세로 막대는 시드 표준편차(n=3). "
-           f"{n_a}(*) 는 보드 미실측으로 지연을 합성 사이클로 추정한 점. 큰 고리와 점선은 파레토 앞면(에너지가 같거나 작으면서 정확도가 같거나 높은 다른 점이 없는 구성).")
+           f"{n_a}(*) 는 보드 미실측으로 지연을 합성 사이클로 추정한 점. 주황 점선은 NPU 전처리 계열(Gabor 필터뱅크와 대역·프레임 수를 늘린 변형 3종, 모두 보드 실측)을 에너지 순으로 이은 것. "
+           f"큰 고리와 회색 점선은 파레토 앞면(에너지가 같거나 작으면서 정확도가 같거나 높은 다른 점이 없는 구성).")
     rows = []
-    for key in (W, FE, A, GA, DA, H25, H16):
+    VARS = [c["name"] for c in CFG["configs"] if c.get("variant_of") == FE]       # ②′ 변형 3종 (보드 실측, 2026-10-19 오후 지시)
+    for key in (W, FE, *VARS, A, GA, DA, H25, H16):
         rows.append([DN[key], f"{latency(key):.2f}" + (" (추정)" if key == A else ""),
                      f"{energy(key):.0f} / {energy(key, 'moosmann'):.0f}",
                      fmt_pm(key), fmt_pm(key, "ext_f1")])
@@ -310,23 +312,32 @@ def build():
               f"시험한 변형들도 같았다: " + "; ".join(f"{a} {b}" for a, b in V1_NEG) + ". 지원하지 않는 비선형을 "
               f"합성곱으로 흉내 내는 순간 NPU 는 CPU 보다 비싸진다.")
     body(doc, fe_neg)
-    # ②′ 곡선 변형 3종 (chain33, fe-curve-design.md 7절) — 보드 미실측이라 그림 1·표 2 에는 없다. 사용자 지시 (2026-10-19):
-    #   한 문장만, 에너지 하한(②′ 실측 구간 + 메모리 읽기 1회 더)이 CPU log-mel 62.5 ms 보다 작은 전력 출처가 있으면 명시. 사후 관찰은 넣지 않는다.
-    vf, vlb = v("variants.②′.f1_S3"), v("variants.②′.energy_lower_bound")
-    src_label = {"datasheet": "데이터시트", "literature": "선행연구", "moosmann": "Moosmann"}
-    srcs = [k for k in ("datasheet", "literature", "moosmann") if k in vlb["lb_exceeds_ga"]]
-    held = [k for k in srcs if vlb["lb_exceeds_ga"][k]]
-    flipped = [k for k in srcs if not vlb["lb_exceeds_ga"][k]]
-    pair = lambda k: f"{src_label[k]} {vlb['lb'][k]:.1f} 대 {vlb['ga'][k]:.1f} μJ"
-    var_sent = (f"대역·프레임 수를 늘린 NPU 전처리 변형 3종(보드 미실측, 그림 1·표 2 제외)은 시험 데이터 macro-F1 이 "
-                f"{vf['min']:.3f}~{vf['max']:.3f} 으로 {s_ga}({f1(GA)[0]:.3f})보다 낮고, {DN[FE]} 의 보드 실측 구간 비용으로 계산한 "
-                f"에너지 하한도 ")
-    if not flipped:
-        var_sent += f"이보다 커서({', '.join(pair(k) for k in held)}), 보드 실측 여부와 무관하게 CPU 전처리 곡선에 지배된다."
+    # ②′ 곡선 변형 3종 (chain33, fe-curve-design.md 7·8절) — 보드 실측 (2026-10-19 오후 지시). 수치는 전부 numbers.json.
+    #   지시문: "대역·프레임 수를 늘린 NPU 전처리 변형은 정확도가 0.655~0.690으로 올랐으나 에너지가 더 빠르게 늘어 CPU 전처리 곡선
+    #   아래에 머물렀다. 주된 비용은 NPU 연산이 아니라 CPU가 가속기 메모리에서 결과를 읽어 오는 시간이었다." — 실측이 다르면 결과대로.
+    #   "64 대역이 원본 파형을 넘었다" 는 사후 관찰은 넣지 않는다 (5항).
+    vf, vm = v("variants.②′.f1_S3"), v("variants.②′.measured")
+    srcs3 = ("datasheet", "literature", "moosmann")
+    below_all = all(vm[n]["dominated_by_cpu_curve"][k] for n in vm for k in srcs3)          # 세 출처 모두에서 CPU 곡선의 어떤 점에 지배
+    below_ds = all(vm[n]["dominated_by_cpu_curve"]["datasheet"] for n in vm)
+    cpu_main = all((vm[n]["cpu_share_of_delta"] or 0.0) > 0.5 for n in vm)                 # ②′ 대비 증가분의 절반 넘게가 CPU 구간
+    e_lo, e_hi = min(vm[n]["E_uJ"]["datasheet"] for n in vm), max(vm[n]["E_uJ"]["datasheet"] for n in vm)
+    var_sent = (f"대역·프레임 수를 늘린 NPU 전처리 변형 3종은 시험 macro-F1 이 {vf['min']:.3f}~{vf['max']:.3f} 으로 올랐으나"
+                f"(표 1) 추정 에너지가 {energy(FE):.0f} 에서 {e_lo:.0f}~{e_hi:.0f} μJ 로 더 빠르게 늘어 ")
+    if below_all:
+        var_sent += "세 전력 출처 모두에서 CPU 전처리 곡선 아래에 머물렀다(그림 1). "
+    elif below_ds:
+        flip = [n for n in vm for k in srcs3 if not vm[n]["dominated_by_cpu_curve"][k]]
+        var_sent += f"데이터시트 전력 기준으로는 CPU 전처리 곡선 아래에 머물렀으나 다른 출처에서는 일부({', '.join(DN[n] for n in dict.fromkeys(flip))})가 지배되지 않았다(그림 1). "
     else:
-        var_sent += (f"{'·'.join(src_label[k] for k in held)} 전력 기준으로는 이보다 커서({', '.join(pair(k) for k in held)}) "
-                     f"보드 실측 여부와 무관하게 CPU 전처리 곡선에 지배된다. {'·'.join(src_label[k] for k in flipped)} 전력 기준으로는 "
-                     f"하한이 더 작아({', '.join(pair(k) for k in flipped)}) 하한만으로는 가르지 못한다.")
+        var_sent += "CPU 전처리 곡선 아래에 머물지 않은 점이 있었다(그림 1). "
+    cs = [100 * (vm[n]["cpu_share_of_delta"] or 0) for n in vm]; ns = [100 * (vm[n]["npu_share_of_delta"] or 0) for n in vm]
+    if cpu_main:
+        var_sent += (f"주된 비용은 NPU 연산({min(ns):.0f}~{max(ns):.0f}%)이 아니라 CPU 가 가속기 메모리에서 결과를 읽어 오는 "
+                     f"시간({min(cs):.0f}~{max(cs):.0f}%)이었다.")
+    else:
+        shares = ", ".join(f"{DN[n]} CPU {100 * (vm[n]['cpu_share_of_delta'] or 0):.0f}% / NPU {100 * (vm[n]['npu_share_of_delta'] or 0):.0f}%" for n in vm)
+        var_sent += f"늘어난 비용은 CPU 의 가속기 메모리 읽기와 NPU 연산에 나뉘었다({shares})."
     body(doc, var_sent)
     body(doc, f"최적점은 중간에 있다. {s_ga}은 {s_w}보다 시험 macro-F1 {welch('가 u1000 − ④')}, 외부 F1 "
               f"{welch('가 u1000 − ④', 'ext_f1')} 로 유의하게 높고, 판단 1회 지연은 {latency(GA):.2f} ms 대 {latency(W):.2f} ms 로 "
@@ -341,7 +352,8 @@ def build():
     body(doc, f"대형 모델 기준선. 같은 정답·같은 문턱값 규칙으로 PANNs(CNN14) 를 채점하면 시험 macro-F1 {pann:.3f} 이다. "
               f"{s_16} 구성은 그 {100*f1(H16)[0]/pann:.0f}% 에 이른다.")
     figure(doc, os.path.join(PAPER, "fig2_latency_breakdown.png"), 88,
-           f"그림 2. 판단 1회 지연 분해(보드 실측, 1,000회 최악값). 왼쪽은 NPU 추론 {len(CFG['configs'])}개 구성(CPU 전처리 / 입력 적재 / NPU 추론), "
+           f"그림 2. 판단 1회 지연 분해(보드 실측, 1,000회 최악값). 왼쪽은 NPU 추론 {len([c for c in CFG['configs'] if not c.get('variant_of')])}개 구성"
+           f"(CPU 전처리 / 입력 적재 / NPU 추론; {DN[FE]} 의 변형 3종은 표 1 에만), "
            "오른쪽은 같은 가중치의 CPU 추론(Cortex-M4F, CMSIS-NN)과 판단 주기 250 ms.")
 
     heading(doc, "5. 한계와 결론")

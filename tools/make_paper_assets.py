@@ -401,7 +401,7 @@ def main():
             b = read_board_log_fe(c["board_log"])
             assert b["kat"] and b["mismatch"] == 0, (c["name"], b)
             LAT[c["name"]] = {"pre": b["cpu"], "load": b["load1"] + b["load2"] + b["cfg1"] + b["cfg2"], "infer": b["infer1"] + b["infer2"],
-                              "out": b["unload"], "est": False, "pre_power": "load", "detail": {k: b[k] for k in FE_SEGS}, "src": b["path"],
+                              "out": b["unload"], "est": False, "pre_power": "load", "detail": {k: b[k] for k in FE_SEGS}, "src": b["path"], "mismatch": b["mismatch"],
                               "pre_src": "보드 실측 cpu 구간 (|cos|+|sin| → 8위치 합 → 정수 로그 32×4 값 → 버퍼 밀기 → 입력 워드 포장), NPU 전원 켜진 채 → P_load 로 계산; 적재 열에 네트워크 전환(cfg1+cfg2) 포함",
                               "core_hz": b["core_hz"], "cnn_hz": b["cnn_hz"], "n_iter": b["n_iter"], "synth": syn}
         elif c["board_log"]:
@@ -454,21 +454,42 @@ def main():
             "load/infer/unload us max (1000회 최악)" + ("; 전처리 " + L["pre_src"] if L["pre"] else ""), "추정(보드 미실측)" if L["est"] else None)
         num(f"energy.{name}", {k: L["E"][k] for k in curve_src}, "µJ", f"{L['src']} × {rel(CFG_PATH)} power_sources",
             C["energy_note"], "추정(실측 지연 × 공개 전력)" + (" — 지연도 추정" if L["est"] else ""))
-    # ── ②′ 곡선 변형 (b64 / f31 / b64f31, chain33, docs/results/fe-curve-design.md 7절) — 보드 미실측. 그림 1·표 2 에 넣지 않는다.
-    #   사용자 지시 (2026-10-19): 본문 4절 한 문장만. 에너지 하한 = ②′ 보드 실측 에너지 + 가속기 메모리 읽기 최소 1회 더
-    #   (②′ cpu 구간 2,048 워드 × P_load). 세 전력 출처 각각으로 CPU log-mel 62.5 ms (가) 와 비교해 출처별 성립 여부를 남긴다.
-    FE_VARIANTS = ["②′ b64", "②′ f31", "②′ b64f31"]
+    # ── ②′ 곡선 변형 (b64 / f31 / b64f31, chain33, docs/results/fe-curve-design.md 7·8절) — 2026-10-19 오후 지시로 보드 실측
+    #   (configs 의 variant_of = "②′"; 지연·에너지는 위 LAT 에 다른 구성과 같은 방식으로 들어간다). 아래는 그 위에 더하는 것:
+    #   · 에너지 하한 (실측 전 계산, 2026-10-19 오전) = ②′ 추정 에너지 + 가속기 메모리 읽기 1회 더 (cpu 구간 × P_load) — 기록으로 남긴다
+    #   · 실측 에너지를 예측값(fe-curve-design.md 4절, fe_curve_judge.VARIANTS)·하한과 나란히, 예측 대비 편차(%), ②′ 대비 증가분의 구간 분해
+    import fe_curve_judge as FJ                                                        # noqa: PLC0415
+    FE_VARIANTS = [c["name"] for c in C["configs"] if c.get("variant_of") == "②′"]
     if all(n in slt["score"]["configs"] for n in FE_VARIANTS) and "②′" in LAT and "가 u1000" in LAT:
         vf1 = {n: float(np.mean([x["testL_S3"]["f1"] for x in slt["score"]["configs"][n]["seeds"]])) for n in FE_VARIANTS}
         vn = {n: len(slt["score"]["configs"][n]["seeds"]) for n in FE_VARIANTS}
         Lfe, Lga = LAT["②′"], LAT["가 u1000"]
         lb = {k: Lfe["E"][k] + Lfe["detail"]["cpu"] * PS[k]["P_load_mW"] for k in curve_src}
         num("variants.②′.f1_S3", {"mean": vf1, "n": vn, "min": min(vf1.values()), "max": max(vf1.values())}, "", src_slt,
-            "score.configs[②′ b64 | ②′ f31 | ②′ b64f31].seeds[*].testL_S3.f1 (시드 평균)", "보드 미실측 — 그림·표 제외 (fe-curve-design.md 7절)")
+            "score.configs[②′ b64 | ②′ f31 | ②′ b64f31].seeds[*].testL_S3.f1 (시드 평균)", "보드 실측 (fe-curve-design.md 8절) — 그림 1·표 2 포함")
         num("variants.②′.energy_lower_bound", {"lb": lb, "ga": {k: Lga["E"][k] for k in curve_src},
                                                "lb_exceeds_ga": {k: bool(lb[k] > Lga["E"][k]) for k in curve_src}, "extra_read_ms": Lfe["detail"]["cpu"]},
             "µJ", f"{Lfe['src']} × {rel(CFG_PATH)} power_sources",
-            "하한 = ②′ 추정 에너지 + ②′ cpu 구간(가속기 메모리 2,048 워드 읽기) × P_load 한 번 더; ga = 가 u1000 추정 에너지", "추정(실측 지연 × 공개 전력)의 하한")
+            "실측 전 하한 (2026-10-19 오전) = ②′ 추정 에너지 + ②′ cpu 구간(가속기 메모리 2,048 워드 읽기) × P_load 한 번 더; ga = 가 u1000 추정 에너지",
+            "추정(실측 지연 × 공개 전력)의 하한 — 기록용, 실측값은 variants.②′.measured")
+        cpu_curve = [n for n in LAT if DG[n] == "cpu"]
+        meas = {}
+        for n in FE_VARIANTS:
+            L = LAT[n]
+            d_seg = {k: L["detail"][k] - Lfe["detail"][k] for k in FE_SEGS if k != "total"}
+            d_tot = L["total"] - Lfe["total"]
+            f1n = vf1[n]
+            meas[n] = {"total_ms": L["total"], "detail_ms": L["detail"], "E_uJ": {k: L["E"][k] for k in curve_src},
+                       "predicted_datasheet_uJ": FJ.VARIANTS[n][1], "lower_bound_datasheet_uJ": lb["datasheet"],
+                       "deviation_from_prediction_pct": 100.0 * (L["E"]["datasheet"] - FJ.VARIANTS[n][1]) / FJ.VARIANTS[n][1],
+                       "delta_vs_fe_ms": d_seg, "delta_total_vs_fe_ms": d_tot,
+                       "cpu_share_of_delta": (d_seg["cpu"] / d_tot) if d_tot else None,
+                       "npu_share_of_delta": ((d_seg["infer1"] + d_seg["infer2"]) / d_tot) if d_tot else None,
+                       "dominated_by_cpu_curve": {k: [m for m in cpu_curve if LAT[m]["E"][k] <= L["E"][k] and mean_sd(ACC[m]["f1_S3"])[0] >= f1n] for k in curve_src},
+                       "mismatch": L.get("mismatch"), "n_iter": L["n_iter"], "src": L["src"]}
+        num("variants.②′.measured", meas, "ms / µJ", "latency/energy 항목 (보드 실측 × paper_config.json power_sources); 예측은 tools/fe_curve_judge.py VARIANTS (fe-curve-design.md 4절)",
+            "실측 에너지를 예측·하한과 나란히; 편차 = (실측 − 예측)/예측; ②′ 대비 증가분의 구간 분해 (cpu = 가속기 메모리 읽기 + 정수 로그); "
+            "dominated_by_cpu_curve[출처] = 에너지 ≤ 이고 macro-F1 ≥ 인 CPU log-mel 구성", "추정(실측 지연 × 공개 전력)")
     num("latency.M4 CMSIS-NN", {k: LAT_M4[k] for k in ("load", "infer", "total")}, "ms", LAT_M4["src"], "load/infer us max (1000회 최악)")
     num("energy.M4 CMSIS-NN", {k: LAT_M4["E"][k] for k in curve_src}, "µJ", f"{LAT_M4['src']} × {rel(CFG_PATH)} power_sources", C["energy_note"],
         "추정(실측 지연 × 공개 전력)")
@@ -516,6 +537,8 @@ def main():
     names = [c["name"] for c in C["configs"]]
     markers = {c["name"]: c["marker"] for c in C["configs"]}
     est = {c["name"]: c["estimated_latency"] for c in C["configs"]}
+    VAR = {c["name"]: c.get("variant_of") for c in C["configs"]}        # ②′ 곡선 변형 (b64 / f31 / b64f31) — 그림 2 에서는 뺀다 (막대 10개는 겹친다)
+    main_names = [n for n in names if not VAR[n]]
 
     # 그림 1 — 정확도-에너지, 좌: 시험 데이터 / 우: 외부 데이터. 색 = 전처리 위치, 마커 = 구성, 점 옆 이름, CPU log-mel 은 에너지 순으로 선
     fig, axes = plt.subplots(1, 2, figsize=(7.6, 3.5))
@@ -527,6 +550,10 @@ def main():
         xs_c = [LAT[n]["E"]["datasheet"] for n in cpu_names]
         ys_c = [mean_sd(ACC[n][key])[0] for n in cpu_names]
         ax.plot(xs_c, ys_c, "-", color=GC["cpu"], lw=1.0, alpha=0.6, zorder=1)
+        npu_names = sorted([n for n in names if DG[n] == "npu" and not est[n]], key=lambda n: LAT[n]["E"]["datasheet"])
+        if len(npu_names) > 1:          # NPU 전처리 계열 (②′ + 변형, 보드 실측) — 점선 (2026-10-19 오후 지시)
+            ax.plot([LAT[n]["E"]["datasheet"] for n in npu_names], [mean_sd(ACC[n][key])[0] for n in npu_names], ls=":", color=GC["npu"],
+                    lw=1.1, alpha=0.8, zorder=1)
         for name in names:
             L = LAT[name]; col = GC[DG[name]]
             es = [L["E"][k] for k in curve_src]
@@ -569,8 +596,8 @@ def main():
     # 그림 2 — 판단 1회 지연 분해
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.8, 3.4), gridspec_kw={"width_ratios": [5.6, 1.6]})   # 구성 7개 — 눈금 이름이 겹치지 않게
     segs = [("pre", "CPU 전처리", "white", "////"), ("load", "입력 적재(+출력)", "0.75", ""), ("infer", "NPU 추론", "0.35", "")]
-    xs = np.arange(len(names))
-    for ax, items, labels in ((ax1, [LAT[n] for n in names], [DS[n] + ("\n(추정)" if est[n] else "") for n in names]), (ax2, [LAT_M4], [M4S])):
+    xs = np.arange(len(main_names))
+    for ax, items, labels in ((ax1, [LAT[n] for n in main_names], [DS[n] + ("\n(추정)" if est[n] else "") for n in main_names]), (ax2, [LAT_M4], [M4S])):
         bottom = np.zeros(len(items))
         for key, lab, col, hatch in segs:
             vals = np.array([(L["load"] + L["out"]) if key == "load" else L[key] for L in items])
@@ -711,6 +738,7 @@ def main():
                                          f"{DN['(a)']} 는 보드 미실측 — 적재·출력은 {DN['④']} 실측, 추론은 합성 사이클 ÷ CNN 클럭 (추정).",
                                          f"{DN['②′']} 는 두 네트워크(NPU 필터뱅크 p1 + 2D CNN p2)를 동시 적재한 보드 실측 — CPU 전처리 열 = p1 출력의 |cos|+|sin|·8위치 합·정수 로그 (NPU 전원 켜진 채 → 에너지는 P_load 로), "
                                          f"입력 적재 열 = 두 적재 + 네트워크 전환(층 레지스터 재설정), 추론 열 = p1 + p2. 판단 주기 256 ms (다른 구성 250 ms). 구간별 값은 numbers.json latency.②′.detail.",
+                                         f"{DN['②′ b64']} / {DN['②′ f31']} / {DN['②′ b64f31']} 은 {DN['②′']} 의 대역·프레임 수를 늘린 변형 (사전 등록 docs/results/fe-curve-design.md) — 같은 두 네트워크 보드 실측, 같은 열 정의. 예측·하한과의 비교는 numbers.json variants.②′.measured.",
                                          "파레토 앞면: 점 추정(데이터시트 에너지, 시드 평균) 기준으로 에너지 ≤ 이고 정확도 ≥ 인 다른 구성이 없는 점."])
 
     hdr3 = ["비교 (앞 − 뒤)", "n", f"macro-F1 {TR['testL_S3']} (주)", f"F1 {TR['real31L']}", f"mAP {TR['real31L']}", f"macro-F1 {TR['testL']}"]

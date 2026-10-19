@@ -88,6 +88,8 @@ def main():
         for x, y in zip(s, fe):
             assert abs(x["thr"] - y["thr"]) < 1e-9 and abs(x["testL"]["f1"] - y["test_f1_L"]) < 1e-9, f"{name}: fe_eval 과 시드 정렬이 다르다"
         e = measured.get(name)
+        if e is None and f"energy.{name}" in num:          # 보드 실측 뒤 make_paper_assets 가 적은 값 (2026-10-19 오후 지시로 실측)
+            e = num[f"energy.{name}"]["value"]["datasheet"]
         pts[name] = {"energy": pred if e is None else e, "src": "예측 (fe-curve-design.md 4절) — 잠정" if e is None else "보드 실측 × 데이터시트",
                      "f1": [x["testL_S3"]["f1"] for x in s], "ext_f1": [x["ext"]["f1"] for x in s],
                      "ext_map": mean([y["ext_map_real31L"] for y in fe]) if fe else None, "n": len(s)}

@@ -70,6 +70,63 @@
       "estimated_latency": false
     },
     {
+      "name": "②′ b64",
+      "long": "②′ 변형 b64 — 64 대역 × 16 프레임 (p1 Conv1d 64→128, LO 1627)",
+      "slt": "②′ b64",
+      "v4eval": null,
+      "stage3": null,
+      "fe_eval": "fe_eval_b64.json",
+      "board_log": "fe_b64",
+      "two_networks": true,
+      "variant_of": "②′",
+      "synth_dir": "safesound_fe_b64_p2_v4d",
+      "synth_dir_p1": "safesound_fe_b64_p1_v4d",
+      "framing": null,
+      "model": "ai85safesoundfe_b64",
+      "model_desc": "p1 NPU Conv1d 64→128 k=8 (512탭 Gabor 필터뱅크 cos/sin 64쌍, wide int32, 판단당 64위치) → CPU |cos|+|sin|·8위치 합·정수 로그 (64×4 값) → p2 2D CNN (1×64×16). 두 네트워크 동시 적재, 판단 주기 256 ms",
+      "preproc": "NPU 필터뱅크 (선형) + CPU 정수 로그",
+      "marker": "p",
+      "estimated_latency": false
+    },
+    {
+      "name": "②′ f31",
+      "long": "②′ 변형 f31 — 32 대역 × 31 프레임 (p1 입력 71 위치, 8위치 간격)",
+      "slt": "②′ f31",
+      "v4eval": null,
+      "stage3": null,
+      "fe_eval": "fe_eval_f31.json",
+      "board_log": "fe_f31",
+      "two_networks": true,
+      "variant_of": "②′",
+      "synth_dir": "safesound_fe_f31_p2_v4d",
+      "synth_dir_p1": "safesound_fe_f31_p1_v4d",
+      "framing": null,
+      "model": "ai85safesoundfe_f31",
+      "model_desc": "p1 NPU Conv1d 64→64 k=8 (Gabor 32쌍), 입력 71 위치(이전 8 + 새 63) → 출력 64 위치 → CPU 정수 로그 32×8 값/판단 → p2 2D CNN (1×32×31). 두 네트워크 동시 적재, 판단 주기 256 ms",
+      "preproc": "NPU 필터뱅크 (선형) + CPU 정수 로그",
+      "marker": "h",
+      "estimated_latency": false
+    },
+    {
+      "name": "②′ b64f31",
+      "long": "②′ 변형 b64f31 — 64 대역 × 31 프레임",
+      "slt": "②′ b64f31",
+      "v4eval": null,
+      "stage3": null,
+      "fe_eval": "fe_eval_b64f31.json",
+      "board_log": "fe_b64f31",
+      "two_networks": true,
+      "variant_of": "②′",
+      "synth_dir": "safesound_fe_b64f31_p2_v4d",
+      "synth_dir_p1": "safesound_fe_b64f31_p1_v4d",
+      "framing": null,
+      "model": "ai85safesoundfe_b64f31",
+      "model_desc": "p1 NPU Conv1d 64→128 k=8 (Gabor 64쌍), 입력 71 위치 → CPU 정수 로그 64×8 값/판단 → p2 2D CNN (1×64×31). 두 네트워크 동시 적재, 판단 주기 256 ms",
+      "preproc": "NPU 필터뱅크 (선형) + CPU 정수 로그",
+      "marker": "d",
+      "estimated_latency": false
+    },
+    {
       "name": "가 u1000",
       "long": "후보 가 (간격 1000, 멜 32)",
       "slt": "가 u1000",
@@ -164,15 +221,47 @@
           -11
         ]
       },
-      "(a)": {
-        "name": "NPU 근사 log",
-        "short": "NPU 근사 log",
-        "tag": "NPU 근사 log",
+      "②′": {
+        "name": "NPU 전처리 (Gabor 필터뱅크)",
+        "short": "NPU 전처리\n(Gabor)",
+        "tag": "NPU 전처리 (Gabor)",
+        "group": "npu",
+        "offset": [
+          0,
+          -27
+        ],
+        "ha": "center"
+      },
+      "②′ b64": {
+        "name": "NPU 전처리 64 대역",
+        "short": "NPU 전처리\n64 대역",
+        "tag": "64 대역",
+        "group": "npu",
+        "offset": [
+          7,
+          -13
+        ]
+      },
+      "②′ f31": {
+        "name": "NPU 전처리 31 프레임",
+        "short": "NPU 전처리\n31 프레임",
+        "tag": "31 프레임",
         "group": "npu",
         "offset": [
           7,
           -11
         ]
+      },
+      "②′ b64f31": {
+        "name": "NPU 전처리 64 대역·31 프레임",
+        "short": "NPU 전처리\n64 대역·31 프레임",
+        "tag": "64 대역·31 프레임",
+        "group": "npu",
+        "offset": [
+          -6,
+          6
+        ],
+        "ha": "right"
       },
       "가 u1000": {
         "name": "CPU log-mel, 간격 62.5 ms (멜 32)",
@@ -215,16 +304,15 @@
           5
         ]
       },
-      "②′": {
-        "name": "NPU 전처리 (Gabor 필터뱅크)",
-        "short": "NPU 전처리\n(Gabor)",
-        "tag": "NPU 전처리 (Gabor)",
+      "(a)": {
+        "name": "NPU 근사 log",
+        "short": "NPU 근사 log",
+        "tag": "NPU 근사 log",
         "group": "npu",
         "offset": [
-          0,
-          -27
-        ],
-        "ha": "center"
+          7,
+          -11
+        ]
       }
     },
     "m4": {

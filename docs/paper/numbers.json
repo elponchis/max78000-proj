@@ -150,6 +150,156 @@
   "source": "data/external_eval/fe_eval.json",
   "field": "seeds[*].ext_map_real31L"
  },
+ "acc.②′ b64.f1_S3": {
+  "value": {
+   "mean": 0.6873188092037333,
+   "sd": 0.004873395478301463,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ b64].seeds[*].testL_S3.f1"
+ },
+ "acc.②′ b64.f1_L": {
+  "value": {
+   "mean": 0.6634504894295424,
+   "sd": 0.011832523092873153,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ b64].seeds[*].testL.f1"
+ },
+ "acc.②′ b64.ext_f1": {
+  "value": {
+   "mean": 0.5042225842302427,
+   "sd": 0.02149437783087209,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ b64].seeds[*].ext.f1"
+ },
+ "acc.②′ b64.scream_S3": {
+  "value": {
+   "mean": 0.3880597014925373,
+   "sd": 0.012925752295290133,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ b64].seeds[*].testL_S3.scream_recall"
+ },
+ "acc.②′ b64.ext_map": {
+  "value": {
+   "mean": 0.8222882762263904,
+   "sd": 0.003067345573178018,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/fe_eval_b64.json",
+  "field": "seeds[*].ext_map_real31L"
+ },
+ "acc.②′ f31.f1_S3": {
+  "value": {
+   "mean": 0.6547691054376502,
+   "sd": 0.010547562818043373,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ f31].seeds[*].testL_S3.f1"
+ },
+ "acc.②′ f31.f1_L": {
+  "value": {
+   "mean": 0.6338763468287164,
+   "sd": 0.012166572876964203,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ f31].seeds[*].testL.f1"
+ },
+ "acc.②′ f31.ext_f1": {
+  "value": {
+   "mean": 0.4653460320112402,
+   "sd": 0.00625581376243002,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ f31].seeds[*].ext.f1"
+ },
+ "acc.②′ f31.scream_S3": {
+  "value": {
+   "mean": 0.2985074626865672,
+   "sd": 0.04893610839031344,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ f31].seeds[*].testL_S3.scream_recall"
+ },
+ "acc.②′ f31.ext_map": {
+  "value": {
+   "mean": 0.8183937473517325,
+   "sd": 0.011564459887440199,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/fe_eval_f31.json",
+  "field": "seeds[*].ext_map_real31L"
+ },
+ "acc.②′ b64f31.f1_S3": {
+  "value": {
+   "mean": 0.6903090383756183,
+   "sd": 0.020834378294990293,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ b64f31].seeds[*].testL_S3.f1"
+ },
+ "acc.②′ b64f31.f1_L": {
+  "value": {
+   "mean": 0.6728819186153571,
+   "sd": 0.02174356193922667,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ b64f31].seeds[*].testL.f1"
+ },
+ "acc.②′ b64f31.ext_f1": {
+  "value": {
+   "mean": 0.5080261925080063,
+   "sd": 0.023053828067126317,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ b64f31].seeds[*].ext.f1"
+ },
+ "acc.②′ b64f31.scream_S3": {
+  "value": {
+   "mean": 0.3283582089552239,
+   "sd": 0.0466044626746149,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/scream_listened_test.json",
+  "field": "score.configs[②′ b64f31].seeds[*].testL_S3.scream_recall"
+ },
+ "acc.②′ b64f31.ext_map": {
+  "value": {
+   "mean": 0.8264913873730627,
+   "sd": 0.02039301515662231,
+   "n": 3
+  },
+  "unit": "",
+  "source": "data/external_eval/fe_eval_b64f31.json",
+  "field": "seeds[*].ext_map_real31L"
+ },
  "acc.가 u1000.f1_S3": {
   "value": {
    "mean": 0.7541726024987172,
@@ -458,6 +608,111 @@
   "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
   "note": "추정(실측 지연 × 공개 전력)"
  },
+ "latency.②′ b64": {
+  "value": {
+   "pre": 1.67773,
+   "load": 0.66519,
+   "infer": 1.3054199999999998,
+   "out": 0.00763,
+   "total": 3.6559699999999995,
+   "detail": {
+    "load1": 0.2813,
+    "cfg1": 0.028030000000000003,
+    "infer1": 0.20267,
+    "cpu": 1.67773,
+    "load2": 0.26683,
+    "cfg2": 0.08903,
+    "infer2": 1.10275,
+    "unload": 0.00763,
+    "total": 3.65591
+   },
+   "pre_power": "load"
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_fe_b64.log",
+  "field": "load/infer/unload us max (1000회 최악); 전처리 보드 실측 cpu 구간 (|cos|+|sin| → 8위치 합 → 정수 로그 32×4 값 → 버퍼 밀기 → 입력 워드 포장), NPU 전원 켜진 채 → P_load 로 계산; 적재 열에 네트워크 전환(cfg1+cfg2) 포함"
+ },
+ "energy.②′ b64": {
+  "value": {
+   "datasheet": 79.71527479999999,
+   "literature": 151.89225399999998,
+   "moosmann": 104.76659199999999
+  },
+  "unit": "µJ",
+  "source": "data/logs-local/board_v4d_fe_b64.log × docs/paper/paper_config.json power_sources",
+  "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
+  "note": "추정(실측 지연 × 공개 전력)"
+ },
+ "latency.②′ f31": {
+  "value": {
+   "pre": 1.66114,
+   "load": 0.68304,
+   "infer": 1.1705,
+   "out": 0.00786,
+   "total": 3.5225400000000002,
+   "detail": {
+    "load1": 0.31193,
+    "cfg1": 0.02537,
+    "infer1": 0.13885,
+    "cpu": 1.66114,
+    "load2": 0.25847000000000003,
+    "cfg2": 0.08727,
+    "infer2": 1.0316500000000002,
+    "unload": 0.00786,
+    "total": 3.52254
+   },
+   "pre_power": "load"
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_fe_f31.log",
+  "field": "load/infer/unload us max (1000회 최악); 전처리 보드 실측 cpu 구간 (|cos|+|sin| → 8위치 합 → 정수 로그 32×4 값 → 버퍼 밀기 → 입력 워드 포장), NPU 전원 켜진 채 → P_load 로 계산; 적재 열에 네트워크 전환(cfg1+cfg2) 포함"
+ },
+ "energy.②′ f31": {
+  "value": {
+   "datasheet": 74.2286654,
+   "literature": 142.25544200000002,
+   "moosmann": 100.000392
+  },
+  "unit": "µJ",
+  "source": "data/logs-local/board_v4d_fe_f31.log × docs/paper/paper_config.json power_sources",
+  "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
+  "note": "추정(실측 지연 × 공개 전력)"
+ },
+ "latency.②′ b64f31": {
+  "value": {
+   "pre": 3.31914,
+   "load": 0.94617,
+   "infer": 2.22197,
+   "out": 0.00671,
+   "total": 6.493989999999999,
+   "detail": {
+    "load1": 0.31264,
+    "cfg1": 0.027809999999999998,
+    "infer1": 0.22047999999999998,
+    "cpu": 3.31914,
+    "load2": 0.5162899999999999,
+    "cfg2": 0.08943000000000001,
+    "infer2": 2.00149,
+    "unload": 0.00671,
+    "total": 6.49389
+   },
+   "pre_power": "load"
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_fe_b64f31.log",
+  "field": "load/infer/unload us max (1000회 최악); 전처리 보드 실측 cpu 구간 (|cos|+|sin| → 8위치 합 → 정수 로그 32×4 값 → 버퍼 밀기 → 입력 워드 포장), NPU 전원 켜진 채 → P_load 로 계산; 적재 열에 네트워크 전환(cfg1+cfg2) 포함"
+ },
+ "energy.②′ b64f31": {
+  "value": {
+   "datasheet": 138.7371015,
+   "literature": 265.261345,
+   "moosmann": 185.048228
+  },
+  "unit": "µJ",
+  "source": "data/logs-local/board_v4d_fe_b64f31.log × docs/paper/paper_config.json power_sources",
+  "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
+  "note": "추정(실측 지연 × 공개 전력)"
+ },
  "latency.가 u1000": {
   "value": {
    "pre": 2.26409,
@@ -592,7 +847,7 @@
   "unit": "",
   "source": "data/external_eval/scream_listened_test.json",
   "field": "score.configs[②′ b64 | ②′ f31 | ②′ b64f31].seeds[*].testL_S3.f1 (시드 평균)",
-  "note": "보드 미실측 — 그림·표 제외 (fe-curve-design.md 7절)"
+  "note": "보드 실측 (fe-curve-design.md 8절) — 그림 1·표 2 포함"
  },
  "variants.②′.energy_lower_bound": {
   "value": {
@@ -615,8 +870,172 @@
   },
   "unit": "µJ",
   "source": "data/logs-local/board_v4d_fe.log × docs/paper/paper_config.json power_sources",
-  "field": "하한 = ②′ 추정 에너지 + ②′ cpu 구간(가속기 메모리 2,048 워드 읽기) × P_load 한 번 더; ga = 가 u1000 추정 에너지",
-  "note": "추정(실측 지연 × 공개 전력)의 하한"
+  "field": "실측 전 하한 (2026-10-19 오전) = ②′ 추정 에너지 + ②′ cpu 구간(가속기 메모리 2,048 워드 읽기) × P_load 한 번 더; ga = 가 u1000 추정 에너지",
+  "note": "추정(실측 지연 × 공개 전력)의 하한 — 기록용, 실측값은 variants.②′.measured"
+ },
+ "variants.②′.measured": {
+  "value": {
+   "②′ b64": {
+    "total_ms": 3.6559699999999995,
+    "detail_ms": {
+     "load1": 0.2813,
+     "cfg1": 0.028030000000000003,
+     "infer1": 0.20267,
+     "cpu": 1.67773,
+     "load2": 0.26683,
+     "cfg2": 0.08903,
+     "infer2": 1.10275,
+     "unload": 0.00763,
+     "total": 3.65591
+    },
+    "E_uJ": {
+     "datasheet": 79.71527479999999,
+     "literature": 151.89225399999998,
+     "moosmann": 104.76659199999999
+    },
+    "predicted_datasheet_uJ": 76.0,
+    "lower_bound_datasheet_uJ": 49.8474789,
+    "deviation_from_prediction_pct": 4.8885194736841955,
+    "delta_vs_fe_ms": {
+     "load1": -0.00020999999999998797,
+     "cfg1": 0.005050000000000002,
+     "infer1": 0.12235,
+     "cpu": 0.8378899999999999,
+     "load2": 0.13297,
+     "cfg2": 0.0030000000000000027,
+     "infer2": 0.57122,
+     "unload": 0.0011999999999999997
+    },
+    "delta_total_vs_fe_ms": 1.6734699999999996,
+    "cpu_share_of_delta": 0.5006901826743235,
+    "npu_share_of_delta": 0.4144502142255314,
+    "dominated_by_cpu_curve": {
+     "datasheet": [
+      "가 u1000",
+      "다 u800"
+     ],
+     "literature": [
+      "가 u1000",
+      "다 u800"
+     ],
+     "moosmann": [
+      "가 u1000",
+      "다 u800"
+     ]
+    },
+    "mismatch": 0,
+    "n_iter": 1000,
+    "src": "data/logs-local/board_v4d_fe_b64.log"
+   },
+   "②′ f31": {
+    "total_ms": 3.5225400000000002,
+    "detail_ms": {
+     "load1": 0.31193,
+     "cfg1": 0.02537,
+     "infer1": 0.13885,
+     "cpu": 1.66114,
+     "load2": 0.25847000000000003,
+     "cfg2": 0.08727,
+     "infer2": 1.0316500000000002,
+     "unload": 0.00786,
+     "total": 3.52254
+    },
+    "E_uJ": {
+     "datasheet": 74.2286654,
+     "literature": 142.25544200000002,
+     "moosmann": 100.000392
+    },
+    "predicted_datasheet_uJ": 72.0,
+    "lower_bound_datasheet_uJ": 49.8474789,
+    "deviation_from_prediction_pct": 3.095368611111107,
+    "delta_vs_fe_ms": {
+     "load1": 0.030420000000000003,
+     "cfg1": 0.0023899999999999998,
+     "infer1": 0.05853000000000001,
+     "cpu": 0.8213,
+     "load2": 0.12461000000000003,
+     "cfg2": 0.001240000000000005,
+     "infer2": 0.5001200000000002,
+     "unload": 0.0014300000000000007
+    },
+    "delta_total_vs_fe_ms": 1.5400400000000003,
+    "cpu_share_of_delta": 0.5332978364198332,
+    "npu_share_of_delta": 0.362750318173554,
+    "dominated_by_cpu_curve": {
+     "datasheet": [
+      "가 u1000",
+      "다 u800"
+     ],
+     "literature": [
+      "가 u1000",
+      "다 u800"
+     ],
+     "moosmann": [
+      "가 u1000",
+      "다 u800"
+     ]
+    },
+    "mismatch": 0,
+    "n_iter": 1000,
+    "src": "data/logs-local/board_v4d_fe_f31.log"
+   },
+   "②′ b64f31": {
+    "total_ms": 6.493989999999999,
+    "detail_ms": {
+     "load1": 0.31264,
+     "cfg1": 0.027809999999999998,
+     "infer1": 0.22047999999999998,
+     "cpu": 3.31914,
+     "load2": 0.5162899999999999,
+     "cfg2": 0.08943000000000001,
+     "infer2": 2.00149,
+     "unload": 0.00671,
+     "total": 6.49389
+    },
+    "E_uJ": {
+     "datasheet": 138.7371015,
+     "literature": 265.261345,
+     "moosmann": 185.048228
+    },
+    "predicted_datasheet_uJ": 140.0,
+    "lower_bound_datasheet_uJ": 49.8474789,
+    "deviation_from_prediction_pct": -0.9020703571428612,
+    "delta_vs_fe_ms": {
+     "load1": 0.03112999999999999,
+     "cfg1": 0.0048299999999999975,
+     "infer1": 0.14016,
+     "cpu": 2.4793,
+     "load2": 0.38242999999999994,
+     "cfg2": 0.003400000000000014,
+     "infer2": 1.46996,
+     "unload": 0.00027999999999999987
+    },
+    "delta_total_vs_fe_ms": 4.511489999999999,
+    "cpu_share_of_delta": 0.5495523651831213,
+    "npu_share_of_delta": 0.3568931771986639,
+    "dominated_by_cpu_curve": {
+     "datasheet": [
+      "가 u1000",
+      "다 u800"
+     ],
+     "literature": [
+      "가 u1000",
+      "다 u800"
+     ],
+     "moosmann": [
+      "가 u1000",
+      "다 u800"
+     ]
+    },
+    "mismatch": 0,
+    "n_iter": 1000,
+    "src": "data/logs-local/board_v4d_fe_b64f31.log"
+   }
+  },
+  "unit": "ms / µJ",
+  "source": "latency/energy 항목 (보드 실측 × paper_config.json power_sources); 예측은 tools/fe_curve_judge.py VARIANTS (fe-curve-design.md 4절)",
+  "field": "실측 에너지를 예측·하한과 나란히; 편차 = (실측 − 예측)/예측; ②′ 대비 증가분의 구간 분해 (cpu = 가속기 메모리 읽기 + 정수 로그); dominated_by_cpu_curve[출처] = 에너지 ≤ 이고 macro-F1 ≥ 인 CPU log-mel 구성",
+  "note": "추정(실측 지연 × 공개 전력)"
  },
  "latency.M4 CMSIS-NN": {
   "value": {
@@ -690,6 +1109,24 @@
  },
  "hop_fraction.②′": {
   "value": 0.00793,
+  "unit": "비",
+  "source": "latency 항목",
+  "field": "판단 1회 / hop"
+ },
+ "hop_fraction.②′ b64": {
+  "value": 0.014623879999999999,
+  "unit": "비",
+  "source": "latency 항목",
+  "field": "판단 1회 / hop"
+ },
+ "hop_fraction.②′ f31": {
+  "value": 0.014090160000000001,
+  "unit": "비",
+  "source": "latency 항목",
+  "field": "판단 1회 / hop"
+ },
+ "hop_fraction.②′ b64f31": {
+  "value": 0.025975959999999996,
   "unit": "비",
   "source": "latency 항목",
   "field": "판단 1회 / hop"
@@ -1409,12 +1846,15 @@
   "display_names": {
    "configs": {
     "④": "원본 파형 (전처리 없음)",
-    "(a)": "NPU 근사 log",
+    "②′": "NPU 전처리 (Gabor 필터뱅크)",
+    "②′ b64": "NPU 전처리 64 대역",
+    "②′ f31": "NPU 전처리 31 프레임",
+    "②′ b64f31": "NPU 전처리 64 대역·31 프레임",
     "가 u1000": "CPU log-mel, 간격 62.5 ms (멜 32)",
     "다 u800": "CPU log-mel, 간격 50 ms",
     "간격 400": "CPU log-mel, 간격 25 ms",
     "①′": "CPU log-mel, 간격 16 ms",
-    "②′": "NPU 전처리 (Gabor 필터뱅크)"
+    "(a)": "NPU 근사 log"
    },
    "m4": "CPU 추론 (Cortex-M4F)",
    "truth": {
