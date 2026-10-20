@@ -1,0 +1,42 @@
+{
+ "asum": {
+  "ok": true,
+  "rc": 0,
+  "errors": [],
+  "yaml": "synthesis/rb-asum-hwc.yaml",
+  "info": {
+   "Kernel offset": "Kernel offset       = [0, 60]",
+   "Kernel length": "Kernel length       = [57, 29]"
+  }
+ },
+ "aavg": {
+  "ok": true,
+  "rc": 0,
+  "errors": [],
+  "yaml": "synthesis/rb-aavg-hwc.yaml",
+  "info": {
+   "Kernel offset": "Kernel offset       = [0, 60]",
+   "Kernel length": "Kernel length       = [57, 4]"
+  }
+ },
+ "c": {
+  "ok": true,
+  "rc": 0,
+  "errors": [],
+  "yaml": "synthesis/rb-c-hwc.yaml",
+  "info": {
+   "Kernel offset": "Kernel offset       = [0, 60]",
+   "Kernel length": "Kernel length       = [57, 4]"
+  }
+ },
+ "b": {
+  "ok": true,
+  "rc": 0,
+  "errors": [],
+  "yaml": "synthesis/rb-b-hwc.yaml",
+  "info": {
+   "Kernel offset": "Kernel offset       = [0, 60, 0, 60, 0, 60]",
+   "Kernel length": "Kernel length       = [57, 29, 57, 29, 57, 29]"
+  }
+ }
+}

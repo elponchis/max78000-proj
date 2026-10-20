@@ -1,0 +1,29 @@
+---
+# NPU 내부 합산 안 C — **합성기 수용 검사용** (tools/npu_readback_synth_check.py 가 만들었다, 2026-10-21).
+#   설계: docs/results/npu-readback-design.md 1절. 층 A = ②′ p1 (Conv1d 64→64 k=8) + Abs, 8비트 (출력 시프트 1.0).
+#   층 B = AvgPool1d(8) → Conv1d(64→32, k=1) 가중치 0.5, **8비트** 출력 (CPU 는 256칸 LUT).
+#   입력 (64, 64) int8 — ②′ 와 같은 판단 1회 청크. 보드용이 아니다 (p2 와의 가중치 배치 --weight-start 없음).
+arch: ai85safesoundrb_c
+dataset: SafeSoundFEP1
+
+layers:
+  # 층 A1: Gabor conv + Abs → 8비트 (시프트는 체크포인트 output_shift)
+  - pad: 0
+    activate: Abs
+    in_offset: 0x0000
+    out_offset: 0x2000
+    processors: 0xffffffffffffffff
+    data_format: HWC
+    operation: Conv1d
+    kernel_size: 8
+  # 층 B: 8위치 평균 풀링(floor) → 1×1 cos+sin 합 (가중치 0.5) → 8비트
+  - pad: 0
+    activate: None
+    in_offset: 0x2000
+    out_offset: 0x4000
+    processors: 0xffffffffffffffff
+    operation: Conv1d
+    kernel_size: 1
+    avg_pool: 8
+    pool_stride: 8
+    output: true
