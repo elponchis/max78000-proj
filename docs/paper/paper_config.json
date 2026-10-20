@@ -229,12 +229,12 @@
       },
       "②′": {
         "name": "NPU 전처리 (Gabor 필터뱅크)",
-        "short": "NPU 전처리\n(Gabor)",
-        "tag": "NPU 전처리 (Gabor)",
+        "short": "NPU 전처리\n(Gabor 필터뱅크)",
+        "tag": "NPU 전처리\n(Gabor 필터뱅크)",
         "group": "npu",
         "offset": [
           0,
-          -27
+          -24
         ],
         "ha": "center"
       },
