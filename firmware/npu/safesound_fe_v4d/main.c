@@ -74,6 +74,9 @@ enum { S_LOAD1, S_CFG1, S_INFER1, S_CPU, S_LOAD2, S_CFG2, S_INFER2, S_UNLOAD, N_
 static const char *seg_name[N_SEG] = { "load1", "cfg1", "infer1", "cpu", "load2", "cfg2", "infer2", "unload" };
 static uint32_t t_seg[N_SEG][N_ITER];
 static uint32_t t_total[N_ITER];
+#ifdef FE_LOG_AB
+static uint32_t t_seg_a[N_SEG][N_ITER], t_total_a[N_ITER], bad_a[3];   // 패스 A(옛 로그) 보관 — 부팅 직후 출력은 시리얼이 놓치므로 while(1) 에서 되풀이한다
+#endif
 
 // ── 사이클 카운터: measure_main.c 와 같다 (MAX78000 M4 는 DWT CYCCNT 가 없어 SysTick) ──
 static int use_systick;
@@ -351,7 +354,7 @@ static uint32_t diag_first_bad(const uint32_t *ptr, uint32_t *word, uint32_t *go
 
 // ── CPU 단: p1 출력(int32, 메모리에 그대로)을 읽어 프레임 4개의 밴드 에너지 → 정수 로그 → int8 ──
 //   채널 c 의 위치 p 워드: 그룹 g = c>>2 의 기준 주소 + (4p + (c&3))·4.  밴드 b 는 채널 2b(cos)·2b+1(sin) — 같은 그룹.
-static void fe_cpu_frames(int first_frame)
+static inline __attribute__((always_inline)) void fe_cpu_frames_impl(int first_frame, int8_t (*lq)(int32_t, int32_t, int32_t))
 {
     for (int b = 0; b < FE_NBAND; b++) {
         const int c = 2 * b;                                   // cos 채널 (sin 은 c+1, 같은 블록의 다음 워드)
@@ -367,10 +370,22 @@ static void fe_cpu_frames(int first_frame)
                 e += (uint32_t)(y0 < 0 ? -y0 : y0) + (uint32_t)(y1 < 0 ? -y1 : y1);
                 p += FE_P1_OUT_STRIDE;
             }
-            fb[b][dst] = log2_q8_to_int8(log2_q8(e), FE_LO_Q8, FE_SPAN_Q8);
+            fb[b][dst] = lq(log2_q8(e), FE_LO_Q8, FE_SPAN_Q8);
         }
     }
 }
+#ifdef FE_LOG_AB
+// -DFE_LOG_AB (feat/log32, fe-curve-design.md 10절): 옛 64비트 log2_q8_to_int8 (_ref) 과 새 32비트 구현을 한 바이너리에 넣고
+// 같은 POR 세션에서 옛 → 새 순서로 N_ITER 회씩 잰다. 함수 포인터는 always_inline 본체에서 상수로 접혀 직접 호출(bl)이 된다 —
+// 빌드 뒤 objdump 로 blx 가 없는지 확인한다. fe_log_sel 분기 한 번(수 사이클)은 두 패스에 같이 든다.
+#include "log2_q8_ref.inc"
+static int fe_log_sel = 0;                                 // 0 = 옛(64비트 ref), 1 = 새(32비트)
+static void fe_cpu_frames_ref(int ff) { fe_cpu_frames_impl(ff, log2_q8_to_int8_ref); }
+static void fe_cpu_frames_new(int ff) { fe_cpu_frames_impl(ff, log2_q8_to_int8); }
+static void fe_cpu_frames(int ff) { if (fe_log_sel) fe_cpu_frames_new(ff); else fe_cpu_frames_ref(ff); }
+#else
+static void fe_cpu_frames(int ff) { fe_cpu_frames_impl(ff, log2_q8_to_int8); }
+#endif
 
 // 판단 1회의 CPU 몫: 버퍼 밀기(4프레임) + 새 4프레임 + p2 입력 워드 포장
 #ifndef FE_CPU_SPLIT
@@ -390,6 +405,24 @@ static void fe_cpu_hop(void)
 // 주 값(옛 펌웨어 1.982 ms)은 바꾸지 않고 비율만 쓴다.
 static uint32_t e_hop[FE_NBAND][FE_FRAMES_PER_HOP];
 static uint32_t t_cpu_rd[N_ITER], t_cpu_lg[N_ITER];
+#ifdef FE_LOG_AB
+static uint32_t t_cpu_rd_a[N_ITER], t_cpu_lg_a[N_ITER];
+#endif
+static inline __attribute__((always_inline)) void split_phase_b(int8_t (*lq)(int32_t, int32_t, int32_t))
+{
+    for (int b = 0; b < FE_NBAND; b++) {                       // (b) 로그 + 밀기
+        memmove(fb[b], fb[b] + FE_FRAMES_PER_HOP, FE_NFRAME - FE_FRAMES_PER_HOP);
+        for (int f = 0; f < FE_FRAMES_PER_HOP; f++)
+            fb[b][FE_NFRAME - FE_FRAMES_PER_HOP + f] = lq(log2_q8(e_hop[b][f]), FE_LO_Q8, FE_SPAN_Q8);
+    }
+}
+#ifdef FE_LOG_AB
+static void split_phase_b_ref(void) { split_phase_b(log2_q8_to_int8_ref); }
+static void split_phase_b_new(void) { split_phase_b(log2_q8_to_int8); }
+static inline void split_phase_b_sel(void) { if (fe_log_sel) split_phase_b_new(); else split_phase_b_ref(); }
+#else
+static inline void split_phase_b_sel(void) { split_phase_b(log2_q8_to_int8); }
+#endif
 static uint32_t split_rd, split_lg;
 static void fe_cpu_hop(void)
 {
@@ -410,11 +443,7 @@ static void fe_cpu_hop(void)
         }
     }
     uint32_t s1 = tick();
-    for (int b = 0; b < FE_NBAND; b++) {                       // (b) 로그 + 밀기 + 포장
-        memmove(fb[b], fb[b] + FE_FRAMES_PER_HOP, FE_NFRAME - FE_FRAMES_PER_HOP);
-        for (int f = 0; f < FE_FRAMES_PER_HOP; f++)
-            fb[b][FE_NFRAME - FE_FRAMES_PER_HOP + f] = log2_q8_to_int8(log2_q8(e_hop[b][f]), FE_LO_Q8, FE_SPAN_Q8);
-    }
+    split_phase_b_sel();                                       // (b) 로그 + 밀기 (+ 아래 포장)
     const int8_t *q = &fb[0][0];
     for (int i = 0; i < FE_P2_IN_WORDS; i++) p2_in[i] = (uint8_t)q[i];
     uint32_t s2 = tick();
@@ -540,6 +569,16 @@ int main(void)
     //   측정 구간 밖에서 버퍼의 슬롯 4..15 에 기대 특징의 프레임 0..11 을 넣어, 4프레임 밀기 뒤 새 4프레임을 더하면
     //   버퍼가 기대 특징(창 전체)과 같아지게 한다 → p2 입력이 매 회 같고 비트 대조가 된다.
     uint32_t bad_p1 = 0, bad_feat = 0, bad_p2 = 0;
+#ifdef FE_LOG_AB
+#define FE_N_PASS 2
+#else
+#define FE_N_PASS 1
+#endif
+    for (int fe_pass = 0; fe_pass < FE_N_PASS; fe_pass++) {
+#ifdef FE_LOG_AB
+    fe_log_sel = fe_pass;
+    bad_p1 = bad_feat = bad_p2 = 0;
+#endif
 #ifdef FE_DIAG_REPEAT
     // -DFE_DIAG_REPEAT (FE_DIAG 와 함께): 리셋 없이 N_ITER 회 루프를 무한 반복하며 라운드마다 누적 불일치를 찍는다 — 드문 실패의 빈도 추정용
     uint32_t round = 0, cum_p1 = 0, cum_feat = 0, cum_p2 = 0;
@@ -675,6 +714,16 @@ repeat_round:
     }
     goto repeat_round;
 #endif
+#ifdef FE_LOG_AB
+    if (fe_pass == 0) {
+        memcpy(t_seg_a, t_seg, sizeof(t_seg)); memcpy(t_total_a, t_total, sizeof(t_total));
+        bad_a[0] = bad_p1; bad_a[1] = bad_feat; bad_a[2] = bad_p2;
+#ifdef FE_CPU_SPLIT
+        memcpy(t_cpu_rd_a, t_cpu_rd, sizeof(t_cpu_rd)); memcpy(t_cpu_lg_a, t_cpu_lg, sizeof(t_cpu_lg));
+#endif
+    }
+#endif
+    }   // fe_pass
     SysTick->CTRL = 0; // 이후 MXC_Delay 금지 (measure_main.c 참조)
     cnn_disable();
 
@@ -714,6 +763,26 @@ repeat_round:
                (unsigned long)dg_odd_after_p1, (unsigned long)dg_odd_val_p1, (unsigned long)dg_odd_after_p2, (unsigned long)dg_odd_val_p2);
         for (int b = 0; b < 16; b++) printf(" %lu", (unsigned long)dg_blk[b]);
         printf("\n");
+#endif
+#ifdef FE_LOG_AB
+        printf("=== PASS A (log64 ref): %d iterations, output mismatches: %lu  (p1 %lu, feature %lu, p2 %lu)\n", N_ITER,
+               (unsigned long)(bad_a[0] + bad_a[1] + bad_a[2]), (unsigned long)bad_a[0], (unsigned long)bad_a[1], (unsigned long)bad_a[2]);
+        for (int s = 0; s < N_SEG; s++) report(seg_name[s], t_seg_a[s], SystemCoreClock);
+        report("total", t_total_a, SystemCoreClock);
+#ifdef FE_CPU_SPLIT
+        report("cpu_rd", t_cpu_rd_a, SystemCoreClock);
+        report("cpu_lg", t_cpu_lg_a, SystemCoreClock);
+#endif
+        printf("=== PASS END ===\n");
+        printf("=== PASS B (log32 new): %d iterations, output mismatches: %lu  (p1 %lu, feature %lu, p2 %lu)\n", N_ITER,
+               (unsigned long)(bad_p1 + bad_feat + bad_p2), (unsigned long)bad_p1, (unsigned long)bad_feat, (unsigned long)bad_p2);
+        for (int s = 0; s < N_SEG; s++) report(seg_name[s], t_seg[s], SystemCoreClock);
+        report("total", t_total, SystemCoreClock);
+#ifdef FE_CPU_SPLIT
+        report("cpu_rd", t_cpu_rd, SystemCoreClock);
+        report("cpu_lg", t_cpu_lg, SystemCoreClock);
+#endif
+        printf("=== PASS END ===\n");
 #endif
         printf("=== END ===\n");
         for (volatile uint32_t w = 0; w < 40000000u; w++) {}

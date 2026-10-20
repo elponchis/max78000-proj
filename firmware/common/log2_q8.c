@@ -75,10 +75,22 @@ int8_t log2_q8_to_int8(int32_t lg, int32_t lo_q8, int32_t span_q8)
     if (span_q8 < 1) {
         span_q8 = 1;
     }
-    const int64_t num = (int64_t)(lg - lo_q8) * 255;
-    int64_t q = num / span_q8;
-    if ((num % span_q8) != 0 && ((num < 0) != (span_q8 < 0))) {
-        q -= 1;                      /* 바닥 나눗셈 보정 */
+    /* ★ 32비트 연산 (2026-10-21, feat/log32). 옛 구현은 (int64_t)·255 / span 으로 **64비트 나눗셈**
+     * (`__aeabi_ldivmod`, Cortex-M4 에 하드웨어 없음) 을 불러 정수 로그 1회가 약 190 사이클이었다.
+     * d = lg − lo 를 ±2^23 으로 먼저 포화시키면 d·255 < 2^31 이고, 그 밖의 d 는 어차피 결과가
+     * ±128 포화라 출력이 같다 (span ≥ 1 에서 |d| ≥ 2^23 이면 |q| ≥ 2^23·255/span ≥ 255... 단 span 이
+     * 아주 크면 다르므로 span ≤ 2^23 에서만 동일 — 우리 span 은 2976). 전 범위 동일성은
+     * tools/log32_check.c 가 int32 전 범위·uint32 전 범위로 확인한다. */
+    int32_t d = lg - lo_q8;
+    if (d > (1 << 23)) {
+        d = (1 << 23);
+    } else if (d < -(1 << 23)) {
+        d = -(1 << 23);
+    }
+    const int32_t num = d * 255;
+    int32_t q = num / span_q8;           /* C 는 0 방향 절단 */
+    if ((num % span_q8) != 0 && num < 0) {
+        q -= 1;                          /* 바닥 나눗셈 보정 (span > 0) */
     }
     q -= 128;
     if (q < -128) {

@@ -2,4 +2,4 @@
 # 측정 빌드: LED 마킹·소프트웨어 타이머를 뺀다 (CLAUDE.md 6장 MEASURE_BUILD).
 BOARD = FTHR_RevA
 PROJ_CFLAGS += -DMEASURE_BUILD -DNET_NAME=\"safesound_fe_v4d\"
-PROJ_CFLAGS += -DFE_CPU_SPLIT   # 2026-10-21 실험 II: CPU 몫 분해 (cpu_rd / cpu_lg)
+PROJ_CFLAGS += -DFE_LOG_AB   # feat/log32: 옛/새 로그 같은 세션 비교 (기본 펌웨어 = 지연 정지, 10-20 "새 펌웨어" 계열)
