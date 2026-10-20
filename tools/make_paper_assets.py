@@ -109,6 +109,19 @@ def read_board_log_fe(tag):
     return r
 
 
+def read_board_log_split(tag):
+    """②′ -DFE_CPU_SPLIT 로그 → cpu_rd / cpu_lg 의 최악·중앙 ms + 보통 구간. KAT 셋 PASS·불일치 0 이어야 한다 (9절 실험 II)."""
+    r = read_board_log_fe(tag)
+    with open(os.path.join(LOGS, f"board_v4d_{tag}.log"), encoding="utf-8", errors="replace") as f:
+        txt = f.read()
+    for seg in ("cpu_rd", "cpu_lg"):
+        m = re.search(rf"^{seg}\s+us\s+min\s+([\d.]+)\s+med\s+([\d.]+)\s+max\s+([\d.]+)", txt, re.M)
+        assert m, (tag, seg)
+        r[seg] = float(m.group(3)) / 1000.0
+        r[seg + "_med"] = float(m.group(2)) / 1000.0
+    return r
+
+
 def pareto_front(pts):
     """pts = {이름: (에너지, 정확도)} → 지배되지 않는 이름들 (에너지 ≤ 이고 정확도 ≥ 인 다른 점이 없다; 둘 다 같으면 둘 다 남긴다)."""
     front = []
@@ -463,6 +476,22 @@ def main():
         if cid and abs(float(cp[cid]["e_datasheet_uJ"]) - LAT[c["name"]]["E"]["datasheet"]) > 1.0:
             sys.exit(f"[에러] {c['name']} 에너지(가) {LAT[c['name']]['E']['datasheet']:.1f} 가 curve-points-v4d.csv 와 1 µJ 넘게 다르다")
     SAME_FW = None
+    SPLIT = None
+    fe_cfg = next(c for c in C["configs"] if c["name"] == "②′")
+    if fe_cfg.get("board_log_split") and os.path.isfile(os.path.join(LOGS, f"board_v4d_{fe_cfg['board_log_split']}.log")):
+        bs = read_board_log_split(fe_cfg["board_log_split"])
+        assert bs["kat"] and bs["mismatch"] == 0, ("②′ split", bs)
+        rd, lg = bs["cpu_rd"], bs["cpu_lg"]
+        share_w, share_m = rd / (rd + lg), bs["cpu_rd_med"] / (bs["cpu_rd_med"] + bs["cpu_lg_med"])
+        verdict = "A" if (share_w >= 0.70 and share_m >= 0.70) else "B"
+        main_cpu = LAT["②′"]["detail"]["cpu"]
+        SPLIT = {"read_ms": rd, "log_ms": lg, "read_ms_med": bs["cpu_rd_med"], "log_ms_med": bs["cpu_lg_med"], "cpu_ms_this_run": bs["cpu"],
+                 "read_share_worst": share_w, "read_share_med": share_m, "read_pct": round(100 * share_w), "log_pct": round(100 * (1 - share_w)),
+                 "verdict": verdict, "sum_vs_cpu_pct": 100 * (rd + lg) / bs["cpu"], "main_cpu_ms": main_cpu,
+                 "sum_vs_main_cpu_pct": 100 * (rd + lg) / main_cpu, "valid": abs((rd + lg) / bs["cpu"] - 1) <= 0.02 and abs((rd + lg) / main_cpu - 1) <= 0.02,
+                 "n_iter": bs["n_iter"], "mismatch": bs["mismatch"], "total_ms_this_run": bs["total"]}
+        num("firmware.cpu_split", SPLIT, "ms", bs["path"], fe_cfg["board_log_split_note"],
+            "보드 실측 — 비율만 논문에 쓴다 (②′ 주 값 불변); 판정 A/B 는 fe-curve-design.md 9절 규칙")
     if NEWFW_FE is not None:
         NEWFW_FE["E"] = {k: energy(dict(NEWFW_FE, pre_power="load"), PS[k]) for k in curve_src}
         num("latency.②′.new_firmware", {k: NEWFW_FE[k] for k in ("pre", "load", "infer", "out", "total", "detail", "E", "n_iter", "mismatch")}, "ms / µJ", NEWFW_FE["src"],

@@ -373,6 +373,7 @@ static void fe_cpu_frames(int first_frame)
 }
 
 // 판단 1회의 CPU 몫: 버퍼 밀기(4프레임) + 새 4프레임 + p2 입력 워드 포장
+#ifndef FE_CPU_SPLIT
 static void fe_cpu_hop(void)
 {
     for (int b = 0; b < FE_NBAND; b++)
@@ -381,6 +382,46 @@ static void fe_cpu_hop(void)
     const int8_t *q = &fb[0][0];
     for (int i = 0; i < FE_P2_IN_WORDS; i++) p2_in[i] = (uint8_t)q[i];
 }
+#else
+// -DFE_CPU_SPLIT (2026-10-21, fe-curve-design.md 9절 실험 II): CPU 몫을 두 단계로 나눠 잰다.
+//   (a) cpu_rd — 가속기 메모리에서 int32 2,048 워드 읽기 + |·| + 8위치 합 (밴드·프레임별 e 까지)
+//   (b) cpu_lg — 정수 로그 128회 + 버퍼 밀기 + p2 입력 포장
+// 계산은 같고(각 e 가 독립이라 순서만 바뀜 — 결과 비트 동일, KAT 로 확인) tick 두 번이 더 든다.
+// 주 값(옛 펌웨어 1.982 ms)은 바꾸지 않고 비율만 쓴다.
+static uint32_t e_hop[FE_NBAND][FE_FRAMES_PER_HOP];
+static uint32_t t_cpu_rd[N_ITER], t_cpu_lg[N_ITER];
+static uint32_t split_rd, split_lg;
+static void fe_cpu_hop(void)
+{
+    uint32_t s0 = tick();
+    for (int b = 0; b < FE_NBAND; b++) {                       // (a) 읽기 + |·| + 합
+        const int c = 2 * b;
+        const int g = (c & 63) >> 2, slot = (c & 3) + (c >= 64 ? 4 : 0);
+        const volatile int32_t *base = (const volatile int32_t *)FE_P1_OUT_ADDR[g];
+        for (int f = 0; f < FE_FRAMES_PER_HOP; f++) {
+            const volatile int32_t *p = base + (FE_POS_PER_FRAME * f) * FE_P1_OUT_STRIDE + slot;
+            uint32_t e = 0;
+            for (int k = 0; k < FE_POOL_POS; k++) {
+                int32_t y0 = p[0], y1 = p[1];
+                e += (uint32_t)(y0 < 0 ? -y0 : y0) + (uint32_t)(y1 < 0 ? -y1 : y1);
+                p += FE_P1_OUT_STRIDE;
+            }
+            e_hop[b][f] = e;
+        }
+    }
+    uint32_t s1 = tick();
+    for (int b = 0; b < FE_NBAND; b++) {                       // (b) 로그 + 밀기 + 포장
+        memmove(fb[b], fb[b] + FE_FRAMES_PER_HOP, FE_NFRAME - FE_FRAMES_PER_HOP);
+        for (int f = 0; f < FE_FRAMES_PER_HOP; f++)
+            fb[b][FE_NFRAME - FE_FRAMES_PER_HOP + f] = log2_q8_to_int8(log2_q8(e_hop[b][f]), FE_LO_Q8, FE_SPAN_Q8);
+    }
+    const int8_t *q = &fb[0][0];
+    for (int i = 0; i < FE_P2_IN_WORDS; i++) p2_in[i] = (uint8_t)q[i];
+    uint32_t s2 = tick();
+    split_rd = (s1 - s0) & tick_mask;
+    split_lg = (s2 - s1) & tick_mask;
+}
+#endif
 
 #ifdef FE_DIAG
 static uint32_t dg_done_max[4], dg_done_to = 0, dg_done_sum[4];
@@ -585,6 +626,10 @@ repeat_round:
         t_seg[S_CFG1][i] = (c2 - c1) & tick_mask;
         t_seg[S_INFER1][i] = (c3 - c2) & tick_mask;
         t_seg[S_CPU][i] = (c5 - c4) & tick_mask;
+#ifdef FE_CPU_SPLIT
+        t_cpu_rd[i] = split_rd;
+        t_cpu_lg[i] = split_lg;
+#endif
         t_seg[S_LOAD2][i] = (c7 - c6) & tick_mask;
         t_seg[S_CFG2][i] = (c8 - c7) & tick_mask;
         t_seg[S_INFER2][i] = (c9 - c8) & tick_mask;
@@ -653,6 +698,10 @@ repeat_round:
                (unsigned long)bad_feat, (unsigned long)bad_p2);
         for (int s = 0; s < N_SEG; s++) report(seg_name[s], t_seg[s], SystemCoreClock);
         report("total", t_total, SystemCoreClock);
+#ifdef FE_CPU_SPLIT
+        report("cpu_rd", t_cpu_rd, SystemCoreClock);
+        report("cpu_lg", t_cpu_lg, SystemCoreClock);
+#endif
 #ifdef FE_DIAG
         printf("DIAG p1-bad iterations %lu, first %lu: infer1 %lu cyc, p1 mismatching words %lu, first word %lu got 0x%08lx exp 0x%08lx; "
                "ctrl0 before p1 0x%08lx after p1 0x%08lx; infer2 %lu cyc, ctrl0 before p2 0x%08lx after p2 0x%08lx; short-infer2 count %lu\n",

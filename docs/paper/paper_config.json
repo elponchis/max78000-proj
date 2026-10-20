@@ -69,7 +69,9 @@
       "marker": "X",
       "estimated_latency": false,
       "board_log_newfw": "fe",
-      "board_log_newfw_note": "주 값은 2026-10-17 펌웨어(생성 ISR 의 RMW 즉시 정지) 실측 (사용자 결정 2026-10-20: 선택지 2). 보조: 2026-10-20 결함 수정 펌웨어(직접 쓰기 + 완료 뒤 안정화 대기) 로 POR 뒤 1000회 재측정 — 변형 3종과 같은 펌웨어."
+      "board_log_newfw_note": "주 값은 2026-10-17 펌웨어(생성 ISR 의 RMW 즉시 정지) 실측 (사용자 결정 2026-10-20: 선택지 2). 보조: 2026-10-20 결함 수정 펌웨어(직접 쓰기 + 완료 뒤 안정화 대기) 로 POR 뒤 1000회 재측정 — 변형 3종과 같은 펌웨어.",
+      "board_log_split": "fe_split",
+      "board_log_split_note": "2026-10-21 실험 II (fe-curve-design.md 9절): -DFE_CPU_SPLIT 로 CPU 몫을 (a) 가속기 메모리 2,048 워드 읽기+|·|+8위치 합 (cpu_rd) 와 (b) 정수 로그 128회+밀기+포장 (cpu_lg) 으로 나눠 잼. 결함 수정 펌웨어, POR 뒤 1000회. 주 값은 바꾸지 않고 비율만 쓴다. 판정 A: rd/(rd+lg) ≥ 0.70 (최악·중앙 모두)."
     },
     {
       "name": "②′ b64",

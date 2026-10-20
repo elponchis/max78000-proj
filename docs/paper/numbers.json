@@ -550,6 +550,31 @@
   "source": "data/external_eval/v4_eval.json",
   "field": "editions.v4+D[(a) NPU 로그 근사].seeds[*].ext_map_real31L"
  },
+ "firmware.cpu_split": {
+  "value": {
+   "read_ms": 0.5703400000000001,
+   "log_ms": 0.28522000000000003,
+   "read_ms_med": 0.5703400000000001,
+   "log_ms_med": 0.28522000000000003,
+   "cpu_ms_this_run": 0.85603,
+   "read_share_worst": 0.6666277058300996,
+   "read_share_med": 0.6666277058300996,
+   "read_pct": 67,
+   "log_pct": 33,
+   "verdict": "B",
+   "sum_vs_cpu_pct": 99.9450953821712,
+   "main_cpu_ms": 0.83984,
+   "sum_vs_main_cpu_pct": 101.87178510192419,
+   "valid": true,
+   "n_iter": 1000,
+   "mismatch": 0,
+   "total_ms_this_run": 2.10252
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_fe_split.log",
+  "field": "2026-10-21 실험 II (fe-curve-design.md 9절): -DFE_CPU_SPLIT 로 CPU 몫을 (a) 가속기 메모리 2,048 워드 읽기+|·|+8위치 합 (cpu_rd) 와 (b) 정수 로그 128회+밀기+포장 (cpu_lg) 으로 나눠 잼. 결함 수정 펌웨어, POR 뒤 1000회. 주 값은 바꾸지 않고 비율만 쓴다. 판정 A: rd/(rd+lg) ≥ 0.70 (최악·중앙 모두).",
+  "note": "보드 실측 — 비율만 논문에 쓴다 (②′ 주 값 불변); 판정 A/B 는 fe-curve-design.md 9절 규칙"
+ },
  "latency.②′.new_firmware": {
   "value": {
    "pre": 0.84504,
