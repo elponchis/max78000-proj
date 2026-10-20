@@ -240,7 +240,8 @@ def build():
     table(doc, ["구성", "판단 1회 지연 (ms)", "에너지 μJ, 추정 (데이터시트 / 선행연구 / Moosmann)", "macro-F1 시험 데이터", "F1 외부 데이터"],
           rows, f"표 1. 주 결과. 정확도는 시드 1~3 평균 ± 표준편차, 오경보 300회/h. 지연은 보드 1,000회 최악값, 에너지는 추정(실측 지연 × 공개 전력). "
                 f"변형 3종은 펌웨어 안정화 대기(NPU 패스당 약 {v('firmware.stop_wait')['us_per_pass']:.0f} μs) 포함. "
-                f"같은 대기를 넣으면 {DN[FE]} 는 {v('firmware.stop_wait')['fe_total_with_wait_ms']:.2f} ms."
+                f"같은 대기를 넣으면 {DN[FE]} 는 {v('firmware.stop_wait')['fe_total_with_wait_ms']:.2f} ms. "
+                f"NPU 전처리 계열의 정수 로그는 32비트 나눗셈 구현(이전 64비트 구현과 출력 비트 일치)이며, 지연은 교체분을 보드에서 잰 차이로 반영했다."
                 + (f" 같은 펌웨어끼리 비교하면 데이터시트 기준 {DN[FE]} {N['firmware.same_fw_fe_vs_ga']['value']['datasheet']['fe']:.0f} μJ > {DN[GA]} "
                    f"{N['firmware.same_fw_fe_vs_ga']['value']['datasheet']['ga']:.0f} μJ."
                    if "firmware.same_fw_fe_vs_ga" in N and N["firmware.same_fw_fe_vs_ga"]["value"]["datasheet"]["fe_gt_ga"] else ""),
@@ -313,8 +314,8 @@ def build():
         fe_neg = (f"선형 부분만 옮기면 에너지는 줄지만 정확도는 그대로다. {DN[FE]} 는 사전에 정한 목표({s_w} 초과 또는 "
                   f"{s_ga}과 동등)는 넘지 못했다({s_w} 대비 {fci(fe_w)}, {s_ga} 대비 {fci(fe_g)}). 추정 에너지는 {s_w}보다 세 전력 출처 모두에서 "
                   f"적지만(데이터시트 {energy(FE):.0f} 대 {energy(W):.0f} μJ, Moosmann {energy(FE, 'moosmann'):.0f} 대 {energy(W, 'moosmann'):.0f} μJ; "
-                  f"판단 1회 {latency(FE):.2f} ms 대 {latency(W):.2f} ms), {s_ga}과는 비슷한 에너지(데이터시트 기준 {energy(FE):.0f} 대 {energy(GA):.0f} μJ, "
-                  f"차이 {d_ga:.0f} μJ 는 측정 펌웨어 차이 수준)에서 시험 macro-F1 이 {abs(fe_g[0]):.2f} 낮다. "
+                  f"판단 1회 {latency(FE):.2f} ms 대 {latency(W):.2f} ms), {s_ga}과는 비슷한 에너지(데이터시트 기준 {energy(FE):.0f} 대 {energy(GA):.0f} μJ)"
+                  f"에서 시험 macro-F1 이 {abs(fe_g[0]):.2f} 낮다. "
                   f"두 네트워크를 동시 적재한 보드에서 가속기 출력·CPU 특징·최종 로짓이 전부 호스트와 비트 일치했고, " + cpu_split_sent)
     else:
         fe_neg = (f"선형 부분만 NPU 로 옮기고 정수 로그만 CPU 에 남긴 {DN[FE]} 도 {s_w} 대비 {fci(fe_w)}, {s_ga} 대비 {fci(fe_g)} 로 열세였고 "
@@ -350,18 +351,11 @@ def build():
         var_sent += "CPU 전처리 곡선 아래에 머물지 않은 점이 있었다(그림 1). "
     cs = [100 * (vm[n]["cpu_share_of_delta"] or 0) for n in vm]; ns = [100 * (vm[n]["npu_share_of_delta"] or 0) for n in vm]
     # 비율(읽기/로그)은 위 ②′ 문단에 한 번만 쓴다 (2026-10-21 지시: 중복 제거)
-    if cpu_main and SP and SP["verdict"] == "A":
-        var_sent += (f"주된 비용은 NPU 연산({min(ns):.0f}~{max(ns):.0f}%)이 아니라 CPU 몫({min(cs):.0f}~{max(cs):.0f}%)이었다. "
-                     f"NPU 전처리의 비용을 결정한 것은 NPU 연산량이 아니라 데이터 이동이다.")
-    elif cpu_main and SP:
-        var_sent += (f"주된 비용은 NPU 연산({min(ns):.0f}~{max(ns):.0f}%)이 아니라 CPU 몫({min(cs):.0f}~{max(cs):.0f}%)이었다. "
-                     f"로그를 가속기가 지원하면 두 몫이 함께 줄어들 수 있다는 점은 같으나, 비용을 데이터 이동만으로 설명할 수는 없다.")
-    elif cpu_main:
-        var_sent += (f"주된 비용은 NPU 연산({min(ns):.0f}~{max(ns):.0f}%)이 아니라 CPU 가 가속기 메모리에서 결과를 읽어 오는 "
-                     f"시간({min(cs):.0f}~{max(cs):.0f}%)이었다.")
+    # 2026-10-21 (32비트 정수 로그 반영 뒤) 지시: CPU 몫이 세 변형 모두 50 % 를 넘지 않으므로 '비슷하게 나눴다' 로 쓴다.
+    if cpu_main:
+        var_sent += f"늘어난 비용의 절반 넘게({min(cs):.0f}~{max(cs):.0f}%)가 CPU 의 가속기 메모리 읽기였고 NPU 연산은 {min(ns):.0f}~{max(ns):.0f}% 였다."
     else:
-        shares = ", ".join(f"{DN[n]} CPU {100 * (vm[n]['cpu_share_of_delta'] or 0):.0f}% / NPU {100 * (vm[n]['npu_share_of_delta'] or 0):.0f}%" for n in vm)
-        var_sent += f"늘어난 비용은 CPU 의 가속기 메모리 읽기와 NPU 연산에 나뉘었다({shares})."
+        var_sent += f"늘어난 비용은 CPU의 가속기 메모리 읽기({min(cs):.0f}~{max(cs):.0f}%)와 NPU 연산({min(ns):.0f}~{max(ns):.0f}%)이 비슷하게 나눴다."
     body(doc, var_sent)
     body(doc, f"최적점은 중간에 있다. {s_ga}은 {s_w}보다 시험 macro-F1 {welch('가 u1000 − ④')}, 외부 F1 "
               f"{welch('가 u1000 − ④', 'ext_f1')} 로 유의하게 높고, 판단 1회 지연은 {latency(GA):.2f} ms 대 {latency(W):.2f} ms 로 "
@@ -379,9 +373,8 @@ def build():
     body(doc, f"대형 모델 기준선. 같은 정답·같은 문턱값 규칙으로 PANNs(CNN14) 를 채점하면 시험 macro-F1 {pann:.3f} 이다. "
               f"{s_16} 구성은 그 {100*f1(H16)[0]/pann:.0f}% 에 이른다.")
     # 4절 끝 (2026-10-20 지시): 비용을 결정한 것은 데이터 이동. 마지막 문장은 추측 — '할 수 있다' 를 넘지 않는다.
-    body(doc, "NPU 전처리의 비용을 결정한 것은 NPU 연산량이 아니라, 로그 연산을 NPU 에서 수행할 수 없어 중간 결과를 CPU 로 읽어 와야 하는 "
-              + ("데이터 이동과 정수 로그였다. " if (SP and SP["verdict"] == "B") else "데이터 이동이었다. ")
-              + "가속기 내부에서 비선형 압축을 지원하면 이 경계가 달라질 수 있다. "
+    body(doc, f"log 연산을 NPU에서 수행할 수 없어 중간 결과를 int32로 CPU에 읽어 와야 하는 데이터 이동이 NPU 전처리 CPU 몫의 대부분({SP['read_pct']}%)을 차지했고, "
+              "대역·프레임을 늘리면 NPU 연산도 비슷한 비중으로 늘었다. 가속기 내부에서 비선형 압축을 지원하면 이 경계가 달라질 수 있다. "
               # 3) 증분 없이 창 전체를 매번 계산했을 때 (추정, docs/results/incremental-design.md 4절)
               + "증분 계산 없이 창 전체를 매번 계산했다면 " + f"{s_ga}과 {DN[FE]} 모두 {s_w}보다 에너지가 컸을 것으로 추정되어"
               + "(일괄 전처리 사이클 = 새 프레임 비용 × 전체 프레임 수, 같은 전력 상수), 전처리의 이점은 증분 계산을 전제로 한다.")

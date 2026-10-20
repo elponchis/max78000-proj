@@ -122,6 +122,23 @@ def read_board_log_split(tag):
     return r
 
 
+def read_board_log_ab(tag):
+    """-DFE_LOG_AB 로그 (같은 POR 세션, 옛 64비트 정수 로그 → 새 32비트, 1000회씩) → 두 패스의 구간 최악 ms 와 불일치.
+    feat/log32 (2026-10-21, fe-curve-design.md 10절). 주 값 환산: Δcpu = 새 − 옛 (CPU 구간은 네트워크 정지 방식과 무관)."""
+    path = os.path.join(LOGS, f"board_v4d_{tag}.log")
+    with open(path, encoding="utf-8", errors="replace") as f:
+        txt = f.read()
+    r = {"path": rel(path), "kat": txt.count("PASS (bit-exact)") >= 3 and "FAIL" not in txt}
+    for p in ("A", "B"):
+        m = re.search(rf"=== PASS {p} \((.*?)\): (\d+) iterations, output mismatches: (\d+).*?(?==== PASS END ===)", txt, re.S)
+        assert m, (tag, p)
+        blk = m.group(0)
+        seg = {s: float(re.search(rf"^{s}\s+us\s+.*?max\s+([\d.]+)", blk, re.M).group(1)) / 1000.0 for s in FE_SEGS}
+        r[p] = {"label": m.group(1), "n_iter": int(m.group(2)), "mismatch": int(m.group(3)), **seg}
+    r["d_cpu_ms"] = r["B"]["cpu"] - r["A"]["cpu"]
+    return r
+
+
 def pareto_front(pts):
     """pts = {이름: (에너지, 정확도)} → 지배되지 않는 이름들 (에너지 ≤ 이고 정확도 ≥ 인 다른 점이 없다; 둘 다 같으면 둘 다 남긴다)."""
     front = []
@@ -421,8 +438,18 @@ def main():
                             "pre": bp["cpu"], "load": bp["load1"] + bp["load2"] + bp["cfg1"] + bp["cfg2"], "infer": bp["infer1"] + bp["infer2"], "out": bp["unload"]}
                 NEWFW_FE["total"] = bp["total"]
                 STOP_WAIT_MS = (bp["infer1"] + bp["infer2"]) - (b["infer1"] + b["infer2"])     # 새 펌웨어의 완료 뒤 안정화 대기 × 2 (판단당)
+            log32 = None
+            if c.get("board_log_log32"):       # feat/log32 (2026-10-21 사용자 결정): 주 값 = 기존 주 값 − 같은 세션 보드 실측 CPU 몫 Δ (환산)
+                ab = read_board_log_ab(c["board_log_log32"])
+                assert ab["kat"] and ab["A"]["mismatch"] == 0 and ab["B"]["mismatch"] == 0, (c["name"], "log32", ab)
+                assert abs(ab["A"]["cpu"] - b["cpu"]) / b["cpu"] <= 0.02, (c["name"], "옛 패스 cpu 가 주 값 cpu 와 2 % 넘게 다르다", ab["A"]["cpu"], b["cpu"])
+                log32 = {"d_cpu_ms": ab["d_cpu_ms"], "cpu_main_before_ms": b["cpu"], "total_main_before_ms": b["total"],
+                         "session_old": {k: ab["A"][k] for k in FE_SEGS}, "session_new": {k: ab["B"][k] for k in FE_SEGS},
+                         "mismatch": [ab["A"]["mismatch"], ab["B"]["mismatch"]], "n_iter": ab["A"]["n_iter"], "src": ab["path"],
+                         "note": c["board_log_log32_note"]}
+                b = dict(b, cpu=b["cpu"] + ab["d_cpu_ms"], total=b["total"] + ab["d_cpu_ms"])
             LAT[c["name"]] = {"pre": b["cpu"], "load": b["load1"] + b["load2"] + b["cfg1"] + b["cfg2"], "infer": b["infer1"] + b["infer2"],
-                              "out": b["unload"], "est": False, "pre_power": "load", "detail": {k: b[k] for k in FE_SEGS}, "src": b["path"], "mismatch": b["mismatch"],
+                              "out": b["unload"], "est": False, "pre_power": "load", "detail": {k: b[k] for k in FE_SEGS}, "src": b["path"] + (f" (CPU 몫 {log32['d_cpu_ms']:+.3f} ms 환산: {log32['src']})" if log32 else ""), "mismatch": b["mismatch"], "log32": log32,
                               "pre_src": "보드 실측 cpu 구간 (|cos|+|sin| → 8위치 합 → 정수 로그 32×4 값 → 버퍼 밀기 → 입력 워드 포장), NPU 전원 켜진 채 → P_load 로 계산; 적재 열에 네트워크 전환(cfg1+cfg2) 포함",
                               "core_hz": b["core_hz"], "cnn_hz": b["cnn_hz"], "n_iter": b["n_iter"], "synth": syn}
         elif c["board_log"]:
@@ -510,6 +537,11 @@ def main():
             num("firmware.same_fw_fe_vs_ga", SAME_FW, "µJ", "latency.②′.new_firmware, latency.가 u1000.new_firmware × power_sources",
                 "같은(결함 수정) 펌웨어끼리 ②′ 대 가 의 추정 에너지 — 보조 확인 (그림·표 주 값은 옛 펌웨어)", "추정")
     for name, L in LAT.items():
+        if L.get("log32"):
+            g = L["log32"]
+            num(f"latency.{name}.log32", g, "ms", g["src"], g["note"],
+                f"주 값 환산 근거 (2026-10-21 사용자 결정): latency.{name} = 기존 주 값 (cpu {g['cpu_main_before_ms']:.3f}, total {g['total_main_before_ms']:.3f}) + Δcpu {g['d_cpu_ms']:+.3f} ms; "
+                "직접 측정값(session_new, 지연 정지 펌웨어)은 보조")
         num(f"latency.{name}", dict({k: L[k] for k in ("pre", "load", "infer", "out", "total")},
                                   **({"detail": L["detail"], "pre_power": "load"} if "detail" in L else {})), "ms", L["src"],
             "load/infer/unload us max (1000회 최악)" + ("; 전처리 " + L["pre_src"] if L["pre"] else ""), "추정(보드 미실측)" if L["est"] else None)

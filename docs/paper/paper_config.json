@@ -68,10 +68,12 @@
       "preproc": "NPU 필터뱅크 (선형) + CPU 정수 로그",
       "marker": "X",
       "estimated_latency": false,
-      "board_log_newfw": "fe",
-      "board_log_newfw_note": "주 값은 2026-10-17 펌웨어(생성 ISR 의 RMW 즉시 정지) 실측 (사용자 결정 2026-10-20: 선택지 2). 보조: 2026-10-20 결함 수정 펌웨어(직접 쓰기 + 완료 뒤 안정화 대기) 로 POR 뒤 1000회 재측정 — 변형 3종과 같은 펌웨어.",
-      "board_log_split": "fe_split",
-      "board_log_split_note": "2026-10-21 실험 II (fe-curve-design.md 9절): -DFE_CPU_SPLIT 로 CPU 몫을 (a) 가속기 메모리 2,048 워드 읽기+|·|+8위치 합 (cpu_rd) 와 (b) 정수 로그 128회+밀기+포장 (cpu_lg) 으로 나눠 잼. 결함 수정 펌웨어, POR 뒤 1000회. 주 값은 바꾸지 않고 비율만 쓴다. 판정 A: rd/(rd+lg) ≥ 0.70 (최악·중앙 모두)."
+      "board_log_newfw": "fe_log32",
+      "board_log_newfw_note": "주 값은 2026-10-17 펌웨어(생성 ISR 의 RMW 즉시 정지) 실측에 2026-10-21 32비트 정수 로그 Δ 를 환산한 값. 보조: 지연 정지 펌웨어(직접 쓰기 + 완료 뒤 안정화 대기, 변형 3종과 같은 펌웨어)로 새 로그를 직접 잰 값 (fe_log32 의 새 패스, POR 뒤 1000회).",
+      "board_log_split": "fe_split_log32",
+      "board_log_split_note": "2026-10-21 실험 II (fe-curve-design.md 9절) 를 32비트 정수 로그로 재측정 (-DFE_CPU_SPLIT -DFE_LOG_AB 의 새 패스): CPU 몫을 (a) 가속기 메모리 2,048 워드 읽기+|·|+8위치 합 (cpu_rd) 와 (b) 정수 로그 128회+밀기+포장 (cpu_lg) 으로 나눠 잼. 지연 정지 펌웨어, POR 뒤 1000회. 판정 A: rd/(rd+lg) ≥ 0.70 (최악·중앙 모두). 옛 로그(64비트)에서는 67/33 → B 였다 (log32-board.md).",
+      "board_log_log32": "fe_log32",
+      "board_log_log32_note": "feat/log32 (2026-10-21): 정수 로그 log2_q8_to_int8 의 64비트 나눗셈을 32비트로 교체 (출력 비트 일치, PC 전 범위 검증 tools/log32_check.c). 같은 바이너리·같은 POR 세션에서 옛 → 새 1000회씩 (-DFE_LOG_AB, 지연 정지 펌웨어). 주 값 = 기존 주 값 − 보드 실측 CPU 몫 Δ (환산; 사용자 결정 2026-10-21). 주 값 계열(생성 ISR) 빌드는 2000회 세션에서 멈춰 쓰지 못함 — fe-curve-design.md 10.1절."
     },
     {
       "name": "②′ b64",
@@ -90,7 +92,9 @@
       "model_desc": "p1 NPU Conv1d 64→128 k=8 (512탭 Gabor 필터뱅크 cos/sin 64쌍, wide int32, 판단당 64위치) → CPU |cos|+|sin|·8위치 합·정수 로그 (64×4 값) → p2 2D CNN (1×64×16). 두 네트워크 동시 적재, 판단 주기 256 ms",
       "preproc": "NPU 필터뱅크 (선형) + CPU 정수 로그",
       "marker": "p",
-      "estimated_latency": false
+      "estimated_latency": false,
+      "board_log_log32": "fe_b64_log32",
+      "board_log_log32_note": "feat/log32 (2026-10-21): 정수 로그 log2_q8_to_int8 의 64비트 나눗셈을 32비트로 교체 (출력 비트 일치, PC 전 범위 검증 tools/log32_check.c). 같은 바이너리·같은 POR 세션에서 옛 → 새 1000회씩 (-DFE_LOG_AB, 지연 정지 펌웨어). 주 값 = 기존 주 값 − 보드 실측 CPU 몫 Δ (환산; 사용자 결정 2026-10-21). 주 값 계열(생성 ISR) 빌드는 2000회 세션에서 멈춰 쓰지 못함 — fe-curve-design.md 10.1절."
     },
     {
       "name": "②′ f31",
@@ -109,7 +113,9 @@
       "model_desc": "p1 NPU Conv1d 64→64 k=8 (Gabor 32쌍), 입력 71 위치(이전 8 + 새 63) → 출력 64 위치 → CPU 정수 로그 32×8 값/판단 → p2 2D CNN (1×32×31). 두 네트워크 동시 적재, 판단 주기 256 ms",
       "preproc": "NPU 필터뱅크 (선형) + CPU 정수 로그",
       "marker": "h",
-      "estimated_latency": false
+      "estimated_latency": false,
+      "board_log_log32": "fe_f31_log32",
+      "board_log_log32_note": "feat/log32 (2026-10-21): 정수 로그 log2_q8_to_int8 의 64비트 나눗셈을 32비트로 교체 (출력 비트 일치, PC 전 범위 검증 tools/log32_check.c). 같은 바이너리·같은 POR 세션에서 옛 → 새 1000회씩 (-DFE_LOG_AB, 지연 정지 펌웨어). 주 값 = 기존 주 값 − 보드 실측 CPU 몫 Δ (환산; 사용자 결정 2026-10-21). 주 값 계열(생성 ISR) 빌드는 2000회 세션에서 멈춰 쓰지 못함 — fe-curve-design.md 10.1절."
     },
     {
       "name": "②′ b64f31",
@@ -128,7 +134,9 @@
       "model_desc": "p1 NPU Conv1d 64→128 k=8 (Gabor 64쌍), 입력 71 위치 → CPU 정수 로그 64×8 값/판단 → p2 2D CNN (1×64×31). 두 네트워크 동시 적재, 판단 주기 256 ms",
       "preproc": "NPU 필터뱅크 (선형) + CPU 정수 로그",
       "marker": "d",
-      "estimated_latency": false
+      "estimated_latency": false,
+      "board_log_log32": "fe_b64f31_log32",
+      "board_log_log32_note": "feat/log32 (2026-10-21): 정수 로그 log2_q8_to_int8 의 64비트 나눗셈을 32비트로 교체 (출력 비트 일치, PC 전 범위 검증 tools/log32_check.c). 같은 바이너리·같은 POR 세션에서 옛 → 새 1000회씩 (-DFE_LOG_AB, 지연 정지 펌웨어). 주 값 = 기존 주 값 − 보드 실측 CPU 몫 Δ (환산; 사용자 결정 2026-10-21). 주 값 계열(생성 ISR) 빌드는 2000회 세션에서 멈춰 쓰지 못함 — fe-curve-design.md 10.1절."
     },
     {
       "name": "가 u1000",

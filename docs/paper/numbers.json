@@ -552,74 +552,74 @@
  },
  "firmware.cpu_split": {
   "value": {
-   "read_ms": 0.5703400000000001,
-   "log_ms": 0.28522000000000003,
-   "read_ms_med": 0.5703400000000001,
-   "log_ms_med": 0.28522000000000003,
-   "cpu_ms_this_run": 0.85603,
-   "read_share_worst": 0.6666277058300996,
-   "read_share_med": 0.6666277058300996,
-   "read_pct": 67,
-   "log_pct": 33,
-   "verdict": "B",
-   "sum_vs_cpu_pct": 99.9450953821712,
-   "main_cpu_ms": 0.83984,
-   "sum_vs_main_cpu_pct": 101.87178510192419,
+   "read_ms": 0.56957,
+   "log_ms": 0.14191,
+   "read_ms_med": 0.56957,
+   "log_ms_med": 0.14191,
+   "cpu_ms_this_run": 0.71187,
+   "read_share_worst": 0.8005425310620116,
+   "read_share_med": 0.8005425310620116,
+   "read_pct": 80,
+   "log_pct": 20,
+   "verdict": "A",
+   "sum_vs_cpu_pct": 99.94521471617009,
+   "main_cpu_ms": 0.7037500000000002,
+   "sum_vs_main_cpu_pct": 101.0984014209591,
    "valid": true,
    "n_iter": 1000,
    "mismatch": 0,
-   "total_ms_this_run": 2.10252
+   "total_ms_this_run": 1.95328
   },
   "unit": "ms",
-  "source": "data/logs-local/board_v4d_fe_split.log",
-  "field": "2026-10-21 실험 II (fe-curve-design.md 9절): -DFE_CPU_SPLIT 로 CPU 몫을 (a) 가속기 메모리 2,048 워드 읽기+|·|+8위치 합 (cpu_rd) 와 (b) 정수 로그 128회+밀기+포장 (cpu_lg) 으로 나눠 잼. 결함 수정 펌웨어, POR 뒤 1000회. 주 값은 바꾸지 않고 비율만 쓴다. 판정 A: rd/(rd+lg) ≥ 0.70 (최악·중앙 모두).",
+  "source": "data/logs-local/board_v4d_fe_split_log32.log",
+  "field": "2026-10-21 실험 II (fe-curve-design.md 9절) 를 32비트 정수 로그로 재측정 (-DFE_CPU_SPLIT -DFE_LOG_AB 의 새 패스): CPU 몫을 (a) 가속기 메모리 2,048 워드 읽기+|·|+8위치 합 (cpu_rd) 와 (b) 정수 로그 128회+밀기+포장 (cpu_lg) 으로 나눠 잼. 지연 정지 펌웨어, POR 뒤 1000회. 판정 A: rd/(rd+lg) ≥ 0.70 (최악·중앙 모두). 옛 로그(64비트)에서는 67/33 → B 였다 (log32-board.md).",
   "note": "보드 실측 — 비율만 논문에 쓴다 (②′ 주 값 불변); 판정 A/B 는 fe-curve-design.md 9절 규칙"
  },
  "latency.②′.new_firmware": {
   "value": {
-   "pre": 0.84504,
-   "load": 0.52939,
-   "infer": 0.7100900000000001,
-   "out": 0.00647,
-   "total": 2.0909899999999997,
+   "pre": 0.7043400000000001,
+   "load": 0.52515,
+   "infer": 0.70995,
+   "out": 0.00785,
+   "total": 1.94729,
    "detail": {
-    "load1": 0.28078,
-    "cfg1": 0.02571,
-    "infer1": 0.1295,
-    "cpu": 0.84504,
+    "load1": 0.27626999999999996,
+    "cfg1": 0.025920000000000002,
+    "infer1": 0.12929,
+    "cpu": 0.7043400000000001,
     "load2": 0.13366999999999998,
-    "cfg2": 0.08923,
-    "infer2": 0.58059,
-    "unload": 0.00647,
-    "total": 2.0909899999999997
+    "cfg2": 0.08929000000000001,
+    "infer2": 0.58066,
+    "unload": 0.00785,
+    "total": 1.94729
    },
    "E": {
-    "datasheet": 44.5135051,
-    "literature": 85.159773,
-    "moosmann": 59.525524000000004
+    "datasheet": 42.8913089,
+    "literature": 81.589447,
+    "moosmann": 55.960252000000004
    },
    "n_iter": 1000,
    "mismatch": 0
   },
   "unit": "ms / µJ",
-  "source": "data/logs-local/board_v4d_fe.log",
-  "field": "주 값은 2026-10-17 펌웨어(생성 ISR 의 RMW 즉시 정지) 실측 (사용자 결정 2026-10-20: 선택지 2). 보조: 2026-10-20 결함 수정 펌웨어(직접 쓰기 + 완료 뒤 안정화 대기) 로 POR 뒤 1000회 재측정 — 변형 3종과 같은 펌웨어. 에너지는 같은 전력 상수.",
+  "source": "data/logs-local/board_v4d_fe_log32.log",
+  "field": "주 값은 2026-10-17 펌웨어(생성 ISR 의 RMW 즉시 정지) 실측에 2026-10-21 32비트 정수 로그 Δ 를 환산한 값. 보조: 지연 정지 펌웨어(직접 쓰기 + 완료 뒤 안정화 대기, 변형 3종과 같은 펌웨어)로 새 로그를 직접 잰 값 (fe_log32 의 새 패스, POR 뒤 1000회). 에너지는 같은 전력 상수.",
   "note": "보조 값 (그림·표의 주 값은 옛 펌웨어 latency.②′)"
  },
  "firmware.stop_wait": {
   "value": {
-   "ms_per_decision": 0.09824000000000022,
-   "us_per_pass": 49.12000000000011,
+   "ms_per_decision": 0.09810000000000008,
+   "us_per_pass": 49.05000000000004,
    "energy_uJ": {
-    "datasheet": 4.007209600000008,
-    "literature": 7.043808000000015,
-    "moosmann": 3.497344000000008
+    "datasheet": 4.001499000000003,
+    "literature": 7.033770000000006,
+    "moosmann": 3.492360000000003
    },
-   "energy_uJ_max": 7.043808000000015,
-   "fe_total_with_wait_ms": 2.0909899999999997
+   "energy_uJ_max": 7.033770000000006,
+   "fe_total_with_wait_ms": 1.94729
   },
   "unit": "ms / µJ",
-  "source": "data/logs-local/board_v4d_fe.log − data/logs-local/board_v4d_fe_oldfw.log (infer1+infer2)",
+  "source": "data/logs-local/board_v4d_fe_log32.log − data/logs-local/board_v4d_fe_oldfw.log (CPU 몫 -0.136 ms 환산: data/logs-local/board_v4d_fe_log32.log) (infer1+infer2)",
   "field": "결함 수정 펌웨어(완료 인터럽트 뒤 FE_DELAY_STOP 바쁜 대기 → 정지)가 NPU 패스마다 더한 시간. 변형 3종의 추론 열에 포함(②′ 주 값에는 없음), P_npu 로 계산되어 그만큼 과대",
   "note": "추정"
  },
@@ -651,17 +651,17 @@
  "firmware.same_fw_fe_vs_ga": {
   "value": {
    "datasheet": {
-    "fe": 44.5135051,
+    "fe": 42.8913089,
     "ga": 45.3723114,
     "fe_gt_ga": false
    },
    "literature": {
-    "fe": 85.159773,
+    "fe": 81.589447,
     "ga": 101.22953100000001,
     "fe_gt_ga": false
    },
    "moosmann": {
-    "fe": 59.525524000000004,
+    "fe": 55.960252000000004,
     "ga": 80.29189199999999,
     "fe_gt_ga": false
    }
@@ -694,143 +694,303 @@
   "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
   "note": "추정(실측 지연 × 공개 전력)"
  },
+ "latency.②′.log32": {
+  "value": {
+   "d_cpu_ms": -0.13608999999999982,
+   "cpu_main_before_ms": 0.83984,
+   "total_main_before_ms": 1.98226,
+   "session_old": {
+    "load1": 0.28219,
+    "cfg1": 0.025920000000000002,
+    "infer1": 0.12938999999999998,
+    "cpu": 0.8404299999999999,
+    "load2": 0.13366999999999998,
+    "cfg2": 0.08929000000000001,
+    "infer2": 0.58066,
+    "unload": 0.00647,
+    "total": 2.08792
+   },
+   "session_new": {
+    "load1": 0.27626999999999996,
+    "cfg1": 0.025920000000000002,
+    "infer1": 0.12929,
+    "cpu": 0.7043400000000001,
+    "load2": 0.13366999999999998,
+    "cfg2": 0.08929000000000001,
+    "infer2": 0.58066,
+    "unload": 0.00785,
+    "total": 1.94729
+   },
+   "mismatch": [
+    0,
+    0
+   ],
+   "n_iter": 1000,
+   "src": "data/logs-local/board_v4d_fe_log32.log",
+   "note": "feat/log32 (2026-10-21): 정수 로그 log2_q8_to_int8 의 64비트 나눗셈을 32비트로 교체 (출력 비트 일치, PC 전 범위 검증 tools/log32_check.c). 같은 바이너리·같은 POR 세션에서 옛 → 새 1000회씩 (-DFE_LOG_AB, 지연 정지 펌웨어). 주 값 = 기존 주 값 − 보드 실측 CPU 몫 Δ (환산; 사용자 결정 2026-10-21). 주 값 계열(생성 ISR) 빌드는 2000회 세션에서 멈춰 쓰지 못함 — fe-curve-design.md 10.1절."
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_fe_log32.log",
+  "field": "feat/log32 (2026-10-21): 정수 로그 log2_q8_to_int8 의 64비트 나눗셈을 32비트로 교체 (출력 비트 일치, PC 전 범위 검증 tools/log32_check.c). 같은 바이너리·같은 POR 세션에서 옛 → 새 1000회씩 (-DFE_LOG_AB, 지연 정지 펌웨어). 주 값 = 기존 주 값 − 보드 실측 CPU 몫 Δ (환산; 사용자 결정 2026-10-21). 주 값 계열(생성 ISR) 빌드는 2000회 세션에서 멈춰 쓰지 못함 — fe-curve-design.md 10.1절.",
+  "note": "주 값 환산 근거 (2026-10-21 사용자 결정): latency.②′ = 기존 주 값 (cpu 0.840, total 1.982) + Δcpu -0.136 ms; 직접 측정값(session_new, 지연 정지 펌웨어)은 보조"
+ },
  "latency.②′": {
   "value": {
-   "pre": 0.83984,
+   "pre": 0.7037500000000002,
    "load": 0.5243800000000001,
    "infer": 0.6118499999999999,
    "out": 0.00643,
-   "total": 1.9825,
+   "total": 1.84641,
    "detail": {
     "load1": 0.28151,
     "cfg1": 0.02298,
     "infer1": 0.08031999999999999,
-    "cpu": 0.83984,
+    "cpu": 0.7037500000000002,
     "load2": 0.13386,
     "cfg2": 0.08603,
     "infer2": 0.53153,
     "unload": 0.00643,
-    "total": 1.98226
+    "total": 1.84617
    },
    "pre_power": "load"
   },
   "unit": "ms",
-  "source": "data/logs-local/board_v4d_fe_oldfw.log",
+  "source": "data/logs-local/board_v4d_fe_oldfw.log (CPU 몫 -0.136 ms 환산: data/logs-local/board_v4d_fe_log32.log)",
   "field": "load/infer/unload us max (1000회 최악); 전처리 보드 실측 cpu 구간 (|cos|+|sin| → 8위치 합 → 정수 로그 32×4 값 → 버퍼 밀기 → 입력 워드 포장), NPU 전원 켜진 채 → P_load 로 계산; 적재 열에 네트워크 전환(cfg1+cfg2) 포함"
  },
  "energy.②′": {
   "value": {
-   "datasheet": 40.390880499999994,
-   "literature": 77.86176499999999,
-   "moosmann": 55.773979999999995
+   "datasheet": 38.8585071,
+   "literature": 74.486733,
+   "moosmann": 52.398948000000004
   },
   "unit": "µJ",
-  "source": "data/logs-local/board_v4d_fe_oldfw.log × docs/paper/paper_config.json power_sources",
+  "source": "data/logs-local/board_v4d_fe_oldfw.log (CPU 몫 -0.136 ms 환산: data/logs-local/board_v4d_fe_log32.log) × docs/paper/paper_config.json power_sources",
   "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
   "note": "추정(실측 지연 × 공개 전력)"
  },
+ "latency.②′ b64.log32": {
+  "value": {
+   "d_cpu_ms": -0.27168999999999977,
+   "cpu_main_before_ms": 1.67773,
+   "total_main_before_ms": 3.65591,
+   "session_old": {
+    "load1": 0.28145,
+    "cfg1": 0.028140000000000002,
+    "infer1": 0.20239,
+    "cpu": 1.6678499999999998,
+    "load2": 0.26679,
+    "cfg2": 0.08921,
+    "infer2": 1.10258,
+    "unload": 0.00777,
+    "total": 3.64574
+   },
+   "session_new": {
+    "load1": 0.27855,
+    "cfg1": 0.028140000000000002,
+    "infer1": 0.20222,
+    "cpu": 1.39616,
+    "load2": 0.26679,
+    "cfg2": 0.08921,
+    "infer2": 1.10258,
+    "unload": 0.00777,
+    "total": 3.3713200000000003
+   },
+   "mismatch": [
+    0,
+    0
+   ],
+   "n_iter": 1000,
+   "src": "data/logs-local/board_v4d_fe_b64_log32.log",
+   "note": "feat/log32 (2026-10-21): 정수 로그 log2_q8_to_int8 의 64비트 나눗셈을 32비트로 교체 (출력 비트 일치, PC 전 범위 검증 tools/log32_check.c). 같은 바이너리·같은 POR 세션에서 옛 → 새 1000회씩 (-DFE_LOG_AB, 지연 정지 펌웨어). 주 값 = 기존 주 값 − 보드 실측 CPU 몫 Δ (환산; 사용자 결정 2026-10-21). 주 값 계열(생성 ISR) 빌드는 2000회 세션에서 멈춰 쓰지 못함 — fe-curve-design.md 10.1절."
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_fe_b64_log32.log",
+  "field": "feat/log32 (2026-10-21): 정수 로그 log2_q8_to_int8 의 64비트 나눗셈을 32비트로 교체 (출력 비트 일치, PC 전 범위 검증 tools/log32_check.c). 같은 바이너리·같은 POR 세션에서 옛 → 새 1000회씩 (-DFE_LOG_AB, 지연 정지 펌웨어). 주 값 = 기존 주 값 − 보드 실측 CPU 몫 Δ (환산; 사용자 결정 2026-10-21). 주 값 계열(생성 ISR) 빌드는 2000회 세션에서 멈춰 쓰지 못함 — fe-curve-design.md 10.1절.",
+  "note": "주 값 환산 근거 (2026-10-21 사용자 결정): latency.②′ b64 = 기존 주 값 (cpu 1.678, total 3.656) + Δcpu -0.272 ms; 직접 측정값(session_new, 지연 정지 펌웨어)은 보조"
+ },
  "latency.②′ b64": {
   "value": {
-   "pre": 1.67773,
+   "pre": 1.4060400000000002,
    "load": 0.66519,
    "infer": 1.3054199999999998,
    "out": 0.00763,
-   "total": 3.6559699999999995,
+   "total": 3.3842799999999995,
    "detail": {
     "load1": 0.2813,
     "cfg1": 0.028030000000000003,
     "infer1": 0.20267,
-    "cpu": 1.67773,
+    "cpu": 1.4060400000000002,
     "load2": 0.26683,
     "cfg2": 0.08903,
     "infer2": 1.10275,
     "unload": 0.00763,
-    "total": 3.65591
+    "total": 3.38422
    },
    "pre_power": "load"
   },
   "unit": "ms",
-  "source": "data/logs-local/board_v4d_fe_b64.log",
+  "source": "data/logs-local/board_v4d_fe_b64.log (CPU 몫 -0.272 ms 환산: data/logs-local/board_v4d_fe_b64_log32.log)",
   "field": "load/infer/unload us max (1000회 최악); 전처리 보드 실측 cpu 구간 (|cos|+|sin| → 8위치 합 → 정수 로그 32×4 값 → 버퍼 밀기 → 입력 워드 포장), NPU 전원 켜진 채 → P_load 로 계산; 적재 열에 네트워크 전환(cfg1+cfg2) 포함"
  },
  "energy.②′ b64": {
   "value": {
-   "datasheet": 79.71527479999999,
-   "literature": 151.89225399999998,
-   "moosmann": 104.76659199999999
+   "datasheet": 76.6560454,
+   "literature": 145.15434199999999,
+   "moosmann": 98.02868
   },
   "unit": "µJ",
-  "source": "data/logs-local/board_v4d_fe_b64.log × docs/paper/paper_config.json power_sources",
+  "source": "data/logs-local/board_v4d_fe_b64.log (CPU 몫 -0.272 ms 환산: data/logs-local/board_v4d_fe_b64_log32.log) × docs/paper/paper_config.json power_sources",
   "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
   "note": "추정(실측 지연 × 공개 전력)"
  },
+ "latency.②′ f31.log32": {
+  "value": {
+   "d_cpu_ms": -0.27007000000000025,
+   "cpu_main_before_ms": 1.66114,
+   "total_main_before_ms": 3.52254,
+   "session_old": {
+    "load1": 0.31191,
+    "cfg1": 0.025589999999999998,
+    "infer1": 0.13883,
+    "cpu": 1.6708900000000002,
+    "load2": 0.25837,
+    "cfg2": 0.08691,
+    "infer2": 1.0318699999999998,
+    "unload": 0.00715,
+    "total": 3.53152
+   },
+   "session_new": {
+    "load1": 0.30889999999999995,
+    "cfg1": 0.02537,
+    "infer1": 0.13867,
+    "cpu": 1.40082,
+    "load2": 0.25837,
+    "cfg2": 0.08691,
+    "infer2": 1.03169,
+    "unload": 0.00764,
+    "total": 3.2583699999999998
+   },
+   "mismatch": [
+    0,
+    0
+   ],
+   "n_iter": 1000,
+   "src": "data/logs-local/board_v4d_fe_f31_log32.log",
+   "note": "feat/log32 (2026-10-21): 정수 로그 log2_q8_to_int8 의 64비트 나눗셈을 32비트로 교체 (출력 비트 일치, PC 전 범위 검증 tools/log32_check.c). 같은 바이너리·같은 POR 세션에서 옛 → 새 1000회씩 (-DFE_LOG_AB, 지연 정지 펌웨어). 주 값 = 기존 주 값 − 보드 실측 CPU 몫 Δ (환산; 사용자 결정 2026-10-21). 주 값 계열(생성 ISR) 빌드는 2000회 세션에서 멈춰 쓰지 못함 — fe-curve-design.md 10.1절."
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_fe_f31_log32.log",
+  "field": "feat/log32 (2026-10-21): 정수 로그 log2_q8_to_int8 의 64비트 나눗셈을 32비트로 교체 (출력 비트 일치, PC 전 범위 검증 tools/log32_check.c). 같은 바이너리·같은 POR 세션에서 옛 → 새 1000회씩 (-DFE_LOG_AB, 지연 정지 펌웨어). 주 값 = 기존 주 값 − 보드 실측 CPU 몫 Δ (환산; 사용자 결정 2026-10-21). 주 값 계열(생성 ISR) 빌드는 2000회 세션에서 멈춰 쓰지 못함 — fe-curve-design.md 10.1절.",
+  "note": "주 값 환산 근거 (2026-10-21 사용자 결정): latency.②′ f31 = 기존 주 값 (cpu 1.661, total 3.523) + Δcpu -0.270 ms; 직접 측정값(session_new, 지연 정지 펌웨어)은 보조"
+ },
  "latency.②′ f31": {
   "value": {
-   "pre": 1.66114,
+   "pre": 1.3910699999999998,
    "load": 0.68304,
    "infer": 1.1705,
    "out": 0.00786,
-   "total": 3.5225400000000002,
+   "total": 3.2524699999999998,
    "detail": {
     "load1": 0.31193,
     "cfg1": 0.02537,
     "infer1": 0.13885,
-    "cpu": 1.66114,
+    "cpu": 1.3910699999999998,
     "load2": 0.25847000000000003,
     "cfg2": 0.08727,
     "infer2": 1.0316500000000002,
     "unload": 0.00786,
-    "total": 3.52254
+    "total": 3.2524699999999998
    },
    "pre_power": "load"
   },
   "unit": "ms",
-  "source": "data/logs-local/board_v4d_fe_f31.log",
+  "source": "data/logs-local/board_v4d_fe_f31.log (CPU 몫 -0.270 ms 환산: data/logs-local/board_v4d_fe_f31_log32.log)",
   "field": "load/infer/unload us max (1000회 최악); 전처리 보드 실측 cpu 구간 (|cos|+|sin| → 8위치 합 → 정수 로그 32×4 값 → 버퍼 밀기 → 입력 워드 포장), NPU 전원 켜진 채 → P_load 로 계산; 적재 열에 네트워크 전환(cfg1+cfg2) 포함"
  },
  "energy.②′ f31": {
   "value": {
-   "datasheet": 74.2286654,
-   "literature": 142.25544200000002,
-   "moosmann": 100.000392
+   "datasheet": 71.1876772,
+   "literature": 135.557706,
+   "moosmann": 93.30265599999998
   },
   "unit": "µJ",
-  "source": "data/logs-local/board_v4d_fe_f31.log × docs/paper/paper_config.json power_sources",
+  "source": "data/logs-local/board_v4d_fe_f31.log (CPU 몫 -0.270 ms 환산: data/logs-local/board_v4d_fe_f31_log32.log) × docs/paper/paper_config.json power_sources",
   "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
   "note": "추정(실측 지연 × 공개 전력)"
  },
+ "latency.②′ b64f31.log32": {
+  "value": {
+   "d_cpu_ms": -0.53749,
+   "cpu_main_before_ms": 3.31914,
+   "total_main_before_ms": 6.49389,
+   "session_old": {
+    "load1": 0.31271,
+    "cfg1": 0.02795,
+    "infer1": 0.22035,
+    "cpu": 3.33962,
+    "load2": 0.5165700000000001,
+    "cfg2": 0.08968999999999999,
+    "infer2": 2.00147,
+    "unload": 0.00677,
+    "total": 6.515029999999999
+   },
+   "session_new": {
+    "load1": 0.30854000000000004,
+    "cfg1": 0.028050000000000002,
+    "infer1": 0.22025,
+    "cpu": 2.80213,
+    "load2": 0.5165700000000001,
+    "cfg2": 0.08968999999999999,
+    "infer2": 2.00147,
+    "unload": 0.00795,
+    "total": 5.97465
+   },
+   "mismatch": [
+    0,
+    0
+   ],
+   "n_iter": 1000,
+   "src": "data/logs-local/board_v4d_fe_b64f31_log32.log",
+   "note": "feat/log32 (2026-10-21): 정수 로그 log2_q8_to_int8 의 64비트 나눗셈을 32비트로 교체 (출력 비트 일치, PC 전 범위 검증 tools/log32_check.c). 같은 바이너리·같은 POR 세션에서 옛 → 새 1000회씩 (-DFE_LOG_AB, 지연 정지 펌웨어). 주 값 = 기존 주 값 − 보드 실측 CPU 몫 Δ (환산; 사용자 결정 2026-10-21). 주 값 계열(생성 ISR) 빌드는 2000회 세션에서 멈춰 쓰지 못함 — fe-curve-design.md 10.1절."
+  },
+  "unit": "ms",
+  "source": "data/logs-local/board_v4d_fe_b64f31_log32.log",
+  "field": "feat/log32 (2026-10-21): 정수 로그 log2_q8_to_int8 의 64비트 나눗셈을 32비트로 교체 (출력 비트 일치, PC 전 범위 검증 tools/log32_check.c). 같은 바이너리·같은 POR 세션에서 옛 → 새 1000회씩 (-DFE_LOG_AB, 지연 정지 펌웨어). 주 값 = 기존 주 값 − 보드 실측 CPU 몫 Δ (환산; 사용자 결정 2026-10-21). 주 값 계열(생성 ISR) 빌드는 2000회 세션에서 멈춰 쓰지 못함 — fe-curve-design.md 10.1절.",
+  "note": "주 값 환산 근거 (2026-10-21 사용자 결정): latency.②′ b64f31 = 기존 주 값 (cpu 3.319, total 6.494) + Δcpu -0.537 ms; 직접 측정값(session_new, 지연 정지 펌웨어)은 보조"
+ },
  "latency.②′ b64f31": {
   "value": {
-   "pre": 3.31914,
+   "pre": 2.78165,
    "load": 0.94617,
    "infer": 2.22197,
    "out": 0.00671,
-   "total": 6.493989999999999,
+   "total": 5.9565,
    "detail": {
     "load1": 0.31264,
     "cfg1": 0.027809999999999998,
     "infer1": 0.22047999999999998,
-    "cpu": 3.31914,
+    "cpu": 2.78165,
     "load2": 0.5162899999999999,
     "cfg2": 0.08943000000000001,
     "infer2": 2.00149,
     "unload": 0.00671,
-    "total": 6.49389
+    "total": 5.9564
    },
    "pre_power": "load"
   },
   "unit": "ms",
-  "source": "data/logs-local/board_v4d_fe_b64f31.log",
+  "source": "data/logs-local/board_v4d_fe_b64f31.log (CPU 몫 -0.537 ms 환산: data/logs-local/board_v4d_fe_b64f31_log32.log)",
   "field": "load/infer/unload us max (1000회 최악); 전처리 보드 실측 cpu 구간 (|cos|+|sin| → 8위치 합 → 정수 로그 32×4 값 → 버퍼 밀기 → 입력 워드 포장), NPU 전원 켜진 채 → P_load 로 계산; 적재 열에 네트워크 전환(cfg1+cfg2) 포함"
  },
  "energy.②′ b64f31": {
   "value": {
-   "datasheet": 138.7371015,
-   "literature": 265.261345,
-   "moosmann": 185.048228
+   "datasheet": 132.6849641,
+   "literature": 251.931593,
+   "moosmann": 171.718476
   },
   "unit": "µJ",
-  "source": "data/logs-local/board_v4d_fe_b64f31.log × docs/paper/paper_config.json power_sources",
+  "source": "data/logs-local/board_v4d_fe_b64f31.log (CPU 몫 -0.537 ms 환산: data/logs-local/board_v4d_fe_b64f31_log32.log) × docs/paper/paper_config.json power_sources",
   "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
   "note": "추정(실측 지연 × 공개 전력)"
  },
@@ -973,9 +1133,9 @@
  "variants.②′.energy_lower_bound": {
   "value": {
    "lb": {
-    "datasheet": 49.8474789,
-    "literature": 98.689797,
-    "moosmann": 76.602012
+    "datasheet": 46.7827321,
+    "literature": 91.939733,
+    "moosmann": 69.85194800000001
    },
    "ga": {
     "datasheet": 43.341995,
@@ -984,52 +1144,52 @@
    },
    "lb_exceeds_ga": {
     "datasheet": true,
-    "literature": true,
+    "literature": false,
     "moosmann": false
    },
-   "extra_read_ms": 0.83984
+   "extra_read_ms": 0.7037500000000002
   },
   "unit": "µJ",
-  "source": "data/logs-local/board_v4d_fe_oldfw.log × docs/paper/paper_config.json power_sources",
+  "source": "data/logs-local/board_v4d_fe_oldfw.log (CPU 몫 -0.136 ms 환산: data/logs-local/board_v4d_fe_log32.log) × docs/paper/paper_config.json power_sources",
   "field": "실측 전 하한 (2026-10-19 오전) = ②′ 추정 에너지 + ②′ cpu 구간(가속기 메모리 2,048 워드 읽기) × P_load 한 번 더; ga = 가 u1000 추정 에너지",
   "note": "추정(실측 지연 × 공개 전력)의 하한 — 기록용, 실측값은 variants.②′.measured"
  },
  "variants.②′.measured": {
   "value": {
    "②′ b64": {
-    "total_ms": 3.6559699999999995,
+    "total_ms": 3.3842799999999995,
     "detail_ms": {
      "load1": 0.2813,
      "cfg1": 0.028030000000000003,
      "infer1": 0.20267,
-     "cpu": 1.67773,
+     "cpu": 1.4060400000000002,
      "load2": 0.26683,
      "cfg2": 0.08903,
      "infer2": 1.10275,
      "unload": 0.00763,
-     "total": 3.65591
+     "total": 3.38422
     },
     "E_uJ": {
-     "datasheet": 79.71527479999999,
-     "literature": 151.89225399999998,
-     "moosmann": 104.76659199999999
+     "datasheet": 76.6560454,
+     "literature": 145.15434199999999,
+     "moosmann": 98.02868
     },
     "predicted_datasheet_uJ": 76.0,
-    "lower_bound_datasheet_uJ": 49.8474789,
-    "deviation_from_prediction_pct": 4.8885194736841955,
+    "lower_bound_datasheet_uJ": 46.7827321,
+    "deviation_from_prediction_pct": 0.8632176315789427,
     "delta_vs_fe_ms": {
      "load1": -0.00020999999999998797,
      "cfg1": 0.005050000000000002,
      "infer1": 0.12235,
-     "cpu": 0.8378899999999999,
+     "cpu": 0.70229,
      "load2": 0.13297,
      "cfg2": 0.0030000000000000027,
      "infer2": 0.57122,
      "unload": 0.0011999999999999997
     },
-    "delta_total_vs_fe_ms": 1.6734699999999996,
-    "cpu_share_of_delta": 0.5006901826743235,
-    "npu_share_of_delta": 0.4144502142255314,
+    "delta_total_vs_fe_ms": 1.5378699999999994,
+    "cpu_share_of_delta": 0.456664087341583,
+    "npu_share_of_delta": 0.4509939071573021,
     "dominated_by_cpu_curve": {
      "datasheet": [
       "가 u1000",
@@ -1046,42 +1206,42 @@
     },
     "mismatch": 0,
     "n_iter": 1000,
-    "src": "data/logs-local/board_v4d_fe_b64.log"
+    "src": "data/logs-local/board_v4d_fe_b64.log (CPU 몫 -0.272 ms 환산: data/logs-local/board_v4d_fe_b64_log32.log)"
    },
    "②′ f31": {
-    "total_ms": 3.5225400000000002,
+    "total_ms": 3.2524699999999998,
     "detail_ms": {
      "load1": 0.31193,
      "cfg1": 0.02537,
      "infer1": 0.13885,
-     "cpu": 1.66114,
+     "cpu": 1.3910699999999998,
      "load2": 0.25847000000000003,
      "cfg2": 0.08727,
      "infer2": 1.0316500000000002,
      "unload": 0.00786,
-     "total": 3.52254
+     "total": 3.2524699999999998
     },
     "E_uJ": {
-     "datasheet": 74.2286654,
-     "literature": 142.25544200000002,
-     "moosmann": 100.000392
+     "datasheet": 71.1876772,
+     "literature": 135.557706,
+     "moosmann": 93.30265599999998
     },
     "predicted_datasheet_uJ": 72.0,
-    "lower_bound_datasheet_uJ": 49.8474789,
-    "deviation_from_prediction_pct": 3.095368611111107,
+    "lower_bound_datasheet_uJ": 46.7827321,
+    "deviation_from_prediction_pct": -1.1282261111111167,
     "delta_vs_fe_ms": {
      "load1": 0.030420000000000003,
      "cfg1": 0.0023899999999999998,
      "infer1": 0.05853000000000001,
-     "cpu": 0.8213,
+     "cpu": 0.6873199999999996,
      "load2": 0.12461000000000003,
      "cfg2": 0.001240000000000005,
      "infer2": 0.5001200000000002,
      "unload": 0.0014300000000000007
     },
-    "delta_total_vs_fe_ms": 1.5400400000000003,
-    "cpu_share_of_delta": 0.5332978364198332,
-    "npu_share_of_delta": 0.362750318173554,
+    "delta_total_vs_fe_ms": 1.4060599999999996,
+    "cpu_share_of_delta": 0.48882693483919587,
+    "npu_share_of_delta": 0.3973159040154761,
     "dominated_by_cpu_curve": {
      "datasheet": [
       "가 u1000",
@@ -1092,48 +1252,47 @@
       "다 u800"
      ],
      "moosmann": [
-      "가 u1000",
-      "다 u800"
+      "가 u1000"
      ]
     },
     "mismatch": 0,
     "n_iter": 1000,
-    "src": "data/logs-local/board_v4d_fe_f31.log"
+    "src": "data/logs-local/board_v4d_fe_f31.log (CPU 몫 -0.270 ms 환산: data/logs-local/board_v4d_fe_f31_log32.log)"
    },
    "②′ b64f31": {
-    "total_ms": 6.493989999999999,
+    "total_ms": 5.9565,
     "detail_ms": {
      "load1": 0.31264,
      "cfg1": 0.027809999999999998,
      "infer1": 0.22047999999999998,
-     "cpu": 3.31914,
+     "cpu": 2.78165,
      "load2": 0.5162899999999999,
      "cfg2": 0.08943000000000001,
      "infer2": 2.00149,
      "unload": 0.00671,
-     "total": 6.49389
+     "total": 5.9564
     },
     "E_uJ": {
-     "datasheet": 138.7371015,
-     "literature": 265.261345,
-     "moosmann": 185.048228
+     "datasheet": 132.6849641,
+     "literature": 251.931593,
+     "moosmann": 171.718476
     },
     "predicted_datasheet_uJ": 140.0,
-    "lower_bound_datasheet_uJ": 49.8474789,
-    "deviation_from_prediction_pct": -0.9020703571428612,
+    "lower_bound_datasheet_uJ": 46.7827321,
+    "deviation_from_prediction_pct": -5.225025642857141,
     "delta_vs_fe_ms": {
      "load1": 0.03112999999999999,
      "cfg1": 0.0048299999999999975,
      "infer1": 0.14016,
-     "cpu": 2.4793,
+     "cpu": 2.0778999999999996,
      "load2": 0.38242999999999994,
      "cfg2": 0.003400000000000014,
      "infer2": 1.46996,
      "unload": 0.00027999999999999987
     },
-    "delta_total_vs_fe_ms": 4.511489999999999,
-    "cpu_share_of_delta": 0.5495523651831213,
-    "npu_share_of_delta": 0.3568931771986639,
+    "delta_total_vs_fe_ms": 4.11009,
+    "cpu_share_of_delta": 0.5055607054833349,
+    "npu_share_of_delta": 0.3917481125717442,
     "dominated_by_cpu_curve": {
      "datasheet": [
       "가 u1000",
@@ -1150,7 +1309,7 @@
     },
     "mismatch": 0,
     "n_iter": 1000,
-    "src": "data/logs-local/board_v4d_fe_b64f31.log"
+    "src": "data/logs-local/board_v4d_fe_b64f31.log (CPU 몫 -0.537 ms 환산: data/logs-local/board_v4d_fe_b64f31_log32.log)"
    }
   },
   "unit": "ms / µJ",
@@ -1229,25 +1388,25 @@
   "field": "판단 1회 / hop"
  },
  "hop_fraction.②′": {
-  "value": 0.00793,
+  "value": 0.007385640000000001,
   "unit": "비",
   "source": "latency 항목",
   "field": "판단 1회 / hop"
  },
  "hop_fraction.②′ b64": {
-  "value": 0.014623879999999999,
+  "value": 0.013537119999999998,
   "unit": "비",
   "source": "latency 항목",
   "field": "판단 1회 / hop"
  },
  "hop_fraction.②′ f31": {
-  "value": 0.014090160000000001,
+  "value": 0.01300988,
   "unit": "비",
   "source": "latency 항목",
   "field": "판단 1회 / hop"
  },
  "hop_fraction.②′ b64f31": {
-  "value": 0.025975959999999996,
+  "value": 0.023826,
   "unit": "비",
   "source": "latency 항목",
   "field": "판단 1회 / hop"
@@ -1768,61 +1927,61 @@
     }
    },
    "NPU 전처리 (Gabor 필터뱅크) < 원본 파형 (전처리 없음)": {
-    "C_X": 1.37065,
+    "C_X": 1.23456,
     "N_X": 0.6118499999999999,
     "C_Y": 1.09506,
     "N_Y": 1.43943,
-    "condition": "r > 0.33",
-    "r_star": 0.33300708088643993,
+    "condition": "r > 0.17",
+    "r_star": 0.1685637642282319,
     "by_source": {
      "datasheet": {
       "r": 4.58830146231721,
-      "E_X": 40.390880499999994,
+      "E_X": 38.8585071,
       "E_Y": 71.0447253
      },
      "literature": {
       "r": 2.8911290322580645,
-      "E_X": 77.86176499999999,
+      "E_X": 74.486733,
       "E_Y": 130.364619
      },
      "moosmann": {
       "r": 1.435483870967742,
-      "E_X": 55.773979999999995,
+      "E_X": 52.398948000000004,
       "E_Y": 78.401196
      },
      "datasheet_upper": {
       "r": 19.06636670416198,
-      "E_X": 119.14209399999999,
+      "E_X": 117.60972059999999,
       "E_Y": 256.3137606
      }
     }
    },
    "NPU 전처리 (Gabor 필터뱅크) < CPU log-mel, 간격 62.5 ms (멜 32)": {
-    "C_X": 1.37065,
+    "C_X": 1.23456,
     "N_X": 0.6118499999999999,
     "C_Y": 2.403,
     "N_Y": 0.53077,
-    "condition": "r < 12.7",
-    "r_star": 12.732486433152454,
+    "condition": "r < 14.4",
+    "r_star": 14.410952146028626,
     "by_source": {
      "datasheet": {
       "r": 4.58830146231721,
-      "E_X": 40.390880499999994,
+      "E_X": 38.8585071,
       "E_Y": 43.341995
      },
      "literature": {
       "r": 2.8911290322580645,
-      "E_X": 77.86176499999999,
+      "E_X": 74.486733,
       "E_Y": 97.650609
      },
      "moosmann": {
       "r": 1.435483870967742,
-      "E_X": 55.773979999999995,
+      "E_X": 52.398948000000004,
       "E_Y": 78.489812
      },
      "datasheet_upper": {
       "r": 19.06636670416198,
-      "E_X": 119.14209399999999,
+      "E_X": 117.60972059999999,
       "E_Y": 111.6574017
      }
     }
