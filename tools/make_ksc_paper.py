@@ -39,11 +39,20 @@ BODY_PT = 9
 # ⚠️ 유일한 예외 — v1 데이터 시절 NPU 쪽 변형의 ④ 대비 차이 (@300/h macro-F1, Welch 95% CI).
 #    출처: docs/STATUS.md 1.3절 표 (g8-first-comparison.md, g8-d1-filterbank.md, errata-update-model.md).
 #    결과 파일(json)이 없어 여기 옮겼다. 논문에는 "v1 데이터" 임을 밝힌다.
-V1_NEG = [("멜 필터뱅크 초기화 Conv1d + Abs (D-1)", "-0.026 [-0.057, +0.006]"),
-          ("D-1 탭 256 / 512 (k=2 / k=4)", "-0.050 / -0.032"),
-          ("NPU 구간선형 로그 ((a), v1)", "+0.003 [-0.028, +0.034]"),
-          ("NPU 필터뱅크 + CPU 정수 로그 분할 ((c))", "-0.012 [-0.042, +0.018]"),
-          ("원본 파형 2D 재배열 (wave2D)", "-0.019")]
+#    다섯 가지 = D-1 (멜 필터뱅크 초기화 Conv1d+Abs) / D-1 탭 256·512 (k=2·k=4, 한 묶음) / (a) v1 (구간선형 로그) /
+#    (c) (NPU 필터뱅크 + CPU 정수 로그 분할) / wave2D (원본 파형 2D 재배열). CI 가 있는 셋(D-1, (a), (c))은 모두 0 을 포함한다.
+V1_NEG = [("D-1", -0.026, (-0.057, +0.006)), ("D-1 k=2", -0.050, None), ("D-1 k=4", -0.032, None),
+          ("(a) v1", +0.003, (-0.028, +0.034)), ("(c)", -0.012, (-0.042, +0.018)), ("wave2D", -0.019, None)]
+assert all(ci is None or ci[0] <= 0 <= ci[1] for _, _, ci in V1_NEG)
+V1_LO, V1_HI = min(d for _, d, _ in V1_NEG), max(d for _, d, _ in V1_NEG)
+
+# ⚠️ 두 번째 예외 — RISC-V 검토 (docs/results/riscv-gate.md 1.3~1.4절·5절, riscv-feasibility.md 0절·4절, 2026-10-20).
+#    데이터시트 19-100868 Rev 1 p.9~10 전류 행으로 계산한 "데이터시트 기반 추정" 이며 결과 파일(json)이 없어 여기 옮겼다.
+#    판단 비용 0.173 mW 는 아래 build() 에서 numbers.json 의 가 u1000 에너지 × 4/s 로 다시 계산한다.
+RISCV = {"avg_mW": (11.09, 13.79),        # 현 구성 평균 전력 (M4 SLEEP + I2S/DMA 대기 8.55~11.25 + CNN 대기 2.37 + 판단 0.17), riscv-gate.md 1.4절
+         "share_pct": (1.26, 1.56),       # 그중 판단 비용의 비율 (riscv-gate.md 1.4절)
+         "p_rv_over_m4": (0.59, 0.97),    # RV32 활성 전력 / M4 활성 전력 (riscv-feasibility.md 1.1절 사례 A~C)
+         "breakeven_ms": (2.2, 4.2)}      # RV32 전처리가 가 보다 에너지가 적으려면 끝나야 하는 전처리 지연 (riscv-feasibility.md 4절)
 
 
 def v(key):
@@ -88,7 +97,7 @@ def set_font(run, size=BODY_PT, bold=False, italic=False):
         rf.set(qn(a), FONT)
 
 
-def para(doc, text="", size=BODY_PT, bold=False, align=None, space_after=2, indent=False, line=1.15, italic=False):
+def para(doc, text="", size=BODY_PT, bold=False, align=None, space_after=2, indent=False, line=1.05, italic=False):
     p = doc.add_paragraph()
     if text:
         r = p.add_run(text)
@@ -212,10 +221,11 @@ def build():
     fe_cpu_ms = v("latency.②′")["detail"]["cpu"]
     para(doc,
          f"NPU 를 탑재한 MCU(MAX78000) 에서 배터리 상시 구동 음향 이벤트 감지기를 구현하고, log-mel 전처리를 "
-         f"어디에 둘지가 정확도와 판단당 에너지에 미치는 영향을 {len(CFG['configs'])}개 구성으로 같은 데이터·같은 보드에서 실측했다. "
-         f"벤더 참조 설계처럼 원본 파형을 NPU 에 직접 넣어 전처리를 없앤 구성은 CPU log-mel 구성보다 시험 데이터 macro-F1 이 {f1(H16)[0]-f1(W)[0]:.3f} 낮았고, "
+         f"어디에 둘지가 정확도와 판단당 에너지에 미치는 영향을 {len(CFG['configs'])}개 구성과 CPU 추론 대조군으로 비교했다. "
+         f"정확도와 판단 1회 지연은 같은 데이터·같은 보드에서 실측했고, 에너지는 실측 지연과 공개 전력값으로 추정했다. "
+         f"벤더 참조 설계처럼 원본 파형을 NPU 에 직접 넣어 전처리를 없앤 구성은 가장 정확한 CPU log-mel 구성(간격 16 ms)보다 시험 데이터 macro-F1 이 {f1(H16)[0]-f1(W)[0]:.3f} 낮았고, "
          f"로그 압축을 NPU 연산으로 근사한 변형은 이 격차를 되찾지 못했으며, 선형 부분(필터뱅크와 에너지 적분)만 NPU 로 옮긴 구성은 "
-         f"원본 파형 구성보다 에너지가 적지만 정확도는 원본 파형 구성과 같았다. 반면 프레임 간격을 넓힌 거친 log-mel을 CPU 에 남기고 작은 2D CNN 을 "
+         f"원본 파형 구성보다 에너지가 적지만 정확도는 원본 파형 구성과 유의한 차이가 없었다. 반면 프레임 간격을 넓힌 거친 log-mel을 CPU 에 남기고 작은 2D CNN 을 "
          f"NPU 에 올린 구성은 원본 파형 구성보다 macro-F1 이 {v('welch.가 u1000 − ④')['test_f1_S3'][0]:+.3f} 높으면서(Welch 95% CI 가 0 을 "
          f"포함하지 않음) 추정 에너지는 같거나 적었다. NPU 추론은 같은 가중치의 CMSIS-NN 추론보다 판단 1회 기준 {r_dec:.0f}배 빨랐다. "
          f"전처리 위치는 가속기 친화성의 문제가 아니라 정확도–에너지 설계 변수이며, 파레토 앞면은 양 끝이 아니라 전처리를 나눈 "
@@ -223,7 +233,7 @@ def build():
          align="just", space_after=6, line=1.15)
 
     # ── 1단 띠: 그림 1 + 표 1 ─────────────────────────────────────────
-    figure(doc, os.path.join(PAPER, "fig1_acc_energy.png"), 150,
+    figure(doc, os.path.join(PAPER, "fig1_acc_energy.png"), 145,
            f"그림 1. 판단 1회 추정 에너지(가로, 로그축)와 정확도. (a) 시험 데이터 macro-F1, (b) 외부 데이터 F1. 색은 전처리 위치, "
            f"마커 위치는 데이터시트 전력 기준, 가로 막대는 세 전력 출처의 범위, 세로 막대는 시드 표준편차(n=3). "
            f"{n_a}(*) 는 보드 미실측으로 지연을 합성 사이클로 추정한 점. 주황 점선은 NPU 전처리 계열(NPU 전처리 (Gabor 필터뱅크)와 대역·프레임 수를 늘린 변형 3종, 모두 보드 실측)을 에너지 순으로 이은 것. "
@@ -253,11 +263,11 @@ def build():
     body(doc, "소형 MCU 에 신경망 가속기(NPU)를 얹은 칩이 늘고 있다. MAX78000 은 Cortex-M4F 와 CNN 가속기를 "
               "한 칩에 두어 상시 동작 음향 감지에 적합하지만, 가속기는 합성곱·풀링·요소별 연산만 지원하고 "
               "FFT·로그 같은 전처리 연산은 지원하지 않는다 [1, 2]. 따라서 log-mel 전처리는 CPU 가 맡거나, 아예 없애고 "
-              "원본 파형을 가속기에 직접 넣어야 한다. 벤더의 음성 키워드 참조 설계는 후자를 택하며 음성에서는 정확도 "
-              "손실이 거의 없다고 알려져 있다 [4].")
+              "원본 파형을 가속기에 직접 넣어야 한다. 벤더의 음성 키워드 참조 설계는 후자를 택하며, MFCC 를 쓰는 "
+              "소형 모델들과 비슷한 정확도(96.3% 대 95.4~96.4%)를 보고했다 [4].")
     body(doc, "본 연구는 이 선택이 환경음(사이렌·유리 파손·비명·개 짖음) 감지에서도 성립하는지를 같은 데이터·같은 "
               "학습 설정·같은 보드에서 실측으로 답한다. 기여는 셋이다. (1) 전처리 위치를 양 끝(전부 CPU, 전부 NPU)과 "
-              f"그 사이의 {len(CFG['configs'])}개 구성으로 나누어 정확도와 판단 1회 지연을 보드에서 재고 에너지를 추정한 정확도–에너지 "
+              f"그 사이의 {len(CFG['configs'])}개 구성(과 CPU 추론 대조군)으로 나누어 정확도와 판단 1회 지연을 보드에서 재고 에너지를 추정한 정확도–에너지 "
               "곡선. (2) 필터뱅크·로그 압축·분할 등 전처리를 NPU 연산으로 옮긴 변형이 원본 파형 구성을 유의하게 넘지 "
               "못한다는 부정 결과와, 선형 부분만 옮긴 구성은 원본 파형 구성보다 에너지가 적지만 정확도 이득이 없어, CPU 전처리의 "
               "저에너지 구성과 비슷한 에너지에서 앞면 끝에 머문다는 실측. (3) 거친 log-mel(프레임 간격 62.5 ms, 멜 32)을 CPU 에 "
@@ -284,6 +294,8 @@ def build():
               f"구간선형 층으로 근사한 1D 구성. {DN[FE]}: 멜 대역폭에 맞춘 512탭 Gabor 필터(cos·sin 32쌍)를 가속기의 "
               f"Conv1d 로 두고 프레임 안 에너지 적분(|cos|+|sin| 의 8위치 합)과 정수 로그만 CPU 가 맡은 뒤, 그 32×16 특징을 "
               f"아래 62.5 ms 구성과 같은 2D CNN 에 넣는 구성 — 두 네트워크를 가속기에 동시 적재하고 판단마다 전환한다(판단 주기 256 ms). "
+              f"그 변형 3종은 Gabor 필터를 64쌍으로 늘려 64 대역을 얻은 {DN['②′ b64']}, 적분 위치 간격을 반으로 좁혀 프레임 간격 64 ms 를 32 ms 로 "
+              f"하고 프레임 수를 16 에서 31 로 늘린 {DN['②′ f31']}, 둘 다 적용한 {DN['②′ b64f31']} 이다. "
               f"CPU log-mel 네 구성: 프레임 간격 62.5 ms(멜 32)·50 ms(멜 32)·"
               f"25 ms(멜 64)·16 ms(멜 64) 의 증분 log-mel을 CPU 가 계산하고 2D CNN 을 NPU 에 올린다. "
               f"모든 구성의 전처리는 판단마다 새 프레임만 계산하는 증분 방식이며, 일괄 계산과 비트 일치함을 보드에서 확인했다. "
@@ -311,7 +323,7 @@ def build():
                       f"시간, {SP['log_pct']}%는 정수 로그였다(보드 실측). " if SP else
                       f"CPU 몫 {fe_cpu_ms:.2f} ms 의 대부분은 로그가 아니라 가속기 메모리에서 int32 출력 2,048 개를 읽어 오는 시간이었다. ")
     if fe_cheaper:
-        fe_neg = (f"선형 부분만 옮기면 에너지는 줄지만 정확도는 그대로다. {DN[FE]} 는 사전에 정한 목표({s_w} 초과 또는 "
+        fe_neg = (f"선형 부분만 옮기면 에너지는 줄지만 정확도는 유의한 차이가 없다. {DN[FE]} 는 사전에 정한 목표({s_w} 초과 또는 "
                   f"{s_ga}과 동등)는 넘지 못했다({s_w} 대비 {fci(fe_w)}, {s_ga} 대비 {fci(fe_g)}). 추정 에너지는 {s_w}보다 세 전력 출처 모두에서 "
                   f"적지만(데이터시트 {energy(FE):.0f} 대 {energy(W):.0f} μJ, Moosmann {energy(FE, 'moosmann'):.0f} 대 {energy(W, 'moosmann'):.0f} μJ; "
                   f"판단 1회 {latency(FE):.2f} ms 대 {latency(W):.2f} ms), {s_ga}과는 비슷한 에너지(데이터시트 기준 {energy(FE):.0f} 대 {energy(GA):.0f} μJ)"
@@ -326,8 +338,8 @@ def build():
               f"큰 비용을 치른다. 같은 가중치를 CPU 로 돌린 CMSIS-NN 대조군과 비교하면 NPU 추론은 추론만 "
               f"{r_inf:.0f}배, 판단 1회 {r_dec:.0f}배 빠르고 CPU 추론은 판단 주기의 {hop_m4:.0f}% 를 추론에 쓴다(그림 2).")
     body(doc, f"NPU 로 옮긴 전처리는 되찾지 못한다. {n_a} 는 {s_w} 대비 {welch('(a) − ④')} 로 CI 가 0 을 포함하고, "
-              f"로그 근사 층 때문에 NPU 사이클이 3.8배 늘어 추정 에너지는 {energy(A)/energy(W):.1f}배다. 앞선 라운드(v1 데이터)에서 "
-              f"시험한 변형들도 같았다: " + "; ".join(f"{a} {b}" for a, b in V1_NEG) + ". 지원하지 않는 비선형을 "
+              f"로그 근사 층 때문에 NPU 사이클이 3.8배 늘어 추정 에너지는 {energy(A)/energy(W):.1f}배다. 이전 데이터 버전에서 시험한 NPU 전처리 변형 다섯 가지도 "
+              f"{s_w} 대비 {V1_LO:+.3f}~{V1_HI:+.3f} 으로, 신뢰구간이 0 을 넘는 개선은 없었다. 지원하지 않는 비선형을 "
               f"합성곱으로 흉내 내는 순간 NPU 는 CPU 보다 비싸진다.")
     body(doc, fe_neg)
     # ②′ 곡선 변형 3종 (chain33, fe-curve-design.md 7·8절) — 보드 실측 (2026-10-19 오후 지시). 수치는 전부 numbers.json.
@@ -378,7 +390,7 @@ def build():
               # 3) 증분 없이 창 전체를 매번 계산했을 때 (추정, docs/results/incremental-design.md 4절)
               + "증분 계산 없이 창 전체를 매번 계산했다면 " + f"{s_ga}과 {DN[FE]} 모두 {s_w}보다 에너지가 컸을 것으로 추정되어"
               + "(일괄 전처리 사이클 = 새 프레임 비용 × 전체 프레임 수, 같은 전력 상수), 전처리의 이점은 증분 계산을 전제로 한다.")
-    figure(doc, os.path.join(PAPER, "fig2_latency_breakdown.png"), 80,
+    figure(doc, os.path.join(PAPER, "fig2_latency_breakdown.png"), 90,
            f"그림 2. 판단 1회 지연 분해(보드 실측, 1,000회 최악값). 왼쪽은 NPU 추론 {len([c for c in CFG['configs'] if not c.get('variant_of')])}개 구성"
            f"(CPU 전처리 / 입력 적재 / NPU 추론; {DN[FE]} 의 변형 3종은 표 1 에만), "
            "오른쪽은 같은 가중치의 CPU 추론(Cortex-M4F, CMSIS-NN)과 판단 주기 250 ms.")
@@ -390,12 +402,22 @@ def build():
               f"오경보율은 실배치보다 부풀려져 있다. {DN[FE]} 의 CPU 구간은 가속기 전원이 켜진 채 돌므로 적재 전력으로 "
               "보수적으로 계산했고, 가속기 메모리 읽기를 DMA 로 바꾸면 더 줄 수 있다. 음량 정규화·필터 해상도·용량 확대 등 원본 파형 쪽 변형을 더 시도할 "
               f"여지는 남아 있다. 향후 과제로, CPU 몫의 {SP['read_pct']}%를 차지하는 읽기와 위치 합산을 NPU 에서 수행하려면 8비트 출력에 맞춘 재학습이 필요하다.")
+    # 평균 전력 조건형 문장 + RISC-V 향후 과제 (2026-10-20 riscv-gate.md 5절 초안을 사용자 지시로 반영, 2026-10-21). 수치는 데이터시트 기반 추정.
+    e_dec_mw = energy(GA) * 4 / 1000.0                     # 판단 1회 (가, 데이터시트) × 초당 4회
+    body(doc, f"평균 전력. 판단 1회 에너지 {energy(GA):.0f} μJ 를 초당 4회로 환산하면 {e_dec_mw:.2f} mW 로, 마이크 I2S 와 DMA 를 살린 가장 깊은 "
+              f"저전력 모드의 대기 전력까지 더한 평균 전력 {RISCV['avg_mW'][0]:.0f}~{RISCV['avg_mW'][1]:.0f} mW(데이터시트 기반 추정)의 "
+              f"{RISCV['share_pct'][0]:.1f}~{RISCV['share_pct'][1]:.1f}% 에 그친다. 판단당 에너지의 차이가 시스템 평균 전력에 드러나려면 대기 전력이 "
+              f"판단 비용 아래로 내려가야 하며, 그 전까지는 대기 모드와 가속기 메모리 유지 방식이 평균 전력을 결정한다. "
+              f"같은 이유로 RISC-V 코어를 상시 게이트로 두어 이벤트 후보에서만 판단하는 설계는 평균 전력을 거의 줄이지 못할 것으로 추정되고, "
+              f"RISC-V 로 전처리를 옮기는 안도 FPU 없는 60 MHz 코어의 전력이 Cortex-M4F 의 {RISCV['p_rv_over_m4'][0]:.1f}~{RISCV['p_rv_over_m4'][1]:.1f}배라 "
+              f"손익분기 전처리 지연 {RISCV['breakeven_ms'][0]:.1f}~{RISCV['breakeven_ms'][1]:.1f} ms 를 지키기 어려워 제외했다. "
+              f"I2S 없이 깨우는 경로(아날로그 비교기 등)와 그때의 짧고 조용한 이벤트 재현율 평가는 향후 과제로 남긴다.")
     body(doc, "결론. NPU 탑재 MCU 에서 '전처리를 전부 가속기로' 는 환경음 감지에서 최적이 아니다. 지원 연산이 "
               "제한된 가속기에 비선형 전처리를 옮기는 시도는 정확도도 에너지도 얻지 못했고" +
               (", 선형 부분만 옮긴 구성은 원본 파형 구성보다 에너지를 줄였지만 CPU 전처리의 저에너지 구성과 비슷한 에너지에서 정확도를 잃어 앞면 끝에 머물렀으며" if fe_cheaper else "") +
               ", 작은 CPU 전처리로 "
-              "데이터량을 줄인 뒤 작은 모델을 가속기에 올리는 구성이 정확도–에너지 전선 위에 있었다. 가속기 설계 "
-              "지침은 연산 위치가 아니라 가속기에 들어가는 데이터율을 기준으로 세워야 한다.")
+              "데이터량을 줄인 뒤 작은 모델을 가속기에 올리는 구성이 정확도–에너지 전선 위에 있었다. 이 칩에서는 어떤 연산을 "
+              "가속기에 두느냐보다, 가속기에 들어가는 데이터율이 구성의 우열을 더 잘 설명했다.")
 
     heading(doc, "참고문헌", size=9)
     refs = [
@@ -414,7 +436,7 @@ def build():
         "Q. Kong, Y. Cao, T. Iqbal, Y. Wang, W. Wang, M. D. Plumbley, \"PANNs: large-scale pretrained audio neural networks for audio pattern recognition,\" IEEE/ACM TASLP, vol. 28, pp. 2880–2894, 2020.",
     ]
     for i, r in enumerate(refs, 1):
-        para(doc, f"[{i}] {r}", size=7.5, align="just", space_after=1, line=1.05)
+        para(doc, f"[{i}] {r}", size=7.5, align="just", space_after=0, line=1.0)
 
     out = os.path.join(OUT_DIR, "ksc2026_review.docx")
     doc.save(out)

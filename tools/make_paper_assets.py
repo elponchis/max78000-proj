@@ -655,8 +655,12 @@ def main():
             ax.errorbar([x], [mu], yerr=[[sd], [sd]], xerr=[[x - min(es)], [max(es) - x]], fmt=markers[name],
                         mfc="white" if est[name] else col, mec=col, ecolor=col, color=col, ms=7, capsize=2, lw=0.9, zorder=3)
             dsp = D["configs"][name]
-            ax.annotate(DT[name] + ("*" if est[name] else ""), (x, mu), textcoords="offset points", xytext=dsp.get("offset", [7, -11]),
-                        ha=dsp.get("ha", "left"), fontsize=8, color=col)
+            sfx = "_a" if key == "f1_S3" else "_b"          # 패널별 위치 (offset_a / offset_b), 없으면 공통 offset
+            off = dsp.get("offset" + sfx, dsp.get("offset", [7, -11]))
+            ha = dsp.get("ha" + sfx, dsp.get("ha", "left"))
+            arrow = dict(arrowstyle="-", lw=0.6, color=col, alpha=0.8, shrinkA=0, shrinkB=3) if dsp.get("leader" + sfx) else None
+            ax.annotate(DT[name] + ("*" if est[name] else ""), (x, mu), textcoords="offset points", xytext=off,
+                        ha=ha, va=dsp.get("va" + sfx, "center" if arrow else "baseline"), fontsize=8, color=col, arrowprops=arrow, zorder=5)
         # 파레토 앞면 (지배되지 않는 점): 큰 고리 + 점선. 점 추정 기준 (데이터시트 에너지, 시드 평균 F1)
         pts = {n: (LAT[n]["E"]["datasheet"], mean_sd(ACC[n][key])[0]) for n in names}
         front = pareto_front(pts)
@@ -686,35 +690,44 @@ def main():
     num("pareto.front", {("test_S3" if k == "f1_S3" else "ext"): v for k, v in PARETO.items()}, "",
         "latency/energy 항목 (datasheet) × acc 항목 (시드 평균)", "다른 점에 지배되지 않는 구성 (에너지 ≤ 이고 정확도 ≥ 인 다른 점이 없다), 에너지 오름차순", "점 추정 기준")
 
-    # 그림 2 — 판단 1회 지연 분해
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.8, 3.4), gridspec_kw={"width_ratios": [5.6, 1.6]})   # 구성 7개 — 눈금 이름이 겹치지 않게
+    # 그림 2 — 판단 1회 지연 분해. 가로 막대 2단: 위 NPU 추론 7개 구성, 아래 CPU 추론 대조군.
+    #   원고에서 90 mm 폭으로 넣으므로 figsize 폭 3.6 in → 축척 0.98, 글자 7.2 pt → 인쇄 약 7 pt (2026-10-21 지시 8항).
+    FS2 = 7.2
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(3.6, 2.35), gridspec_kw={"height_ratios": [7.0, 1.7]})
     segs = [("pre", "CPU 전처리", "white", "////"), ("load", "입력 적재(+출력)", "0.75", ""), ("infer", "NPU 추론", "0.35", "")]
-    xs = np.arange(len(main_names))
-    for ax, items, labels in ((ax1, [LAT[n] for n in main_names], [DS[n] + ("\n(추정)" if est[n] else "") for n in main_names]), (ax2, [LAT_M4], [M4S])):
-        bottom = np.zeros(len(items))
+    for ax, items, labels in ((ax1, [LAT[n] for n in main_names], [DS[n].replace("\n", " ") + (" (추정)" if est[n] else "") for n in main_names]),
+                              (ax2, [LAT_M4], [M4S])):
+        ys = np.arange(len(items))[::-1]              # 첫 구성이 맨 위
+        left = np.zeros(len(items))
         for key, lab, col, hatch in segs:
             vals = np.array([(L["load"] + L["out"]) if key == "load" else L[key] for L in items])
             if ax is ax2 and key == "infer":
                 lab = "CPU 추론"
-            ax.bar(np.arange(len(items)), vals, bottom=bottom, color=col, edgecolor="black", hatch=hatch, lw=0.8, width=0.6, label=lab)
-            bottom += vals
-        for i, L in enumerate(items):
-            if ax is ax2:      # CPU 추론 막대 — 숫자는 막대 안 위쪽에 (판단 주기 점선과 겹치지 않게)
-                ax.text(i, bottom[i] * 0.98, f"{L['total']:.2f}\n(NPU 대비 ×{NUMBERS['ratio.decision_m4cmsis_over_npu']['value']:.0f})",
-                        ha="center", va="top", fontsize=8, color="white")
+            ax.barh(ys, vals, left=left, color=col, edgecolor="black", hatch=hatch, lw=0.7, height=0.62, label=lab)
+            left += vals
+        for y, L in zip(ys, items):
+            if ax is ax2:      # CPU 추론 막대 — 숫자는 막대 안 오른쪽 끝에 (판단 주기 점선과 겹치지 않게)
+                ax.text(left[0] * 0.98, y, f"{L['total']:.2f} ms (NPU 대비 ×{NUMBERS['ratio.decision_m4cmsis_over_npu']['value']:.0f})",
+                        ha="right", va="center", fontsize=FS2, color="white")
             else:
-                ax.text(i, bottom[i], f"{L['total']:.2f}", ha="center", va="bottom", fontsize=8)
-        ax.set_xticks(np.arange(len(items)))
-        ax.set_xticklabels(labels, fontsize=6.8)
-        ax.grid(True, axis="y", lw=0.3, color="0.85")
-    ax1.set_ylabel("판단 1회 지연 (ms)")
-    ax2.set_ylabel("판단 1회 지연 (ms)")
-    ax2.axhline(hop_ms, color="black", ls="--", lw=0.8)
-    ax2.text(0, hop_ms, f"판단 주기 {hop_ms:.0f} ms", ha="center", va="bottom", fontsize=7)
-    ax2.set_ylim(0, hop_ms * 1.15)
+                ax.text(left[list(ys).index(y)] + 0.25, y, f"{L['total']:.2f}", ha="left", va="center", fontsize=FS2)
+        ax.set_yticks(ys)
+        ax.set_yticklabels(labels, fontsize=FS2)
+        ax.tick_params(axis="x", labelsize=FS2, length=2, pad=1)
+        ax.tick_params(axis="y", length=0, pad=2)
+        ax.grid(True, axis="x", lw=0.3, color="0.85")
+        ax.set_axisbelow(True)
+    ax1.set_xlim(0, max(L["total"] for L in [LAT[n] for n in main_names]) * 1.18)
+    ax1.set_ylim(-0.6, len(main_names) - 0.4)
+    ax2.set_xlim(0, hop_ms * 1.08)
+    ax2.set_ylim(-0.6, 0.6)
+    ax2.axvline(hop_ms, color="black", ls="--", lw=0.8)
+    ax2.set_xticks([0, 100, 200, hop_ms])
+    ax2.set_xticklabels(["0", "100", "200", f"{hop_ms:.0f}" + chr(10) + "(판단 주기)"], fontsize=FS2)
+    ax2.set_xlabel("판단 1회 지연 (ms)", fontsize=FS2, labelpad=1)
     h1, l1 = ax1.get_legend_handles_labels()
-    ax1.legend(h1, l1, loc="upper left", frameon=False)
-    fig.tight_layout()
+    ax1.legend(h1, l1, loc="upper right", frameon=False, fontsize=FS2, handlelength=1.4, handleheight=0.8, labelspacing=0.3, borderaxespad=0.2)
+    fig.tight_layout(h_pad=0.6)
     figs["fig2"] = save(fig, "fig2_latency_breakdown")
 
     # 그림 3 — 클래스별 재현율 (시험 데이터 / 외부 데이터) + 대형 모델 점선. 논문판(3구성) 과 부록판(전체)

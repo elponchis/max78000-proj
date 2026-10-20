@@ -233,7 +233,12 @@
         "offset": [
           7,
           -11
-        ]
+        ],
+        "offset_a": [
+          -9,
+          -3
+        ],
+        "ha_a": "right"
       },
       "②′": {
         "name": "NPU 전처리 (Gabor 필터뱅크)",
@@ -254,7 +259,18 @@
         "offset": [
           7,
           -13
-        ]
+        ],
+        "offset_a": [
+          -14,
+          10
+        ],
+        "ha_a": "right",
+        "offset_b": [
+          -9,
+          -8
+        ],
+        "ha_b": "right",
+        "leader_a": true
       },
       "②′ f31": {
         "name": "NPU 전처리 31 프레임",
@@ -264,7 +280,18 @@
         "offset": [
           7,
           -11
-        ]
+        ],
+        "offset_a": [
+          24,
+          -15
+        ],
+        "ha_a": "left",
+        "leader_a": true,
+        "offset_b": [
+          8,
+          6
+        ],
+        "ha_b": "left"
       },
       "②′ b64f31": {
         "name": "NPU 전처리 64 대역·31 프레임",
@@ -275,7 +302,19 @@
           -6,
           6
         ],
-        "ha": "right"
+        "ha": "right",
+        "offset_a": [
+          12,
+          26
+        ],
+        "ha_a": "left",
+        "leader_a": true,
+        "offset_b": [
+          12,
+          14
+        ],
+        "ha_b": "left",
+        "leader_b": true
       },
       "가 u1000": {
         "name": "CPU log-mel, 간격 62.5 ms (멜 32)",
@@ -326,7 +365,12 @@
         "offset": [
           7,
           -11
-        ]
+        ],
+        "offset_a": [
+          7,
+          -11
+        ],
+        "ha_a": "left"
       }
     },
     "m4": {
