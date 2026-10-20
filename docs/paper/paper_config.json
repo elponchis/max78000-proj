@@ -35,6 +35,21 @@
     }
   },
   "energy_note": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
+  "standby_power": {
+    "_설명": "평균 전력 분해용 대기 전력 (docs/results/riscv-gate.md 1.1~1.3절). I2S·DMA 를 살린 채 들어갈 수 있는 대기 모드는 SLEEP 과 LPM 뿐 (µPM 은 I2S 없음). P = I × V_REGI.",
+    "V_REGI_V": 3.0,
+    "lo": {
+      "P_mW": 1.92,
+      "label": "LPM 고정 전류",
+      "source": "데이터시트 p.10 I_REGI_FLP 0.64 mA (LOW POWER 모드, 고정분) × 3.0 V — 하한: 동적분(코어·DMA 클럭) 미포함"
+    },
+    "hi": {
+      "P_mW": 11.25,
+      "label": "SLEEP, IPO 100 MHz, DMA",
+      "source": "데이터시트 p.10 I_REGI_DSLP 22.5 µA/MHz × 100 MHz + I_REGI_FSLP 1.5 mA, × 3.0 V — 상한: 현 구성(M4 SLEEP, I2S DMA)의 대기"
+    },
+    "decisions_per_s": 4
+  },
   "configs": [
     {
       "name": "④",

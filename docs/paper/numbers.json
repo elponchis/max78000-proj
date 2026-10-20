@@ -550,6 +550,96 @@
   "source": "data/external_eval/v4_eval.json",
   "field": "editions.v4+D[(a) NPU 로그 근사].seeds[*].ext_map_real31L"
  },
+ "avg_power": {
+  "value": {
+   "P_wait_lo_mW": 1.92,
+   "P_wait_hi_mW": 11.25,
+   "decisions_per_s": 4,
+   "configs": {
+    "④": {
+     "E_min_uJ": 71.0447253,
+     "E_max_uJ": 130.364619,
+     "share_max_pct": 21.358482281228035,
+     "share_min_pct": 2.4637982784403873,
+     "share_datasheet_at_hi_pct": 2.4637982784403873
+    },
+    "②′": {
+     "E_min_uJ": 38.8585071,
+     "E_max_uJ": 74.486733,
+     "share_max_pct": 13.433456305978021,
+     "share_min_pct": 1.3628067815127671,
+     "share_datasheet_at_hi_pct": 1.3628067815127671
+    },
+    "②′ b64": {
+     "E_min_uJ": 76.6560454,
+     "E_max_uJ": 145.15434199999999,
+     "share_max_pct": 23.218960862628066,
+     "share_min_pct": 2.653233130901625,
+     "share_datasheet_at_hi_pct": 2.653233130901625
+    },
+    "②′ f31": {
+     "E_min_uJ": 71.1876772,
+     "E_max_uJ": 135.557706,
+     "share_max_pct": 22.021933066337084,
+     "share_min_pct": 2.468633401697708,
+     "share_datasheet_at_hi_pct": 2.468633401697708
+    },
+    "②′ b64f31": {
+     "E_min_uJ": 132.6849641,
+     "E_max_uJ": 251.931593,
+     "share_max_pct": 34.42010092328396,
+     "share_min_pct": 4.505148767135117,
+     "share_datasheet_at_hi_pct": 4.505148767135117
+    },
+    "가 u1000": {
+     "E_min_uJ": 43.341995,
+     "E_max_uJ": 97.650609,
+     "share_max_pct": 16.904787682825763,
+     "share_min_pct": 1.517660818626627,
+     "share_datasheet_at_hi_pct": 1.517660818626627
+    },
+    "다 u800": {
+     "E_min_uJ": 53.7791674,
+     "E_max_uJ": 121.385482,
+     "share_max_pct": 20.184305347098487,
+     "share_min_pct": 1.8762710908157298,
+     "share_datasheet_at_hi_pct": 1.8762710908157298
+    },
+    "간격 400": {
+     "E_min_uJ": 166.73214330000002,
+     "E_max_uJ": 353.22579400000006,
+     "share_max_pct": 42.39256592193304,
+     "share_min_pct": 5.596480411067135,
+     "share_datasheet_at_hi_pct": 5.596480411067135
+    },
+    "①′": {
+     "E_min_uJ": 266.80268870000003,
+     "E_max_uJ": 565.027658,
+     "share_max_pct": 54.06820132218931,
+     "share_min_pct": 8.664386572943144,
+     "share_datasheet_at_hi_pct": 8.664386572943144
+    },
+    "(a)": {
+     "E_min_uJ": 222.7624,
+     "E_max_uJ": 421.11457200000007,
+     "share_max_pct": 46.73263368334477,
+     "share_min_pct": 7.339148009081521,
+     "share_datasheet_at_hi_pct": 7.755184676963222
+    },
+    "M4 CMSIS-NN": {
+     "E_min_uJ": 2007.7707599999999,
+     "E_max_uJ": 5599.1952,
+     "share_max_pct": 92.10421800569917,
+     "share_min_pct": 41.65265521308601,
+     "share_datasheet_at_hi_pct": 41.65265521308601
+    }
+   }
+  },
+  "unit": "mW / %",
+  "source": "energy 항목 × docs/paper/paper_config.json standby_power (데이터시트 p.10)",
+  "field": "판단 비용 비중 = 4·E_판단/(P_대기 + 4·E_판단). share_max: E 세 출처 최댓값·P_대기 하한(LPM 고정 0.64 mA); share_min: E 최솟값·P_대기 상한(SLEEP 100 MHz + DMA); share_datasheet_at_hi: 데이터시트 E·상한 대기 (RISC-V 게이트 이득 상한, docs/results/riscv-gate.md 3절)",
+  "note": "데이터시트 기반 추정"
+ },
  "firmware.cpu_split": {
   "value": {
    "read_ms": 0.56957,

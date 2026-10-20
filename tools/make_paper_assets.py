@@ -502,6 +502,23 @@ def main():
         cid = {"wave": "wave", "u1000": "u1000", "u800": "u800", "h400": "h400", "melinc": "melinc"}.get(c["board_log"])
         if cid and abs(float(cp[cid]["e_datasheet_uJ"]) - LAT[c["name"]]["E"]["datasheet"]) > 1.0:
             sys.exit(f"[에러] {c['name']} 에너지(가) {LAT[c['name']]['E']['datasheet']:.1f} 가 curve-points-v4d.csv 와 1 µJ 넘게 다르다")
+    # ── 평균 전력 분해 (2026-10-21 지시): 판단 비용 비중 = 4·E_판단 / (P_대기 + 4·E_판단). 데이터시트 기반 추정.
+    #   "이하" 는 가장 보수적으로 — E_판단은 세 출처 최댓값, P_대기는 하한(LPM 고정 전류). "이상" 은 반대로 — E 최솟값, P_대기 상한(SLEEP 100 MHz + DMA).
+    SB = C["standby_power"]; dps = SB["decisions_per_s"]
+    p_lo, p_hi = SB["lo"]["P_mW"], SB["hi"]["P_mW"]
+    def share(e_uJ, p_wait):
+        pd = dps * e_uJ / 1000.0
+        return 100.0 * pd / (p_wait + pd)
+    AVGP = {"P_wait_lo_mW": p_lo, "P_wait_hi_mW": p_hi, "decisions_per_s": dps, "configs": {}}
+    for name, L in list(LAT.items()) + [("M4 CMSIS-NN", LAT_M4)]:
+        es = {k: L["E"][k] for k in curve_src}
+        AVGP["configs"][name] = {"E_min_uJ": min(es.values()), "E_max_uJ": max(es.values()),
+                                 "share_max_pct": share(max(es.values()), p_lo),     # ≤ : E 최대, 대기 하한
+                                 "share_min_pct": share(min(es.values()), p_hi),     # ≥ : E 최소, 대기 상한
+                                 "share_datasheet_at_hi_pct": share(es["datasheet"], p_hi)}   # 현 대기 모드(SLEEP)에서 데이터시트 기준 — 게이트 이득 상한
+    num("avg_power", AVGP, "mW / %", f"energy 항목 × {rel(CFG_PATH)} standby_power (데이터시트 p.10)",
+        "판단 비용 비중 = 4·E_판단/(P_대기 + 4·E_판단). share_max: E 세 출처 최댓값·P_대기 하한(LPM 고정 0.64 mA); share_min: E 최솟값·P_대기 상한(SLEEP 100 MHz + DMA); "
+        "share_datasheet_at_hi: 데이터시트 E·상한 대기 (RISC-V 게이트 이득 상한, docs/results/riscv-gate.md 3절)", "데이터시트 기반 추정")
     SAME_FW = None
     SPLIT = None
     fe_cfg = next(c for c in C["configs"] if c["name"] == "②′")
