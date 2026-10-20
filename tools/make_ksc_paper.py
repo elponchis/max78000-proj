@@ -221,7 +221,7 @@ def build():
     # ── 1단 띠: 그림 1 + 표 1 ─────────────────────────────────────────
     figure(doc, os.path.join(PAPER, "fig1_acc_energy.png"), 150,
            f"그림 1. 판단 1회 추정 에너지(가로, 로그축)와 정확도. (a) 시험 데이터 macro-F1, (b) 외부 데이터 F1. 색은 전처리 위치, "
-           f"마커 위치는 데이터시트 전력 기준, 가로 막대는 공개 전력값 범위, 세로 막대는 시드 표준편차(n=3). "
+           f"마커 위치는 데이터시트 전력 기준, 가로 막대는 세 전력 출처의 범위, 세로 막대는 시드 표준편차(n=3). "
            f"{n_a}(*) 는 보드 미실측으로 지연을 합성 사이클로 추정한 점. 주황 점선은 NPU 전처리 계열(Gabor 필터뱅크와 대역·프레임 수를 늘린 변형 3종, 모두 보드 실측)을 에너지 순으로 이은 것. "
            f"큰 고리와 회색 점선은 파레토 앞면(에너지가 같거나 작으면서 정확도가 같거나 높은 다른 점이 없는 구성).")
     rows = []
@@ -234,7 +234,8 @@ def build():
     rows.append([CFG["display"]["m4"]["name"] + " (원파형 가중치)", f"{lm4:.2f}",
                  f"{energy(M4):.0f} / {energy(M4, 'moosmann'):.0f}", "= 원본 파형", "= 원본 파형"])
     table(doc, ["구성", "판단 1회 지연 (ms)", "에너지 μJ, 추정 (데이터시트 / Moosmann)", "macro-F1 시험 데이터", "F1 외부 데이터"],
-          rows, f"표 1. 주 결과. 정확도는 시드 1~3 평균 ± 표준편차, 오경보 300회/h. 지연은 보드 1,000회 최악값, 에너지는 추정(실측 지연 × 공개 전력). "
+          rows, f"표 1. 주 결과. 정확도는 시드 1~3 평균 ± 표준편차, 오경보 300회/h. 지연은 보드 1,000회 최악값, 에너지는 추정(실측 지연 × 공개 전력; "
+                f"세 출처 가운데 데이터시트와 Moosmann 두 값만 싣고 선행연구(Moss·Ulkar & Okman) 값은 그림 1 의 가로 막대와 table2_main.csv 에 있다). "
                 f"변형 3종은 펌웨어 안정화 대기(NPU 패스당 약 {v('firmware.stop_wait')['us_per_pass']:.0f} μs) 포함. "
                 f"같은 대기를 넣으면 {DN[FE]} 는 {v('firmware.stop_wait')['fe_total_with_wait_ms']:.2f} ms."
                 + (f" 같은 펌웨어끼리 비교하면 데이터시트 기준 {DN[FE]} {N['firmware.same_fw_fe_vs_ga']['value']['datasheet']['fe']:.0f} μJ > {DN[GA]} "
@@ -285,10 +286,10 @@ def build():
               f"CPU 추론: {n_w} 의 가중치를 그대로 CMSIS-NN 으로 Cortex-M4F 에서 돌린 대조군(NPU 출력과 비트 일치). "
               f"모든 구성은 같은 데이터로 150 에폭, 같은 스케줄·증강·교사 증류(PANNs 임베딩 위 선형 프로브)로 "
               f"시드 3개씩 학습했다.")
-    body(doc, f"지연과 에너지. 지연은 보드에서 SysTick 으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, "
+    body(doc, f"지연과 에너지. 지연은 보드에서 SysTick(코어 클럭 사이클, 분해능 10 ns)으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, "
               f"코어 100 MHz, CNN 50 MHz). 에너지는 외부 계측 장비 없이 "
               f"E = t전처리·Pcpu + (t적재 + t출력)·Pload + t추론·Pnpu 로 추정했으며, 전력값은 데이터시트 [1] 와 동일 칩 "
-              f"실측 선행연구 [3–5] 두 출처를 나란히 써 범위로 보고한다. 측정값이 아님을 모든 수치에 밝힌다.")
+              f"실측 선행연구 두 벌(Moss·Ulkar & Okman [3, 4], Moosmann [5])의 세 출처를 나란히 써 범위로 보고한다. 측정값이 아님을 모든 수치에 밝힌다.")
 
     # ── 결과·결론·참고문헌 (2단 계속) ────────────────────────────────
     # ②′ (NPU 전처리: Gabor 필터뱅크 + CPU 정수 로그) — 보드 실측 뒤 정식 점. 사용자 지시 (2026-10-17) 4·5항:
@@ -299,14 +300,19 @@ def build():
     # 2026-10-20 지시: "②′ 가 가 보다 에너지가 적다" 는 주장으로 쓰지 않는다. 원본 파형보다 세 출처 모두 적다는 것만 유지, 손익분기 문장은 본문에서 뺀다
     #   (docs/paper/table5_breakeven.csv 에 남는다). 비슷한 에너지(데이터시트 차이 수 µJ = 측정 펌웨어 차이 수준)에서 정확도 0.11 낮다 로 쓴다.
     d_ga = abs(energy(GA) - energy(FE))
+    SP = N.get("firmware.cpu_split", {}).get("value")        # 9절 실험 II (2026-10-21): CPU 몫 분해 실측 — 비율만 쓴다 (②′ 주 값 불변)
+    if SP and not SP["valid"]:
+        sys.exit(f"[에러] CPU 분해 (a)+(b) 가 CPU 구간과 2 % 넘게 다르다: {SP}")
+    cpu_split_sent = (f"CPU 몫 {fe_cpu_ms:.2f} ms 중 {SP['read_pct']}%는 가속기 메모리에서 int32 출력 2,048개를 읽어 절댓값과 8위치 합산까지 하는 "
+                      f"시간, {SP['log_pct']}%는 정수 로그였다(보드 실측). " if SP else
+                      f"CPU 몫 {fe_cpu_ms:.2f} ms 의 대부분은 로그가 아니라 가속기 메모리에서 int32 출력 2,048 개를 읽어 오는 시간이었다. ")
     if fe_cheaper:
         fe_neg = (f"선형 부분만 옮기면 에너지는 줄지만 정확도는 그대로다. {DN[FE]} 는 사전에 정한 목표({s_w} 초과 또는 "
                   f"{s_ga}과 동등)는 넘지 못했다({s_w} 대비 {fci(fe_w)}, {s_ga} 대비 {fci(fe_g)}). 추정 에너지는 {s_w}보다 세 전력 출처 모두에서 "
                   f"적지만(데이터시트 {energy(FE):.0f} 대 {energy(W):.0f} μJ, Moosmann {energy(FE, 'moosmann'):.0f} 대 {energy(W, 'moosmann'):.0f} μJ; "
                   f"판단 1회 {latency(FE):.2f} ms 대 {latency(W):.2f} ms), {s_ga}과는 비슷한 에너지(데이터시트 기준 {energy(FE):.0f} 대 {energy(GA):.0f} μJ, "
                   f"차이 {d_ga:.0f} μJ 는 측정 펌웨어 차이 수준)에서 시험 macro-F1 이 {abs(fe_g[0]):.2f} 낮다. "
-                  f"두 네트워크를 동시 적재한 보드에서 가속기 출력·CPU 특징·최종 로짓이 전부 호스트와 비트 일치했고, "
-                  f"CPU 몫 {fe_cpu_ms:.2f} ms 의 대부분은 로그가 아니라 가속기 메모리에서 int32 출력 2,048 개를 읽어 오는 시간이었다. ")
+                  f"두 네트워크를 동시 적재한 보드에서 가속기 출력·CPU 특징·최종 로짓이 전부 호스트와 비트 일치했고, " + cpu_split_sent)
     else:
         fe_neg = (f"선형 부분만 NPU 로 옮기고 정수 로그만 CPU 에 남긴 {DN[FE]} 도 {s_w} 대비 {fci(fe_w)}, {s_ga} 대비 {fci(fe_g)} 로 열세였고 "
                   f"에너지도 {s_w} 보다 적지 않았다({energy(FE):.0f} 대 {energy(W):.0f} μJ). ")
@@ -340,16 +346,12 @@ def build():
     else:
         var_sent += "CPU 전처리 곡선 아래에 머물지 않은 점이 있었다(그림 1). "
     cs = [100 * (vm[n]["cpu_share_of_delta"] or 0) for n in vm]; ns = [100 * (vm[n]["npu_share_of_delta"] or 0) for n in vm]
-    SP = N.get("firmware.cpu_split", {}).get("value")        # 9절 실험 II (2026-10-21): CPU 몫 분해 실측 — 비율만 쓴다
-    if SP and not SP["valid"]:
-        sys.exit(f"[에러] CPU 분해 (a)+(b) 가 CPU 구간과 2 % 넘게 다르다: {SP}")
+    # 비율(읽기/로그)은 위 ②′ 문단에 한 번만 쓴다 (2026-10-21 지시: 중복 제거)
     if cpu_main and SP and SP["verdict"] == "A":
-        var_sent += (f"주된 비용은 NPU 연산({min(ns):.0f}~{max(ns):.0f}%)이 아니라 CPU 몫({min(cs):.0f}~{max(cs):.0f}%)이었고, "
-                     f"{DN[FE]} 의 CPU 몫 {SP['main_cpu_ms']:.2f} ms 가운데 {SP['read_pct']}% 는 가속기 메모리에서 int32 2,048 워드를 읽어 오는 시간이고 "
-                     f"정수 로그는 {SP['log_pct']}% 였다(보드 실측). NPU 전처리의 비용을 결정한 것은 NPU 연산량이 아니라 데이터 이동이다.")
+        var_sent += (f"주된 비용은 NPU 연산({min(ns):.0f}~{max(ns):.0f}%)이 아니라 CPU 몫({min(cs):.0f}~{max(cs):.0f}%)이었다. "
+                     f"NPU 전처리의 비용을 결정한 것은 NPU 연산량이 아니라 데이터 이동이다.")
     elif cpu_main and SP:
         var_sent += (f"주된 비용은 NPU 연산({min(ns):.0f}~{max(ns):.0f}%)이 아니라 CPU 몫({min(cs):.0f}~{max(cs):.0f}%)이었다. "
-                     f"{DN[FE]} 의 CPU 몫 {SP['main_cpu_ms']:.2f} ms 는 가속기 메모리 읽기({SP['read_pct']}%)와 정수 로그({SP['log_pct']}%)가 나눠 가졌다(보드 실측). "
                      f"로그를 가속기가 지원하면 두 몫이 함께 줄어들 수 있다는 점은 같으나, 비용을 데이터 이동만으로 설명할 수는 없다.")
     elif cpu_main:
         var_sent += (f"주된 비용은 NPU 연산({min(ns):.0f}~{max(ns):.0f}%)이 아니라 CPU 가 가속기 메모리에서 결과를 읽어 오는 "
