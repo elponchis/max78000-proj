@@ -409,8 +409,9 @@ def build():
               f"(세 전력 출처 중 가장 큰 에너지 기준). 반면 NPU 없이 CPU 로 추론하면 현 구성의 대기 전력 상한 {AP['P_wait_hi_mW']:.0f} mW 에서도 "
               f"판단 비용이 평균 전력의 {apc[M4]['share_min_pct']:.0f}% 이상을 차지한다. 즉 NPU 는 거친 log-mel 구성에서 판단 비용을 평균 전력의 작은 몫으로 "
               f"낮추고, 전처리 구성 간 에너지 차이는 대기 전력을 줄일수록 평균 전력에 더 크게 드러난다. "
-              f"RISC-V 코어를 상시 게이트로 두어 이벤트 후보에서만 판단하는 설계의 이득 상한은 현 대기 모드에서 판단 비용 전부인 "
-              f"약 {apc[GA]['share_datasheet_at_hi_pct']:.0f}% 로 추정되고, RISC-V 로 전처리를 옮기는 안도 FPU 없는 60 MHz 코어의 전력이 Cortex-M4F 의 "
+              f"RISC-V 코어를 상시 게이트로 두어 이벤트 후보에서만 판단하는 설계의 이득 상한은 판단 비용 전부로, 현 대기 모드에서 "
+              f"약 {apc[GA]['share_datasheet_at_hi_pct']:.0f}%, 가장 깊은 대기 모드에서도 {s_ga} 기준 {apc[GA]['share_max_pct']:.0f}%를 넘지 않는 것으로 추정된다. "
+              f"RISC-V 로 전처리를 옮기는 안도 FPU 없는 60 MHz 코어의 전력이 Cortex-M4F 의 "
               f"{RISCV['p_rv_over_m4'][0]:.1f}~{RISCV['p_rv_over_m4'][1]:.1f}배로 추정되어 손익분기 전처리 지연 {RISCV['breakeven_ms'][0]:.1f}~{RISCV['breakeven_ms'][1]:.1f} ms 를 "
               f"지키기 어려워 제외했다.")
     body(doc, "결론. NPU 탑재 MCU 에서 '전처리를 전부 가속기로' 는 환경음 감지에서 최적이 아니다. 지원 연산이 "
