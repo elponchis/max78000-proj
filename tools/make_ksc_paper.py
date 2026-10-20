@@ -205,14 +205,13 @@ def build():
          size=11, align="center", space_after=8, line=1.15)
     para(doc, "요   약", size=10, bold=True, align="center", space_after=3)
     pf = [DN[n] for n in v("pareto.front")["test_S3"]]
-    brk_fe_ga = v("breakeven")[f"{DN[FE]} < {DN[GA]}"]["r_star"]
     fe_cpu_ms = v("latency.②′")["detail"]["cpu"]
     para(doc,
          f"NPU 를 탑재한 MCU(MAX78000) 에서 배터리 상시 구동 음향 이벤트 감지기를 구현하고, 로그 멜 전처리를 "
          f"어디에 둘지가 정확도와 판단당 에너지에 미치는 영향을 {len(CFG['configs'])}개 구성으로 같은 데이터·같은 보드에서 실측했다. "
          f"벤더 참조 설계처럼 원파형을 NPU 에 직접 넣어 전처리를 없앤 구성은 CPU 로그 멜 구성보다 시험셋 macro-F1 이 {f1(H16)[0]-f1(W)[0]:.3f} 낮았고, "
          f"로그 압축을 NPU 연산으로 근사한 변형은 이 격차를 되찾지 못했으며, 선형 부분(필터뱅크와 에너지 적분)만 NPU 로 옮긴 구성은 "
-         f"에너지를 가장 적게 쓰지만 정확도는 원파형과 같았다. 반면 프레임 간격을 넓힌 거친 로그 멜을 CPU 에 남기고 작은 2D CNN 을 "
+         f"원파형보다 에너지가 적지만 정확도는 원파형과 같았다. 반면 프레임 간격을 넓힌 거친 로그 멜을 CPU 에 남기고 작은 2D CNN 을 "
          f"NPU 에 올린 구성은 원파형 구성보다 macro-F1 이 {v('welch.가 u1000 − ④')['test_f1_S3'][0]:+.3f} 높으면서(Welch 95% CI 가 0 을 "
          f"포함하지 않음) 추정 에너지는 같거나 적었다. NPU 추론은 같은 가중치의 CMSIS-NN 추론보다 판단 1회 기준 {r_dec:.0f}배 빨랐다. "
          f"전처리 위치는 가속기 친화성의 문제가 아니라 정확도–에너지 설계 변수이며, 파레토 앞면은 양 끝이 아니라 전처리를 나눈 "
@@ -235,7 +234,12 @@ def build():
     rows.append([CFG["display"]["m4"]["name"] + " (원파형 가중치)", f"{lm4:.2f}",
                  f"{energy(M4):.0f} / {energy(M4, 'moosmann'):.0f}", "= 원본 파형", "= 원본 파형"])
     table(doc, ["구성", "판단 1회 지연 (ms)", "에너지 μJ, 추정 (데이터시트 / Moosmann)", "macro-F1 시험 데이터", "F1 외부 데이터"],
-          rows, f"표 1. 주 결과. 정확도는 시드 1~3 평균 ± 표준편차, 오경보 300회/h. 지연은 보드 1,000회 최악값, 에너지는 추정(실측 지연 × 공개 전력).",
+          rows, f"표 1. 주 결과. 정확도는 시드 1~3 평균 ± 표준편차, 오경보 300회/h. 지연은 보드 1,000회 최악값, 에너지는 추정(실측 지연 × 공개 전력). "
+                f"변형 3종은 펌웨어 안정화 대기(NPU 패스당 약 {v('firmware.stop_wait')['us_per_pass']:.0f} μs) 포함. "
+                f"같은 대기를 넣으면 {DN[FE]} 는 {v('firmware.stop_wait')['fe_total_with_wait_ms']:.2f} ms."
+                + (f" 같은 펌웨어끼리 비교하면 데이터시트 기준 {DN[FE]} {N['firmware.same_fw_fe_vs_ga']['value']['datasheet']['fe']:.0f} μJ > {DN[GA]} "
+                   f"{N['firmware.same_fw_fe_vs_ga']['value']['datasheet']['ga']:.0f} μJ."
+                   if "firmware.same_fw_fe_vs_ga" in N and N["firmware.same_fw_fe_vs_ga"]["value"]["datasheet"]["fe_gt_ga"] else ""),
           col_mm=[60, 24, 40, 33, 33])
 
     # ── 2단: 서론·관련 연구·방법 ──────────────────────────────────────
@@ -291,13 +295,16 @@ def build():
     fe_w, fe_g = v("welch.②′ − ④")["test_f1_S3"], v("welch.②′ − 가 u1000")["test_f1_S3"]
     fe_cheaper = all(energy(FE, k) < energy(W, k) for k in ("datasheet", "literature", "moosmann"))
     fci = lambda t: f"{t[0]:+.3f} [{t[1]:+.3f}, {t[2]:+.3f}]"
+    # 2026-10-20 지시: "②′ 가 가 보다 에너지가 적다" 는 주장으로 쓰지 않는다. 원본 파형보다 세 출처 모두 적다는 것만 유지, 손익분기 문장은 본문에서 뺀다
+    #   (docs/paper/table5_breakeven.csv 에 남는다). 비슷한 에너지(데이터시트 차이 수 µJ = 측정 펌웨어 차이 수준)에서 정확도 0.11 낮다 로 쓴다.
+    d_ga = abs(energy(GA) - energy(FE))
     if fe_cheaper:
         fe_neg = (f"선형 부분만 옮기면 에너지는 줄지만 정확도는 그대로다. {DN[FE]} 는 사전에 정한 목표({s_w} 초과 또는 "
-                  f"{s_ga}과 동등)는 넘지 못했으나({s_w} 대비 {fci(fe_w)}, {s_ga} 대비 {fci(fe_g)}), {s_w}과 구분되지 않는 정확도를 "
-                  f"더 낮은 에너지로 달성해 정확도–에너지 곡선의 저에너지 끝을 이룬다. 판단 1회 {latency(FE):.2f} ms 대 {latency(W):.2f} ms, "
-                  f"추정 에너지는 데이터시트 기준 {energy(FE):.0f} 대 {energy(W):.0f} μJ, Moosmann 기준 {energy(FE, 'moosmann'):.0f} 대 "
-                  f"{energy(W, 'moosmann'):.0f} μJ 이며, {s_ga}보다 적다는 결론은 NPU 와 CPU 의 전력비가 {brk_fe_ga:.1f} 미만일 때 성립한다"
-                  f"(공개 전력값은 전부 그 안). 두 네트워크를 동시 적재한 보드에서 가속기 출력·CPU 특징·최종 로짓이 전부 호스트와 비트 일치했고, "
+                  f"{s_ga}과 동등)는 넘지 못했다({s_w} 대비 {fci(fe_w)}, {s_ga} 대비 {fci(fe_g)}). 추정 에너지는 {s_w}보다 세 전력 출처 모두에서 "
+                  f"적지만(데이터시트 {energy(FE):.0f} 대 {energy(W):.0f} μJ, Moosmann {energy(FE, 'moosmann'):.0f} 대 {energy(W, 'moosmann'):.0f} μJ; "
+                  f"판단 1회 {latency(FE):.2f} ms 대 {latency(W):.2f} ms), {s_ga}과는 비슷한 에너지(데이터시트 기준 {energy(FE):.0f} 대 {energy(GA):.0f} μJ, "
+                  f"차이 {d_ga:.0f} μJ 는 측정 펌웨어 차이 수준)에서 시험 macro-F1 이 {abs(fe_g[0]):.2f} 낮다. "
+                  f"두 네트워크를 동시 적재한 보드에서 가속기 출력·CPU 특징·최종 로짓이 전부 호스트와 비트 일치했고, "
                   f"CPU 몫 {fe_cpu_ms:.2f} ms 의 대부분은 로그가 아니라 가속기 메모리에서 int32 출력 2,048 개를 읽어 오는 시간이었다. ")
     else:
         fe_neg = (f"선형 부분만 NPU 로 옮기고 정수 로그만 CPU 에 남긴 {DN[FE]} 도 {s_w} 대비 {fci(fe_w)}, {s_ga} 대비 {fci(fe_g)} 로 열세였고 "
@@ -348,9 +355,15 @@ def build():
               f"NPU 가 원시 샘플 전량을 처리하는 순간 그 이득이 사라진다. 프레임 간격을 좁힐수록 정확도는 오르지만 "
               f"({s_25} {fmt_pm(H25)}, {s_16} {fmt_pm(H16)}) 전처리가 지연의 2/3 를 차지해 에너지가 {energy(H16)/energy(GA):.0f}배가 된다. "
               f"{s_25} 와 {s_16} 의 차이는 {welch('간격 400 − ①′')} 로 작지만 0 을 포함하지 않았다. "
-              f"그림 1 의 파레토 앞면은 {' → '.join(pf)} 이고, {s_w}과 {n_a} 는 모두 다른 점에 지배된다.")
+              + (f"그림 1 의 파레토 앞면은 {' → '.join(DN[n] for n in v('pareto.front')['test_S3'] if n != FE)} 이고, 그 저에너지 끝에 "
+                 f"{DN[FE]} 가 {s_ga}과 근접해 있다(앞면 끝). {s_w}과 {n_a} 는 모두 다른 점에 지배된다."
+                 if FE in v("pareto.front")["test_S3"] else
+                 f"그림 1 의 파레토 앞면은 {' → '.join(pf)} 이고, {s_w}과 {n_a} 는 모두 다른 점에 지배된다."))
     body(doc, f"대형 모델 기준선. 같은 정답·같은 문턱값 규칙으로 PANNs(CNN14) 를 채점하면 시험 macro-F1 {pann:.3f} 이다. "
               f"{s_16} 구성은 그 {100*f1(H16)[0]/pann:.0f}% 에 이른다.")
+    # 4절 끝 (2026-10-20 지시): 비용을 결정한 것은 데이터 이동. 마지막 문장은 추측 — '할 수 있다' 를 넘지 않는다.
+    body(doc, "NPU 전처리의 비용을 결정한 것은 NPU 연산량이 아니라, 로그 연산을 NPU 에서 수행할 수 없어 중간 결과를 CPU 로 읽어 와야 하는 "
+              "데이터 이동이었다. 가속기 내부에서 비선형 압축을 지원하면 이 경계가 달라질 수 있다.")
     figure(doc, os.path.join(PAPER, "fig2_latency_breakdown.png"), 88,
            f"그림 2. 판단 1회 지연 분해(보드 실측, 1,000회 최악값). 왼쪽은 NPU 추론 {len([c for c in CFG['configs'] if not c.get('variant_of')])}개 구성"
            f"(CPU 전처리 / 입력 적재 / NPU 추론; {DN[FE]} 의 변형 3종은 표 1 에만), "
@@ -365,7 +378,7 @@ def build():
               "여지는 남아 있다.")
     body(doc, "결론. NPU 탑재 MCU 에서 '전처리를 전부 가속기로' 는 환경음 감지에서 최적이 아니다. 지원 연산이 "
               "제한된 가속기에 비선형 전처리를 옮기는 시도는 정확도도 에너지도 얻지 못했고" +
-              (", 선형 부분만 옮긴 구성은 에너지를 조금 줄이는 대신 정확도를 잃어 곡선의 저에너지 끝에 머물렀으며" if fe_cheaper else "") +
+              (", 선형 부분만 옮긴 구성은 원파형보다 에너지를 줄였지만 CPU 전처리의 저에너지 구성과 비슷한 에너지에서 정확도를 잃어 앞면 끝에 머물렀으며" if fe_cheaper else "") +
               ", 작은 CPU 전처리로 "
               "데이터량을 줄인 뒤 작은 모델을 가속기에 올리는 구성이 정확도–에너지 전선 위에 있었다. 가속기 설계 "
               "지침은 연산 위치가 아니라 가속기에 들어가는 데이터율을 기준으로 세워야 한다.")

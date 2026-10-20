@@ -550,6 +550,102 @@
   "source": "data/external_eval/v4_eval.json",
   "field": "editions.v4+D[(a) NPU 로그 근사].seeds[*].ext_map_real31L"
  },
+ "latency.②′.new_firmware": {
+  "value": {
+   "pre": 0.84504,
+   "load": 0.52939,
+   "infer": 0.7100900000000001,
+   "out": 0.00647,
+   "total": 2.0909899999999997,
+   "detail": {
+    "load1": 0.28078,
+    "cfg1": 0.02571,
+    "infer1": 0.1295,
+    "cpu": 0.84504,
+    "load2": 0.13366999999999998,
+    "cfg2": 0.08923,
+    "infer2": 0.58059,
+    "unload": 0.00647,
+    "total": 2.0909899999999997
+   },
+   "E": {
+    "datasheet": 44.5135051,
+    "literature": 85.159773,
+    "moosmann": 59.525524000000004
+   },
+   "n_iter": 1000,
+   "mismatch": 0
+  },
+  "unit": "ms / µJ",
+  "source": "data/logs-local/board_v4d_fe.log",
+  "field": "주 값은 2026-10-17 펌웨어(생성 ISR 의 RMW 즉시 정지) 실측 (사용자 결정 2026-10-20: 선택지 2). 보조: 2026-10-20 결함 수정 펌웨어(직접 쓰기 + 완료 뒤 안정화 대기) 로 POR 뒤 1000회 재측정 — 변형 3종과 같은 펌웨어. 에너지는 같은 전력 상수.",
+  "note": "보조 값 (그림·표의 주 값은 옛 펌웨어 latency.②′)"
+ },
+ "firmware.stop_wait": {
+  "value": {
+   "ms_per_decision": 0.09824000000000022,
+   "us_per_pass": 49.12000000000011,
+   "energy_uJ": {
+    "datasheet": 4.007209600000008,
+    "literature": 7.043808000000015,
+    "moosmann": 3.497344000000008
+   },
+   "energy_uJ_max": 7.043808000000015,
+   "fe_total_with_wait_ms": 2.0909899999999997
+  },
+  "unit": "ms / µJ",
+  "source": "data/logs-local/board_v4d_fe.log − data/logs-local/board_v4d_fe_oldfw.log (infer1+infer2)",
+  "field": "결함 수정 펌웨어(완료 인터럽트 뒤 FE_DELAY_STOP 바쁜 대기 → 정지)가 NPU 패스마다 더한 시간. 변형 3종의 추론 열에 포함(②′ 주 값에는 없음), P_npu 로 계산되어 그만큼 과대",
+  "note": "추정"
+ },
+ "latency.가 u1000.new_firmware": {
+  "value": {
+   "pre": 2.26409,
+   "load": 0.13549,
+   "infer": 0.57999,
+   "out": 0.00543,
+   "total": 2.985,
+   "E": {
+    "datasheet": 45.3723114,
+    "literature": 101.22953100000001,
+    "moosmann": 80.29189199999999
+   },
+   "n_iter": 1000,
+   "mismatch": 0,
+   "main_detail": {
+    "load": 0.13353,
+    "infer": 0.53077,
+    "out": 0.00538
+   }
+  },
+  "unit": "ms / µJ",
+  "source": "data/logs-local/board_v4d_u1000_newfw.log",
+  "field": "보조 확인 (2026-10-20): measure_main.c 에 같은 수정(-DMEASURE_STOP_FIX: 직접 쓰기 + 안정화 대기 500회 루프) 을 넣어 POR 뒤 1000회. 주 값은 바꾸지 않는다 — 같은 펌웨어끼리 ②′ 대 가 의 에너지 순서 확인용.",
+  "note": "보조 값 (주 값은 latency.가 u1000)"
+ },
+ "firmware.same_fw_fe_vs_ga": {
+  "value": {
+   "datasheet": {
+    "fe": 44.5135051,
+    "ga": 45.3723114,
+    "fe_gt_ga": false
+   },
+   "literature": {
+    "fe": 85.159773,
+    "ga": 101.22953100000001,
+    "fe_gt_ga": false
+   },
+   "moosmann": {
+    "fe": 59.525524000000004,
+    "ga": 80.29189199999999,
+    "fe_gt_ga": false
+   }
+  },
+  "unit": "µJ",
+  "source": "latency.②′.new_firmware, latency.가 u1000.new_firmware × power_sources",
+  "field": "같은(결함 수정) 펌웨어끼리 ②′ 대 가 의 추정 에너지 — 보조 확인 (그림·표 주 값은 옛 펌웨어)",
+  "note": "추정"
+ },
  "latency.④": {
   "value": {
    "pre": 0.0,
@@ -594,7 +690,7 @@
    "pre_power": "load"
   },
   "unit": "ms",
-  "source": "data/logs-local/board_v4d_fe.log",
+  "source": "data/logs-local/board_v4d_fe_oldfw.log",
   "field": "load/infer/unload us max (1000회 최악); 전처리 보드 실측 cpu 구간 (|cos|+|sin| → 8위치 합 → 정수 로그 32×4 값 → 버퍼 밀기 → 입력 워드 포장), NPU 전원 켜진 채 → P_load 로 계산; 적재 열에 네트워크 전환(cfg1+cfg2) 포함"
  },
  "energy.②′": {
@@ -604,7 +700,7 @@
    "moosmann": 55.773979999999995
   },
   "unit": "µJ",
-  "source": "data/logs-local/board_v4d_fe.log × docs/paper/paper_config.json power_sources",
+  "source": "data/logs-local/board_v4d_fe_oldfw.log × docs/paper/paper_config.json power_sources",
   "field": "추정(실측 지연 × 공개 전력). 측정값이 아니다. E = t_전처리·P_cpu + (t_적재 + t_출력)·P_load + t_추론·P_npu; M4 는 t_적재·P_load + t_추론·P_cpu. 슬립·유휴·가중치 적재 미포함.",
   "note": "추정(실측 지연 × 공개 전력)"
  },
@@ -869,7 +965,7 @@
    "extra_read_ms": 0.83984
   },
   "unit": "µJ",
-  "source": "data/logs-local/board_v4d_fe.log × docs/paper/paper_config.json power_sources",
+  "source": "data/logs-local/board_v4d_fe_oldfw.log × docs/paper/paper_config.json power_sources",
   "field": "실측 전 하한 (2026-10-19 오전) = ②′ 추정 에너지 + ②′ cpu 구간(가속기 메모리 2,048 워드 읽기) × P_load 한 번 더; ga = 가 u1000 추정 에너지",
   "note": "추정(실측 지연 × 공개 전력)의 하한 — 기록용, 실측값은 variants.②′.measured"
  },

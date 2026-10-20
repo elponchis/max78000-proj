@@ -391,6 +391,7 @@ def main():
     pre = read_preproc_cycles()
     LAT = {}
     wave_log = None
+    NEWFW_FE, STOP_WAIT_MS, NEWFW_GA = None, None, None
     for c in C["configs"]:
         syn = read_synth(c["synth_dir"])
         if c.get("synth_dir_p1"):              # ②′: 두 네트워크 — 합성 수치는 p1 + p2 의 합
@@ -400,6 +401,13 @@ def main():
         if c.get("two_networks"):              # ②′: 보드 실측, 구간 8개. CPU 구간은 NPU 전원이 켜진 채 돌므로 에너지는 P_load 로 (보수적)
             b = read_board_log_fe(c["board_log"])
             assert b["kat"] and b["mismatch"] == 0, (c["name"], b)
+            if c.get("board_log_newfw"):       # ②′: 새 펌웨어(결함 수정 + 안정화 대기) 재측정을 보조로 나란히 남긴다 (2026-10-20, 주 값은 옛 펌웨어)
+                bp = read_board_log_fe(c["board_log_newfw"])
+                assert bp["kat"] and bp["mismatch"] == 0, (c["name"], "newfw", bp)
+                NEWFW_FE = {"detail": {k: bp[k] for k in FE_SEGS}, "src": bp["path"], "n_iter": bp["n_iter"], "mismatch": bp["mismatch"], "note": c["board_log_newfw_note"],
+                            "pre": bp["cpu"], "load": bp["load1"] + bp["load2"] + bp["cfg1"] + bp["cfg2"], "infer": bp["infer1"] + bp["infer2"], "out": bp["unload"]}
+                NEWFW_FE["total"] = bp["total"]
+                STOP_WAIT_MS = (bp["infer1"] + bp["infer2"]) - (b["infer1"] + b["infer2"])     # 새 펌웨어의 완료 뒤 안정화 대기 × 2 (판단당)
             LAT[c["name"]] = {"pre": b["cpu"], "load": b["load1"] + b["load2"] + b["cfg1"] + b["cfg2"], "infer": b["infer1"] + b["infer2"],
                               "out": b["unload"], "est": False, "pre_power": "load", "detail": {k: b[k] for k in FE_SEGS}, "src": b["path"], "mismatch": b["mismatch"],
                               "pre_src": "보드 실측 cpu 구간 (|cos|+|sin| → 8위치 합 → 정수 로그 32×4 값 → 버퍼 밀기 → 입력 워드 포장), NPU 전원 켜진 채 → P_load 로 계산; 적재 열에 네트워크 전환(cfg1+cfg2) 포함",
@@ -411,6 +419,12 @@ def main():
                 wave_log = b
             core = b["core_hz"]
             t_pre, pre_src = (pre[c["framing"]][0] / core * 1e3, pre[c["framing"]][1]) if c["framing"] else (0.0, "전처리 없음")
+            if c.get("board_log_aux") and os.path.isfile(os.path.join(LOGS, f"board_v4d_{c['board_log_aux']}.log")):   # 가: 새 펌웨어 보조 확인
+                ba = read_board_log(c["board_log_aux"])
+                assert ba["kat"] and ba["mismatch"] == 0, (c["name"], "aux", ba)
+                NEWFW_GA = {"name": c["name"], "pre": t_pre, "load": ba["load"], "infer": ba["infer"], "out": ba["unload"], "src": ba["path"], "n_iter": ba["n_iter"],
+                            "mismatch": ba["mismatch"], "note": c["board_log_aux_note"], "main_detail": {"load": b["load"], "infer": b["infer"], "out": b["unload"]}}
+                NEWFW_GA["total"] = t_pre + ba["load"] + ba["infer"] + ba["unload"]
             LAT[c["name"]] = {"pre": t_pre, "load": b["load"], "infer": b["infer"], "out": b["unload"], "est": False,
                               "src": b["path"], "pre_src": pre_src, "core_hz": core, "cnn_hz": b["cnn_hz"], "n_iter": b["n_iter"], "synth": syn}
         else:                                     # (a): 보드 미실측 — 적재·출력은 ④ 실측, 추론은 합성 사이클 ÷ CNN 클럭
@@ -448,6 +462,24 @@ def main():
         cid = {"wave": "wave", "u1000": "u1000", "u800": "u800", "h400": "h400", "melinc": "melinc"}.get(c["board_log"])
         if cid and abs(float(cp[cid]["e_datasheet_uJ"]) - LAT[c["name"]]["E"]["datasheet"]) > 1.0:
             sys.exit(f"[에러] {c['name']} 에너지(가) {LAT[c['name']]['E']['datasheet']:.1f} 가 curve-points-v4d.csv 와 1 µJ 넘게 다르다")
+    SAME_FW = None
+    if NEWFW_FE is not None:
+        NEWFW_FE["E"] = {k: energy(dict(NEWFW_FE, pre_power="load"), PS[k]) for k in curve_src}
+        num("latency.②′.new_firmware", {k: NEWFW_FE[k] for k in ("pre", "load", "infer", "out", "total", "detail", "E", "n_iter", "mismatch")}, "ms / µJ", NEWFW_FE["src"],
+            NEWFW_FE["note"] + " 에너지는 같은 전력 상수.", "보조 값 (그림·표의 주 값은 옛 펌웨어 latency.②′)")
+        wait_e = {k: STOP_WAIT_MS * PS[k]["P_npu_mW"] for k in curve_src}
+        num("firmware.stop_wait", {"ms_per_decision": STOP_WAIT_MS, "us_per_pass": 500.0 * STOP_WAIT_MS, "energy_uJ": wait_e, "energy_uJ_max": max(wait_e.values()),
+                                   "fe_total_with_wait_ms": NEWFW_FE["total"]}, "ms / µJ",
+            f"{NEWFW_FE['src']} − {LAT['②′']['src']} (infer1+infer2)",
+            "결함 수정 펌웨어(완료 인터럽트 뒤 FE_DELAY_STOP 바쁜 대기 → 정지)가 NPU 패스마다 더한 시간. 변형 3종의 추론 열에 포함(②′ 주 값에는 없음), P_npu 로 계산되어 그만큼 과대",
+            "추정")
+        if NEWFW_GA is not None:
+            NEWFW_GA["E"] = {k: energy(NEWFW_GA, PS[k]) for k in curve_src}
+            num(f"latency.{NEWFW_GA['name']}.new_firmware", {k: NEWFW_GA[k] for k in ("pre", "load", "infer", "out", "total", "E", "n_iter", "mismatch", "main_detail")}, "ms / µJ",
+                NEWFW_GA["src"], NEWFW_GA["note"], "보조 값 (주 값은 latency.가 u1000)")
+            SAME_FW = {k: {"fe": NEWFW_FE["E"][k], "ga": NEWFW_GA["E"][k], "fe_gt_ga": bool(NEWFW_FE["E"][k] > NEWFW_GA["E"][k])} for k in curve_src}
+            num("firmware.same_fw_fe_vs_ga", SAME_FW, "µJ", "latency.②′.new_firmware, latency.가 u1000.new_firmware × power_sources",
+                "같은(결함 수정) 펌웨어끼리 ②′ 대 가 의 추정 에너지 — 보조 확인 (그림·표 주 값은 옛 펌웨어)", "추정")
     for name, L in LAT.items():
         num(f"latency.{name}", dict({k: L[k] for k in ("pre", "load", "infer", "out", "total")},
                                   **({"detail": L["detail"], "pre_power": "load"} if "detail" in L else {})), "ms", L["src"],
@@ -739,6 +771,10 @@ def main():
                                          f"{DN['②′']} 는 두 네트워크(NPU 필터뱅크 p1 + 2D CNN p2)를 동시 적재한 보드 실측 — CPU 전처리 열 = p1 출력의 |cos|+|sin|·8위치 합·정수 로그 (NPU 전원 켜진 채 → 에너지는 P_load 로), "
                                          f"입력 적재 열 = 두 적재 + 네트워크 전환(층 레지스터 재설정), 추론 열 = p1 + p2. 판단 주기 256 ms (다른 구성 250 ms). 구간별 값은 numbers.json latency.②′.detail.",
                                          f"{DN['②′ b64']} / {DN['②′ f31']} / {DN['②′ b64f31']} 은 {DN['②′']} 의 대역·프레임 수를 늘린 변형 (사전 등록 docs/results/fe-curve-design.md) — 같은 두 네트워크 보드 실측, 같은 열 정의. 예측·하한과의 비교는 numbers.json variants.②′.measured.",
+                                         (f"변형 3종은 펌웨어 안정화 대기(NPU 패스당 약 {500.0 * STOP_WAIT_MS:.0f} µs) 포함 — 에너지 최대 약 {max(wait_e.values()):.0f} µJ 과대(측정값에서 빼지 않음). "
+                                          f"같은 대기를 넣으면 {DN['②′']} 는 {NEWFW_FE['total']:.2f} ms." if NEWFW_FE is not None else ""),
+                                         (f"같은 펌웨어끼리 비교하면 데이터시트 기준 {DN['②′']} {SAME_FW['datasheet']['fe']:.1f} µJ > {DN['가 u1000']} {SAME_FW['datasheet']['ga']:.1f} µJ."
+                                          if SAME_FW is not None and SAME_FW["datasheet"]["fe_gt_ga"] else ""),
                                          "파레토 앞면: 점 추정(데이터시트 에너지, 시드 평균) 기준으로 에너지 ≤ 이고 정확도 ≥ 인 다른 구성이 없는 점."])
 
     hdr3 = ["비교 (앞 − 뒤)", "n", f"macro-F1 {TR['testL_S3']} (주)", f"F1 {TR['real31L']}", f"mAP {TR['real31L']}", f"macro-F1 {TR['testL']}"]

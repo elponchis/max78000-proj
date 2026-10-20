@@ -30,6 +30,36 @@
 
 volatile uint32_t cnn_time; // 완료 인터럽트가 세운다 (cnn.c)
 
+// -DMEASURE_STOP_FIX (2026-10-20, 보조 확인용 — 기본 꺼짐): 두 네트워크 펌웨어(fe_measure_main.c)에서 고친 결함 두 가지를 같은 방식으로 넣는다.
+//   (1) 생성 CNN_ISR·cnn_stop 의 읽어-고쳐-쓰기 대신 알려진 정지값 0x00100008 을 네 사분면에 직접 쓴다.
+//   (2) 완료 인터럽트에서는 레지스터를 쓰지 않고(인터럽트만 막고 깃발) STOP_FIX_DELAY 회 루프(500 ≈ 49 µs) 뒤 한 번만 정지시킨다.
+//   본 표의 단일 네트워크 값(wave/u1000/u800/h400/melinc)은 이 옵션 **없이** 잰 것이다 — 가(u1000) 를 이 옵션으로 다시 재어 ②′ 와 같은
+//   펌웨어끼리 비교하는 보조 확인에만 쓴다 (docs/results/fe-curve-design.md 8.6절).
+#ifdef MEASURE_STOP_FIX
+#ifndef STOP_FIX_DELAY
+#define STOP_FIX_DELAY 500
+#endif
+static const uint32_t SF_QBASE[4] = { 0x50100000u, 0x50500000u, 0x50900000u, 0x50d00000u };
+static void sf_isr(void)
+{
+    NVIC_DisableIRQ(CNN_IRQn);
+    cnn_time = 1;
+}
+static inline void sf_wait_and_stop(void)
+{
+    while (cnn_time == 0) {}
+    for (volatile int w = 0; w < STOP_FIX_DELAY; w++) {}
+    for (int q = 0; q < 4; q++) *((volatile uint32_t *)SF_QBASE[q]) = 0x00100008u;
+    NVIC_ClearPendingIRQ(CNN_IRQn);
+    NVIC_EnableIRQ(CNN_IRQn);
+}
+#define WAIT_DONE() sf_wait_and_stop()
+#define NET_STOP()  do { for (int q = 0; q < 4; q++) *((volatile uint32_t *)SF_QBASE[q]) = 0x00100008u; } while (0)
+#else
+#define WAIT_DONE() do { while (cnn_time == 0) {} } while (0)
+#define NET_STOP()  cnn_stop()
+#endif
+
 void load_input(void);   // kat_io.c (합성기 생성)
 int check_output(void);  // kat_io.c (합성기 생성)
 
@@ -108,6 +138,9 @@ int main(void)
     cnn_init();
     cnn_load_weights();
     cnn_load_bias();
+#ifdef MEASURE_STOP_FIX
+    MXC_NVIC_SetVector(CNN_IRQn, sf_isr);
+#endif
     cnn_configure();
     dwt_init();
     printf("measuring %s ...\n", NET_NAME);
@@ -115,11 +148,11 @@ int main(void)
     // ── 1. KAT ────────────────────────────────────────────────────────
     load_input();
     cnn_start();
-    while (cnn_time == 0) {}
+    WAIT_DONE();
     int kat = check_output();
     cnn_unload((uint32_t *)ml_data);
     softmax_q17p14_q15((const q31_t *)ml_data, CNN_NUM_OUTPUTS, ml_softmax);
-    cnn_stop();
+    NET_STOP();
     static int32_t kat_raw[CNN_NUM_OUTPUTS];
     for (int i = 0; i < CNN_NUM_OUTPUTS; i++) kat_raw[i] = ml_data[i];
 
@@ -130,14 +163,14 @@ int main(void)
         load_input();
         uint32_t c1 = tick();
         cnn_start();
-        while (cnn_time == 0) {}
+        WAIT_DONE();
         uint32_t c2 = tick();
         if (check_output() != CNN_OK) bad++; // 측정 구간 밖
         uint32_t c3 = tick();
         cnn_unload((uint32_t *)ml_data);
         softmax_q17p14_q15((const q31_t *)ml_data, CNN_NUM_OUTPUTS, ml_softmax);
         uint32_t c4 = tick();
-        cnn_stop();
+        NET_STOP();
         t_load[i] = (c1 - c0) & tick_mask;
         t_infer[i] = (c2 - c1) & tick_mask;
         t_unload[i] = (c4 - c3) & tick_mask;
