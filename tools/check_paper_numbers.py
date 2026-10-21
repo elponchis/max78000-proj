@@ -233,7 +233,7 @@ def main():
         tag = el.tag.split("}")[1]
         if tag == "p":
             p = docx.text.paragraph.Paragraph(el, d)
-            t = p.text.strip()
+            t = p.text.strip().replace("‑", "-")      # 줄바꿈 금지 하이픈(음수 기호) → 대조용 "-"
             if not t:
                 continue
             if re.match(r"^(\d\. |참고문헌)", t) and any(r.bold for r in p.runs if r.text.strip()):
@@ -243,7 +243,7 @@ def main():
         elif tag == "tbl":
             tb = docx.table.Table(el, d)
             for r in tb.rows:
-                cells = [c.text.strip() for c in r.cells]
+                cells = [c.text.strip().replace("‑", "-") for c in r.cells]
                 items.append((sec, "[표] " + " | ".join(cells)))
     stats = {"✓": 0, "⚠": 0, "상수": 0, "✗": 0}
     for sec, text in items:
