@@ -2,7 +2,7 @@
 
 원고: `docs/paper/ksc2026/ksc2026_review.docx`. 방법: 문장마다 수치 토큰을 뽑고, numbers.json 의 어느 키가 그 표기(.0f/.1f/.2f/.3f/±/%/천 단위)를 내는지 찾은 뒤, 키 경로의 구성 id 가 문장에 언급된 구성(별칭 포함)과 맞는지 본다. 참고문헌·인용 번호·표/그림 번호는 제외.
 
-판정 집계: ✓ 232 · ⚠ 구성 확인 8 · 상수 46 · ✗ 미확인 0
+판정 집계: ✓ 232 · ⚠ 구성 확인 13 · 상수 46 · ✗ 미확인 0
 
 | 절 | 문장 (앞 70자) | 수치 | 문장의 구성 | numbers.json 키 (또는 상수 설명) | 판정 |
 |---|---|---|---|---|---|
@@ -35,11 +35,6 @@
 | 2. 시스템과 실험 설계 | MAX78000FTHR 단독으로 온보드 마이크 16 kHz 입력을 1.024 s 창(16,384 샘플, int8)으로 받는다. | 5 | 50 ms | acc.②′ b64f31.scream_S3.sd; acc.②′ f31.scream_S3.sd; avg_power.configs.②′ b64f31.share_datasheet_at_hi_pct; avg_power.configs.②′ b64f31.share_min_pct; breakeven | ✓ |
 | 2. 시스템과 실험 설계 | 모델은 가중치 8 bit QAT, 가속기 가중치 메모리 442 KB 안에 들어간다. | 8 | — | acc.다 u800.scream_S3.sd; avg_power.configs.(a).share_datasheet_at_hi_pct; latency.②′.detail.infer1; listening.A_ext_scream/실사용만.?; welch.(a) − ④.test_f1_L[2]; w | ✓ |
 | 2. 시스템과 실험 설계 | 모델은 가중치 8 bit QAT, 가속기 가중치 메모리 442 KB 안에 들어간다. | 442 | — | 가중치 메모리 KB | 상수 |
-| 2. 시스템과 실험 설계 | 시험 데이터의 유리·비명 창은 저자가 전수 청취해 양성을 확정했다(채점 창 4,965). | 4,965 | — | truth.testL_S3_windows | ✓ |
-| 2. 시스템과 실험 설계 | 외부 평가는 AudioSet 의 별도 영상에서 뽑은 673창(양성 271, 음성 402) 으로, 학습에 쓰지 않았다. | 673 | — | 유도: 외부 창 수 (양성 합+음성) | ✓ |
-| 2. 시스템과 실험 설계 | 외부 평가는 AudioSet 의 별도 영상에서 뽑은 673창(양성 271, 음성 402) 으로, 학습에 쓰지 않았다. | 271 | — | 유도: 외부 양성 합 | ✓ |
-| 2. 시스템과 실험 설계 | 외부 평가는 AudioSet 의 별도 영상에서 뽑은 673창(양성 271, 음성 402) 으로, 학습에 쓰지 않았다. | 402 | — | truth.ext_negatives_real31L | ✓ |
-| 2. 시스템과 실험 설계 | 오경보율은 시험 데이터 배경에서 300회/h 가 되는 문턱값을 잡아 외부에도 같은 값을 썼고, 지표는 macro-F1 이다. | 300 | — | 오경보/h | 상수 |
 | 2. 시스템과 실험 설계 | 정확도는 시드 1~3 평균 ± 표준편차(그림 1 의 세로 막대), 오경보 300회/h. | 1 | — | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
 | 2. 시스템과 실험 설계 | 정확도는 시드 1~3 평균 ± 표준편차(그림 1 의 세로 막대), 오경보 300회/h. | 3 | — | acc.(a).ext_f1.n; acc.(a).ext_map.n; acc.(a).f1_L.n; acc.(a).f1_S3.n; acc.(a).scream_S3.n; acc.(a).scream_S3.sd; acc.①′.ext_f1.n; acc.①′.ext_map.n; acc.①′.f1_L. | ✓ |
 | 2. 시스템과 실험 설계 | 정확도는 시드 1~3 평균 ± 표준편차(그림 1 의 세로 막대), 오경보 300회/h. | 300 | — | 오경보/h | 상수 |
@@ -142,6 +137,11 @@
 | 2. 시스템과 실험 설계 | [표] CPU 추론 (Cortex-M4F) (원본 파형 가중치) \| 225.77 \| 2008 / 5599 / 5599 \| =  | 2008 | CPU 추론, 원본 파형 | avg_power.configs.M4 CMSIS-NN.E_min_uJ; breakeven.원본 파형 (전처리 없음) (NPU 추론) < CPU 추론 (Cortex-M4F).by_source.datasheet.E_Y; breakeven.원본 파형 (전처리 없음) (NPU 추론) < CPU | ✓ |
 | 2. 시스템과 실험 설계 | [표] CPU 추론 (Cortex-M4F) (원본 파형 가중치) \| 225.77 \| 2008 / 5599 / 5599 \| =  | 5599 | CPU 추론, 원본 파형 | avg_power.configs.M4 CMSIS-NN.E_max_uJ; breakeven.원본 파형 (전처리 없음) (NPU 추론) < CPU 추론 (Cortex-M4F).by_source.literature.E_Y; breakeven.원본 파형 (전처리 없음) (NPU 추론) < CP | ✓ |
 | 2. 시스템과 실험 설계 | [표] CPU 추론 (Cortex-M4F) (원본 파형 가중치) \| 225.77 \| 2008 / 5599 / 5599 \| =  | 5599 | CPU 추론, 원본 파형 | avg_power.configs.M4 CMSIS-NN.E_max_uJ; breakeven.원본 파형 (전처리 없음) (NPU 추론) < CPU 추론 (Cortex-M4F).by_source.literature.E_Y; breakeven.원본 파형 (전처리 없음) (NPU 추론) < CP | ✓ |
+| 2. 시스템과 실험 설계 | 시험 데이터의 유리·비명 창은 저자가 전수 청취해 양성을 확정했다(채점 창 4,965). | 4,965 | — | truth.testL_S3_windows | ✓ |
+| 2. 시스템과 실험 설계 | 외부 평가는 AudioSet 의 별도 영상에서 뽑은 673창(양성 271, 음성 402) 으로, 학습에 쓰지 않았다. | 673 | — | 유도: 외부 창 수 (양성 합+음성) | ✓ |
+| 2. 시스템과 실험 설계 | 외부 평가는 AudioSet 의 별도 영상에서 뽑은 673창(양성 271, 음성 402) 으로, 학습에 쓰지 않았다. | 271 | — | 유도: 외부 양성 합 | ✓ |
+| 2. 시스템과 실험 설계 | 외부 평가는 AudioSet 의 별도 영상에서 뽑은 673창(양성 271, 음성 402) 으로, 학습에 쓰지 않았다. | 402 | — | truth.ext_negatives_real31L | ✓ |
+| 2. 시스템과 실험 설계 | 오경보율은 시험 데이터 배경에서 300회/h 가 되는 문턱값을 잡아 외부에도 같은 값을 썼고, 지표는 macro-F1 이다. | 300 | — | 오경보/h | 상수 |
 | 2. 시스템과 실험 설계 | 전처리 없음 — 원본 파형 (전처리 없음): 원본 파형을 128×128 로 접어 NPU 의 1D CNN 에 넣는 벤더 방식. | 128 | 원본 파형 | listening.T_test_scream/screaming_test.O | ✓ |
 | 2. 시스템과 실험 설계 | 전처리 없음 — 원본 파형 (전처리 없음): 원본 파형을 128×128 로 접어 NPU 의 1D CNN 에 넣는 벤더 방식. | 128 | 원본 파형 | listening.T_test_scream/screaming_test.O | ✓ |
 | 2. 시스템과 실험 설계 | 전처리 없음 — 원본 파형 (전처리 없음): 원본 파형을 128×128 로 접어 NPU 의 1D CNN 에 넣는 벤더 방식. | 1 | 원본 파형 | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
@@ -236,18 +236,23 @@
 | 3. 결  과 | CPU log-mel 62.5 ms 구성은 원본 파형 구성보다 시험 macro-F1 +0.085 [+0.035, +0.135] | +0.099 | 62.5 ms, 원본 파형 | welch.가 u1000 − ④.ext_f1[0] | ✓ |
 | 3. 결  과 | CPU log-mel 62.5 ms 구성은 원본 파형 구성보다 시험 macro-F1 +0.085 [+0.035, +0.135] | +0.056 | 62.5 ms, 원본 파형 | welch.가 u1000 − ④.ext_f1[1] | ✓ |
 | 3. 결  과 | CPU log-mel 62.5 ms 구성은 원본 파형 구성보다 시험 macro-F1 +0.085 [+0.035, +0.135] | +0.142 | 62.5 ms, 원본 파형 | firmware.cpu_split.log_ms; firmware.cpu_split.log_ms_med; welch.가 u1000 − ④.ext_f1[2] | ✓ |
-| 3. 결  과 | CPU log-mel 62.5 ms 구성은 원본 파형 구성보다 시험 macro-F1 +0.085 [+0.035, +0.135] | 1 | 62.5 ms, 원본 파형 | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
-| 3. 결  과 | CPU log-mel 62.5 ms 구성은 원본 파형 구성보다 시험 macro-F1 +0.085 [+0.035, +0.135] | 2.93 | 62.5 ms, 원본 파형 | latency.가 u1000.total | ✓ |
-| 3. 결  과 | CPU log-mel 62.5 ms 구성은 원본 파형 구성보다 시험 macro-F1 +0.085 [+0.035, +0.135] | 2.53 | 62.5 ms, 원본 파형 | latency.④.total | ✓ |
-| 3. 결  과 | CPU log-mel 62.5 ms 구성은 원본 파형 구성보다 시험 macro-F1 +0.085 [+0.035, +0.135] | 43 | 62.5 ms, 원본 파형 | avg_power.configs.가 u1000.E_min_uJ; breakeven.CPU log-mel, 간격 62.5 ms (멜 32) < 원본 파형 (전처리 없음).by_source.datasheet.E_X; breakeven.NPU 전처리 (Gabor 필터뱅크) < CPU log- | ✓ |
-| 3. 결  과 | CPU log-mel 62.5 ms 구성은 원본 파형 구성보다 시험 macro-F1 +0.085 [+0.035, +0.135] | 71 | 62.5 ms, 원본 파형 | avg_power.configs.②′ f31.E_min_uJ; avg_power.configs.④.E_min_uJ; breakeven.CPU log-mel, 간격 50 ms < 원본 파형 (전처리 없음).by_source.datasheet.E_Y; breakeven.CPU log-mel | ✓ |
 | 3. 결  과 | CPU log-mel 62.5 ms 구성은 원본 파형 구성보다 시험 macro-F1 +0.085 [+0.035, +0.135] | 78 | 62.5 ms, 원본 파형 | breakeven.CPU log-mel, 간격 50 ms < 원본 파형 (전처리 없음).by_source.moosmann.E_Y; breakeven.CPU log-mel, 간격 62.5 ms (멜 32) < 원본 파형 (전처리 없음).by_source.moosmann.E_X; break | ✓ |
 | 3. 결  과 | CPU log-mel 62.5 ms 구성은 원본 파형 구성보다 시험 macro-F1 +0.085 [+0.035, +0.135] | 78 | 62.5 ms, 원본 파형 | breakeven.CPU log-mel, 간격 50 ms < 원본 파형 (전처리 없음).by_source.moosmann.E_Y; breakeven.CPU log-mel, 간격 62.5 ms (멜 32) < 원본 파형 (전처리 없음).by_source.moosmann.E_X; break | ✓ |
-| 3. 결  과 | log-mel이 16,384 샘플을 512 값으로 줄이므로 NPU 추론이 1.44 ms 에서 0.53 ms 로 줄고, CPU  | 16,384 | — | 창 샘플 | 상수 |
-| 3. 결  과 | log-mel이 16,384 샘플을 512 값으로 줄이므로 NPU 추론이 1.44 ms 에서 0.53 ms 로 줄고, CPU  | 512 | — | 512탭 / 512 값 | 상수 |
-| 3. 결  과 | log-mel이 16,384 샘플을 512 값으로 줄이므로 NPU 추론이 1.44 ms 에서 0.53 ms 로 줄고, CPU  | 1.44 | — | breakeven.CPU log-mel, 간격 25 ms < CPU log-mel, 간격 16 ms.by_source.moosmann.r; breakeven.CPU log-mel, 간격 50 ms < 원본 파형 (전처리 없음).N_Y; breakeven.CPU log-mel, 간격 50 | ✓ |
-| 3. 결  과 | log-mel이 16,384 샘플을 512 값으로 줄이므로 NPU 추론이 1.44 ms 에서 0.53 ms 로 줄고, CPU  | 0.53 | — | breakeven.CPU log-mel, 간격 62.5 ms (멜 32) < 원본 파형 (전처리 없음).N_X; breakeven.NPU 전처리 (Gabor 필터뱅크) < CPU log-mel, 간격 62.5 ms (멜 32).N_Y; latency.②′.detail.infer2; la | ✓ |
-| 3. 결  과 | log-mel이 16,384 샘플을 512 값으로 줄이므로 NPU 추론이 1.44 ms 에서 0.53 ms 로 줄고, CPU  | 2.26 | — | latency.가 u1000.new_firmware.pre; latency.가 u1000.pre | ⚠ |
+| 3. 결  과 | log-mel이 16,384 샘플을 512 값으로 줄여 NPU 입력 적재(1.09 → 0.13 ms)와 추론(1.44 → 0. | 16,384 | — | 창 샘플 | 상수 |
+| 3. 결  과 | log-mel이 16,384 샘플을 512 값으로 줄여 NPU 입력 적재(1.09 → 0.13 ms)와 추론(1.44 → 0. | 512 | — | 512탭 / 512 값 | 상수 |
+| 3. 결  과 | log-mel이 16,384 샘플을 512 값으로 줄여 NPU 입력 적재(1.09 → 0.13 ms)와 추론(1.44 → 0. | 1.09 | — | latency.(a).load; latency.④.load | ⚠ |
+| 3. 결  과 | log-mel이 16,384 샘플을 512 값으로 줄여 NPU 입력 적재(1.09 → 0.13 ms)와 추론(1.44 → 0. | 0.13 | — | latency.②′.detail.load2; latency.②′.log32.session_new.infer1; latency.②′.log32.session_new.load2; latency.②′.log32.session_old.infer1; latency.②′.log32.session_ | ⚠ |
+| 3. 결  과 | log-mel이 16,384 샘플을 512 값으로 줄여 NPU 입력 적재(1.09 → 0.13 ms)와 추론(1.44 → 0. | 1.44 | — | breakeven.CPU log-mel, 간격 25 ms < CPU log-mel, 간격 16 ms.by_source.moosmann.r; breakeven.CPU log-mel, 간격 50 ms < 원본 파형 (전처리 없음).N_Y; breakeven.CPU log-mel, 간격 50 | ✓ |
+| 3. 결  과 | log-mel이 16,384 샘플을 512 값으로 줄여 NPU 입력 적재(1.09 → 0.13 ms)와 추론(1.44 → 0. | 0.53 | — | breakeven.CPU log-mel, 간격 62.5 ms (멜 32) < 원본 파형 (전처리 없음).N_X; breakeven.NPU 전처리 (Gabor 필터뱅크) < CPU log-mel, 간격 62.5 ms (멜 32).N_Y; latency.②′.detail.infer2; la | ✓ |
+| 3. 결  과 | 대신 CPU 전처리 2.26 ms 가 늘어 판단 1회 지연은 2.93 대 2.53 ms 로 비슷하지만, 줄어든 적재·추론 구간 | 2.26 | — | latency.가 u1000.new_firmware.pre; latency.가 u1000.pre | ⚠ |
+| 3. 결  과 | 대신 CPU 전처리 2.26 ms 가 늘어 판단 1회 지연은 2.93 대 2.53 ms 로 비슷하지만, 줄어든 적재·추론 구간 | 1 | — | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
+| 3. 결  과 | 대신 CPU 전처리 2.26 ms 가 늘어 판단 1회 지연은 2.93 대 2.53 ms 로 비슷하지만, 줄어든 적재·추론 구간 | 2.93 | — | latency.가 u1000.total | ⚠ |
+| 3. 결  과 | 대신 CPU 전처리 2.26 ms 가 늘어 판단 1회 지연은 2.93 대 2.53 ms 로 비슷하지만, 줄어든 적재·추론 구간 | 2.53 | — | latency.④.total | ⚠ |
+| 3. 결  과 | 대신 CPU 전처리 2.26 ms 가 늘어 판단 1회 지연은 2.93 대 2.53 ms 로 비슷하지만, 줄어든 적재·추론 구간 | 71 | — | avg_power.configs.②′ f31.E_min_uJ; avg_power.configs.④.E_min_uJ; breakeven.CPU log-mel, 간격 50 ms < 원본 파형 (전처리 없음).by_source.datasheet.E_Y; breakeven.CPU log-mel | ✓ |
+| 3. 결  과 | 대신 CPU 전처리 2.26 ms 가 늘어 판단 1회 지연은 2.93 대 2.53 ms 로 비슷하지만, 줄어든 적재·추론 구간 | 23 | — | avg_power.configs.②′ b64.share_max_pct | ⚠ |
+| 3. 결  과 | 대신 CPU 전처리 2.26 ms 가 늘어 판단 1회 지연은 2.93 대 2.53 ms 로 비슷하지만, 줄어든 적재·추론 구간 | 20 | — | avg_power.configs.다 u800.share_max_pct; firmware.cpu_split.log_pct; latency.②′ b64.detail.infer1; latency.②′ b64.log32.session_new.infer1; latency.②′ b64.log32. | ✓ |
+| 3. 결  과 | 대신 CPU 전처리 2.26 ms 가 늘어 판단 1회 지연은 2.93 대 2.53 ms 로 비슷하지만, 줄어든 적재·추론 구간 | 43 | — | avg_power.configs.가 u1000.E_min_uJ; breakeven.CPU log-mel, 간격 62.5 ms (멜 32) < 원본 파형 (전처리 없음).by_source.datasheet.E_X; breakeven.NPU 전처리 (Gabor 필터뱅크) < CPU log- | ✓ |
+| 3. 결  과 | 대신 CPU 전처리 2.26 ms 가 늘어 판단 1회 지연은 2.93 대 2.53 ms 로 비슷하지만, 줄어든 적재·추론 구간 | 71 | — | avg_power.configs.②′ f31.E_min_uJ; avg_power.configs.④.E_min_uJ; breakeven.CPU log-mel, 간격 50 ms < 원본 파형 (전처리 없음).by_source.datasheet.E_Y; breakeven.CPU log-mel | ✓ |
 | 3. 결  과 | 프레임 간격을 좁힐수록 정확도는 오르지만(CPU log-mel 25 ms 0.820 ± 0.006, CPU log-mel 16 | 25 | 62.5 ms, 50 ms, 25 ms, NPU 전처리 (Gabor 필터뱅크), 16 ms | listening.A_ext_scream/v1+실사용.n | ✓ |
 | 3. 결  과 | 프레임 간격을 좁힐수록 정확도는 오르지만(CPU log-mel 25 ms 0.820 ± 0.006, CPU log-mel 16 | 0.820 | 62.5 ms, 50 ms, 25 ms, NPU 전처리 (Gabor 필터뱅크), 16 ms | acc.간격 400.f1_S3.mean | ✓ |
 | 3. 결  과 | 프레임 간격을 좁힐수록 정확도는 오르지만(CPU log-mel 25 ms 0.820 ± 0.006, CPU log-mel 16 | 0.006 | 62.5 ms, 50 ms, 25 ms, NPU 전처리 (Gabor 필터뱅크), 16 ms | acc.②′ f31.ext_f1.sd; acc.간격 400.f1_L.sd; acc.간격 400.f1_S3.sd; latency.②′.detail.unload; latency.②′.log32.session_old.unload; latency.②′.out; latency.간격 400.out | ✓ |
@@ -292,3 +297,68 @@
 | 4. 한계와 결론 | 향후 과제로, CPU 몫의 80%를 차지하는 읽기와 위치 합산을 NPU 에서 수행하려면 8비트 출력에 맞춘 재학습이 필요하다. | 80 | — | acc.간격 400.f1_L.mean; firmware.cpu_split.read_pct; firmware.cpu_split.read_share_med; firmware.cpu_split.read_share_worst; firmware.same_fw_fe_vs_ga.moosmann.ga | ✓ |
 | 4. 한계와 결론 | 향후 과제로, CPU 몫의 80%를 차지하는 읽기와 위치 합산을 NPU 에서 수행하려면 8비트 출력에 맞춘 재학습이 필요하다. | 8 | — | acc.다 u800.scream_S3.sd; avg_power.configs.(a).share_datasheet_at_hi_pct; latency.②′.detail.infer1; listening.A_ext_scream/실사용만.?; welch.(a) − ④.test_f1_L[2]; w | ✓ |
 | 4. 한계와 결론 | NPU 전처리의 비용을 결정한 것은 log 를 NPU 에서 수행할 수 없어 중간 결과를 int32 로 CPU 에 읽어 오는 데 | 80 | — | acc.간격 400.f1_L.mean; firmware.cpu_split.read_pct; firmware.cpu_split.read_share_med; firmware.cpu_split.read_share_worst; firmware.same_fw_fe_vs_ga.moosmann.ga | ✓ |
+
+## 구간별 에너지 계산 — 원본 파형(④) 대 CPU log-mel 62.5 ms(가), 추정(실측 지연 × 공개 전력)
+
+| 전력 출처 | 구성 | 전처리 ms × P_cpu | 적재+출력 ms × P_load | 추론 ms × P_npu | 합 μJ | numbers.json energy |
+|---|---|---|---|---|---|---|
+| datasheet | ④ | 0.00 × 8.89 = 0.0 | 1.10 × 11.26 = 12.3 | 1.44 × 40.79 = 58.7 | 71.0 | 71.0 |
+| datasheet | 가 u1000 | 2.26 × 8.89 = 20.1 | 0.14 × 11.26 = 1.6 | 0.53 × 40.79 = 21.7 | 43.3 | 43.3 |
+| literature | ④ | 0.00 × 24.8 = 0.0 | 1.10 × 24.8 = 27.2 | 1.44 × 71.7 = 103.2 | 130.4 | 130.4 |
+| literature | 가 u1000 | 2.26 × 24.8 = 56.1 | 0.14 × 24.8 = 3.4 | 0.53 × 71.7 = 38.1 | 97.7 | 97.7 |
+| moosmann | ④ | 0.00 × 24.8 = 0.0 | 1.10 × 24.8 = 27.2 | 1.44 × 35.6 = 51.2 | 78.4 | 78.4 |
+| moosmann | 가 u1000 | 2.26 × 24.8 = 56.1 | 0.14 × 24.8 = 3.4 | 0.53 × 35.6 = 18.9 | 78.5 | 78.5 |
+
+| 전력 출처 | 줄어든 적재+추론 에너지 (④ − 가) | 늘어난 전처리 에너지 (가 − ④) | 순 변화 (가 − ④) | 감소 주원인 |
+|---|---|---|---|---|
+| datasheet | 47.8 (적재 10.8 + 추론 37.1) | 20.1 | -27.7 | 추론 |
+| literature | 88.9 (적재 23.7 + 추론 65.2) | 56.1 | -32.7 | 추론 |
+| moosmann | 56.1 (적재 23.7 + 추론 32.3) | 56.1 | +0.1 | 추론 |
+
+원고 문장(데이터시트 기준)은 '줄어든 적재·추론 구간의 에너지가 늘어난 CPU 구간보다 커서' 다 — 세 출처 모두 감소분 > 증가분이고, 감소의 주원인은 추론 구간이다(적재 구간도 줄었다). Moosmann 기준은 순 변화 +0.1 μJ 로 '같다'.
+
+## 비교 문장 참/거짓 표 ('A 가 B 보다 작다/크다/같다' 류, 양쪽 값을 numbers.json 에서 계산)
+
+| 절 | 주장 | 좌변 | 우변 | 판정 |
+|---|---|---|---|---|
+| 요약·3절 | 원본 파형은 CPU log-mel 16 ms 보다 시험 macro-F1 이 낮다 | ④ 0.669 | ①′ 0.836 (차 0.166) | 참 |
+| 3절 | 외부 F1 도 낮다 | ④ 0.443 | ①′ 0.665 (차 0.222) | 참 |
+| 요약·3절 | CPU log-mel 62.5 ms 는 원본 파형보다 macro-F1 이 유의하게 높다 (CI 가 0 제외) | 가 0.754 | ④ 0.669; Welch +0.085 [+0.035, +0.135] | 참 |
+| 3절 | 외부 F1 도 유의하게 높다 | 가 0.542 | ④ 0.443; +0.099 [+0.056, +0.142] | 참 |
+| 요약·3절·4절 | 가 의 추정 에너지는 ④ 보다 적다 (datasheet) | 가 43.3 μJ | ④ 71.0 μJ | 참 |
+| 요약·3절·4절 | 가 의 추정 에너지는 ④ 보다 적다 (literature) | 가 97.7 μJ | ④ 130.4 μJ | 참 |
+| 요약·3절·4절 | 가 의 추정 에너지는 ④ 보다 같다 (moosmann) | 가 78.5 μJ | ④ 78.4 μJ | 참 |
+| 3절 | 가 와 ④ 의 판단 1회 지연은 비슷하다 | 가 2.93 ms | ④ 2.53 ms | 참 |
+| 3절 | NPU 추론은 CPU 추론보다 추론만 157배 빠르다 | M4 225.50 ms | ④ 1.44 ms (비 156.7) | 참 |
+| 3절 | 판단 1회 89배 | M4 225.77 ms | ④ 2.53 ms (비 89.1) | 참 |
+| 3절 | CPU 추론은 판단 주기의 90% 를 추론에 쓴다 | M4 225.77 ms | 주기 250 ms (비 90.3%) | 참 |
+| 3절 | NPU 근사 log 의 ④ 대비 CI 는 0 을 포함 |  | +0.034 [-0.022, +0.090] | 참 |
+| 3절 | NPU 근사 log 의 추정 에너지는 ④ 의 3.3배 | (a) 236.5 μJ | ④ 71.0 μJ (비 3.33) | 참 |
+| 3절 | ②′ 는 '원본 파형 초과' 목표를 넘지 못했다 (CI 가 0 포함) |  | -0.026 [-0.082, +0.030] | 참 |
+| 3절 | ②′ 는 '가 와 동등' 목표를 넘지 못했다 (CI 가 0 제외, 음수) |  | -0.111 [-0.162, -0.060] | 참 |
+| 3절 | ②′ 의 시험 macro-F1 은 가 보다 0.11 낮다 | ②′ 0.643 | 가 0.754 (Welch 차 -0.111) | 참 |
+| 요약·3절·4절 | ②′ 의 추정 에너지는 ④ 보다 적다 (datasheet) | ②′ 38.9 μJ | ④ 71.0 μJ | 참 |
+| 요약·3절·4절 | ②′ 의 추정 에너지는 ④ 보다 적다 (literature) | ②′ 74.5 μJ | ④ 130.4 μJ | 참 |
+| 요약·3절·4절 | ②′ 의 추정 에너지는 ④ 보다 적다 (moosmann) | ②′ 52.4 μJ | ④ 78.4 μJ | 참 |
+| 3절 | ②′ 와 가 는 비슷한 에너지 (데이터시트 차이 약 4 μJ) | ②′ 38.9 μJ | 가 43.3 μJ (차 4.5) | 참 |
+| 3절 | ②′ 판단 1회 지연 1.85 < ④ 2.53 ms | ②′ 1.85 ms | ④ 2.53 ms | 참 |
+| 3절 | 변형 3종은 ②′ 보다 정확도가 올랐다 | 변형 0.655~0.690 | ②′ 0.643 | 참 |
+| 3절 | 변형 3종은 세 전력 출처 모두에서 CPU 전처리 곡선 아래 (지배됨) |  | {'②′ b64': {'datasheet': ['가 u1000', '다 u800'], 'literature': ['가 u1000', '다 u800'], 'moosmann': ['가 u1000', '다 u800']}, '②′ f31': {'datasheet': ['가 u1000', '다 u800'], 'literature': ['가 u1000', '다 u800'], 'moosmann': ['가 u1000']}, '②′ b64f31': {'datasheet': ['가 u1000', '다 u800'], 'literature': ['가 u1000', '다 u800'], 'moosmann': ['가 u1000', '다 u800']}} | 참 |
+| 3절 | 늘어난 비용은 CPU 읽기와 NPU 연산이 비슷하게 나눴다 (CPU 몫이 50% 를 넘지 않음) | CPU 46~51% | NPU 39~45% | 참 |
+| 3절 | NPU 입력 적재와 추론이 줄었다 (④ → 가) | 적재 1.09 → 0.13 ms | 추론 1.44 → 0.53 ms | 참 |
+| 3절 | 줄어든 적재·추론 구간 에너지 > 늘어난 CPU 구간 에너지 (데이터시트) | 감소 47.8 μJ | 증가 20.1 μJ | 참 |
+| 3절 | 프레임 간격을 좁힐수록 정확도가 오른다 (62.5 → 50 → 25 → 16 ms) | 0.754 → 0.758 → 0.820 → 0.836 |  | 참 |
+| 3절 | CPU log-mel 16 ms 는 전처리가 지연의 2/3 | 전처리 9.87 ms | 총 15.06 ms (비 0.66) | 참 |
+| 3절 | 16 ms 의 에너지는 62.5 ms 의 6배 | ①′ 266.8 μJ | 가 43.3 μJ (비 6.16) | 참 |
+| 3절 | 25 ms 와 16 ms 의 차이는 작지만 CI 가 0 을 포함하지 않는다 | 25 ms 0.820 | 16 ms 0.836; -0.016 [-0.030, -0.002] | 참 |
+| 3절 | ④ 와 (a) 는 파레토 앞면에 없다 (다른 점에 지배) | 앞면 ②′ → 가 u1000 → 다 u800 → 간격 400 → ①′ | ④ E 71/F1 0.669 vs 가 E 43/F1 0.754; (a) E 236/F1 0.703 | 참 |
+| 3절 | 외부 데이터의 앞면 순서가 시험과 같다 | ②′ → 가 u1000 → 다 u800 → 간격 400 → ①′ | ②′ → 가 u1000 → 다 u800 → 간격 400 → ①′ | 참 |
+| 3절 | CPU log-mel 16 ms 는 PANNs 의 99% | ①′ 0.836 | PANNs 0.845 (비 98.9%) | 참 |
+| 3절 | ②′ CPU 몫의 80% 는 읽기, 20% 는 로그 | 읽기 0.570 ms | 로그 0.142 ms, CPU 0.712 ms | 참 |
+| 4절 | 가 의 판단 비용은 평균 전력의 17% 이하 (대기 하한) | 16.9% |  | 참 |
+| 4절 | ①′ 는 54% 이하 | 54.1% |  | 참 |
+| 4절 | CPU 추론은 대기 상한에서도 42% 이상 | 41.7% |  | 참 |
+| 4절 | 62.5 ms 구성의 우위는 '적다' 와 '같다' 사이 (출처별) | 데이터시트 43<71, 선행연구 98<130 | Moosmann 78.5 ≈ 78.4 | 참 |
+
+비교 문장 38개 중 거짓 0개.
+

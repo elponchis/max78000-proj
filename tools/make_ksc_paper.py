@@ -48,7 +48,7 @@ FONT = "맑은 고딕"
 FMT = {"body_pt": 9, "line_mult": 1.05, "title_pt": 16, "etitle_pt": 14, "abs_pt": 9, "abs_line": 1.15,
        "head_pt": 9, "cap_pt": 9, "ref_pt": 9, "tbl_pt": 9,
        "col_gap_mm": 12.7, "fig1_mm": 150, "fig2_mm": 72,                 # 단 폭 88.65 mm; 그림 2 는 72 mm (글자 7 pt 이상)
-       "indent_pt": 10, "abs_indent_pt": 5, "table_pos": "data"}
+       "indent_pt": 10, "abs_indent_pt": 5, "table_pos": "sys"}
 # 단계 4 (표 1 분할 금지): table_pos = band 는 1쪽 띠에 두되 제목·요약 간격을 조이고 열 폭을 재배분해 1쪽 안에 맞춘다;
 #   intro1 / intro2 / related / sys / data 는 그 단락 뒤에 1단 띠를 끼워 표가 2쪽 머리로 가게 한다 (앞 2단은 균형 배치).
 STAGE = 8            # 위 docstring 의 단계. 실행 결과(2026-10-21 밤) 는 docs/paper/ksc2026/format-diff.md 에.
@@ -477,18 +477,27 @@ def build(out_path):
                 if FE in v("pareto.front")["test_S3"] else
                 f"그림 1 의 파레토 앞면은 {' → '.join(pf)} 이고, {s_w}과 {n_a} 는 모두 다른 점에 지배된다.") + ext_sent
     best_1 = (f"{s_ga}은 {s_w}보다 시험 macro-F1 {welch('가 u1000 − ④')}, 외부 F1 {welch('가 u1000 − ④', 'ext_f1')} 로 유의하게 높고, "
-              f"판단 1회 지연은 {latency(GA):.2f} ms 대 {latency(W):.2f} ms 로 비슷하며, 추정 에너지는 데이터시트 기준 {energy(GA):.0f} 대 {energy(W):.0f} μJ 로 적고 "
-              f"Moosmann 기준 {energy(GA,'moosmann'):.0f} 대 {energy(W,'moosmann'):.0f} μJ 로 같다.")
-    if STAGE >= 3:    # 후보 2: "이유" 를 두 구절로, 프레임 간격 문장과 파레토 문장을 합침
-        why_s = (f"이유는 {'그림 2' if STAGE < 5 else '지연 분해'}에 있다. log-mel이 16,384 샘플을 512 값으로 줄이므로 NPU 추론이 {v('latency.④')['infer']:.2f} ms 에서 "
-                 f"{lat_ga['infer']:.2f} ms 로 줄고, CPU 전처리 {lat_ga['pre']:.2f} ms 가 그 차이보다 작다.")
+              + (f"추정 에너지는 데이터시트 기준으로는 적고(아래) Moosmann 기준 {energy(GA,'moosmann'):.0f} 대 {energy(W,'moosmann'):.0f} μJ 로 같다."
+                 if STAGE >= 3 else           # 지연·데이터시트 에너지 수치는 바로 뒤 '이유' 문장에 있다 (중복 제거, 2026-10-21 밤)
+                 f"판단 1회 지연은 {latency(GA):.2f} ms 대 {latency(W):.2f} ms 로 비슷하며, 추정 에너지는 데이터시트 기준 {energy(GA):.0f} 대 {energy(W):.0f} μJ 로 적고 "
+                 f"Moosmann 기준 {energy(GA,'moosmann'):.0f} 대 {energy(W,'moosmann'):.0f} μJ 로 같다."))
+    # 구간별 에너지 (데이터시트 기준): 줄어든 적재·추론 구간 대 늘어난 CPU 구간. 계산은 check_paper_numbers.py 가 number-check.md 에 남긴다.
+    PSd = CFG["power_sources"]["datasheet"]
+    seg = lambda L: {"load": (L["load"] + L["out"]) * PSd["P_load_mW"], "infer": L["infer"] * PSd["P_npu_mW"], "pre": L["pre"] * PSd["P_cpu_mW"]}
+    sw, sg = seg(v("latency.④")), seg(lat_ga)
+    cut_e, add_e = (sw["load"] + sw["infer"]) - (sg["load"] + sg["infer"]), sg["pre"] - sw["pre"]
+    if not (sg["load"] < sw["load"] and sg["infer"] < sw["infer"] and cut_e > add_e > 0):
+        sys.exit(f"[에러] 구간별 에너지가 '이유' 문장의 설명과 맞지 않는다: ④ {sw} / 가 {sg}")
+    why_s = (f"log-mel이 16,384 샘플을 512 값으로 줄여 NPU 입력 적재({v('latency.④')['load']:.2f} → {lat_ga['load']:.2f} ms)와 추론({v('latency.④')['infer']:.2f} → "
+             f"{lat_ga['infer']:.2f} ms)이 줄었다. 대신 CPU 전처리 {lat_ga['pre']:.2f} ms 가 늘어 판단 1회 지연은 {latency(GA):.2f} 대 {latency(W):.2f} ms 로 비슷하지만, "
+             f"줄어든 적재·추론 구간의 에너지(데이터시트 기준 {sw['load'] + sw['infer']:.0f} → {sg['load'] + sg['infer']:.0f} μJ)가 늘어난 CPU 구간({sg['pre']:.0f} μJ)보다 커서 "
+             f"추정 에너지는 {energy(GA):.0f} 대 {energy(W):.0f} μJ 로 줄었다.")
+    if STAGE >= 3:    # 후보 2: 프레임 간격 문장과 파레토 문장을 합침
         frame_s = (f"프레임 간격을 좁힐수록 정확도는 오르지만({s_25} {fmt_pm(H25)}, {s_16} {fmt_pm(H16)}; 둘의 차이 {welch('간격 400 − ①′')} 는 작지만 0 을 포함하지 않음) "
                    f"전처리가 지연의 2/3 를 차지해 에너지가 {energy(H16)/energy(GA):.0f}배가 되며, " + pareto_s)
         best = [best_1, why_s, frame_s]
     else:
-        best = [best_1,
-                f"이유는 그림 2 에 있다. log-mel이 16,384 샘플을 512 값으로 줄이므로 NPU 추론이 {v('latency.④')['infer']:.2f} ms 에서 "
-                f"{lat_ga['infer']:.2f} ms 로 줄고, CPU 전처리 {lat_ga['pre']:.2f} ms 가 그 차이보다 작다.",
+        best = [best_1, why_s,
                 f"프레임 간격을 좁힐수록 정확도는 오르지만({s_25} {fmt_pm(H25)}, {s_16} {fmt_pm(H16)}) 전처리가 지연의 2/3 를 차지해 "
                 f"에너지가 {energy(H16)/energy(GA):.0f}배가 된다. {s_25} 와 {s_16} 의 차이는 {welch('간격 400 − ①′')} 로 작지만 0 을 포함하지 않았다.",
                 pareto_s]
