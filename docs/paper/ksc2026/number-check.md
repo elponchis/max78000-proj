@@ -2,7 +2,7 @@
 
 원고: `docs/paper/ksc2026/ksc2026_review.docx`. 방법: 문장마다 수치 토큰을 뽑고, numbers.json 의 어느 키가 그 표기(.0f/.1f/.2f/.3f/±/%/천 단위)를 내는지 찾은 뒤, 키 경로의 구성 id 가 문장에 언급된 구성(별칭 포함)과 맞는지 본다. 참고문헌·인용 번호·표/그림 번호는 제외.
 
-판정 집계: ✓ 216 · ⚠ 구성 확인 17 · 상수 43 · ✗ 미확인 0
+판정 집계: ✓ 215 · ⚠ 구성 확인 17 · 상수 42 · ✗ 미확인 0
 
 | 절 | 문장 (앞 70자) | 수치 | 문장의 구성 | numbers.json 키 (또는 상수 설명) | 판정 |
 |---|---|---|---|---|---|
@@ -173,7 +173,6 @@
 | 2. 시스템과 실험 설계 | 지연은 보드에서 SysTick(코어 클럭 사이클, 분해능 10 ns)으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, | 1,000 | CPU 추론 | firmware.cpu_split.n_iter; latency.②′ b64.log32.n_iter; latency.②′ b64f31.log32.n_iter; latency.②′ f31.log32.n_iter; latency.②′.log32.n_iter; latency.②′.new_fir | ✓ |
 | 2. 시스템과 실험 설계 | 지연은 보드에서 SysTick(코어 클럭 사이클, 분해능 10 ns)으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, | 100 | CPU 추론 | firmware.cpu_split.sum_vs_cpu_pct; listening.S_train_scream/screaming_train.n | ✓ |
 | 2. 시스템과 실험 설계 | 지연은 보드에서 SysTick(코어 클럭 사이클, 분해능 10 ns)으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, | 50 | CPU 추론 | 프레임 간격 ms / CNN 50 MHz | 상수 |
-| 2. 시스템과 실험 설계 | 지연은 보드에서 SysTick(코어 클럭 사이클, 분해능 10 ns)으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, | 24 | CPU 추론 | SysTick bit | 상수 |
 | 2. 시스템과 실험 설계 | 지연은 보드에서 SysTick(코어 클럭 사이클, 분해능 10 ns)으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, | 168 | CPU 추론 | SysTick 한계 ms | 상수 |
 | 2. 시스템과 실험 설계 | 지연은 보드에서 SysTick(코어 클럭 사이클, 분해능 10 ns)으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, | 1 | CPU 추론 | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
 | 2. 시스템과 실험 설계 | 변형 3종의 지연은 펌웨어 안정화 대기(NPU 패스당 약 49 μs)를 포함하며, 같은 대기를 넣으면 NPU 전처리 (Gabo | 3 | 변형 3종, 변형 3종, 변형 3종, NPU 전처리 (Gabor 필터뱅크) | acc.(a).ext_f1.n; acc.(a).ext_map.n; acc.(a).f1_L.n; acc.(a).f1_S3.n; acc.(a).scream_S3.n; acc.(a).scream_S3.sd; acc.①′.ext_f1.n; acc.①′.ext_map.n; acc.①′.f1_L. | ✓ |
@@ -268,20 +267,19 @@
 | 3. 결  과 | PANNs(CNN14)는 같은 정답·문턱값 규칙에서 시험 macro-F1 0.845이고, CPU log-mel 16 ms 구성 | 0.845 | 16 ms | acc.(a).ext_map.mean; panns.test_S3.f1 | ✓ |
 | 3. 결  과 | PANNs(CNN14)는 같은 정답·문턱값 규칙에서 시험 macro-F1 0.845이고, CPU log-mel 16 ms 구성 | 16 | 16 ms | 16 kHz / 16 프레임 / 16 ms | 상수 |
 | 3. 결  과 | PANNs(CNN14)는 같은 정답·문턱값 규칙에서 시험 macro-F1 0.845이고, CPU log-mel 16 ms 구성 | 99 | 16 ms | 유도: 100·f1(①′)/PANNs | ✓ |
-| 4. 한계와 결론 | 에너지는 직접 계측하지 않은 추정값이며 전력 출처에 따라 결론의 강도가 다르다(CPU log-mel 62.5 ms 구성의 우위 | 62.5 | 62.5 ms | 프레임 간격 ms | 상수 |
-| 4. 한계와 결론 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분을 차지해, 가장  | 1 | 62.5 ms, 16 ms | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
-| 4. 한계와 결론 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분을 차지해, 가장  | 1.9 | 62.5 ms, 16 ms | acc.다 u800.f1_L.sd; acc.다 u800.f1_S3.sd; avg_power.P_wait_lo_mW; avg_power.configs.다 u800.share_datasheet_at_hi_pct; avg_power.configs.다 u800.share_min_pct; edi | ✓ |
-| 4. 한계와 결론 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분을 차지해, 가장  | 62.5 | 62.5 ms, 16 ms | 프레임 간격 ms | 상수 |
-| 4. 한계와 결론 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분을 차지해, 가장  | 17 | 62.5 ms, 16 ms | avg_power.configs.가 u1000.share_max_pct; breakeven.NPU 전처리 (Gabor 필터뱅크) < 원본 파형 (전처리 없음).r_star; latency.다 u800.load; listening.T_test_scream/screaming_test.?;  | ✓ |
-| 4. 한계와 결론 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분을 차지해, 가장  | 16 | 62.5 ms, 16 ms | 16 kHz / 16 프레임 / 16 ms | 상수 |
-| 4. 한계와 결론 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분을 차지해, 가장  | 54 | 62.5 ms, 16 ms | acc.가 u1000.ext_f1.mean; avg_power.configs.①′.share_max_pct; avg_power.configs.다 u800.E_min_uJ; breakeven.CPU log-mel, 간격 50 ms < 원본 파형 (전처리 없음).by_source.datas | ✓ |
-| 4. 한계와 결론 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분을 차지해, 가장  | 11 | 62.5 ms, 16 ms | avg_power.P_wait_hi_mW; breakeven.CPU log-mel, 간격 25 ms < CPU log-mel, 간격 16 ms.C_Y; listening.B_ext_glass/전체/verdict_first.?; listening.S_train_scream/yellshou | ✓ |
-| 4. 한계와 결론 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분을 차지해, 가장  | 42 | 62.5 ms, 16 ms | avg_power.configs.M4 CMSIS-NN.share_datasheet_at_hi_pct; avg_power.configs.M4 CMSIS-NN.share_min_pct; avg_power.configs.간격 400.share_max_pct; editions.ext_f1_re | ⚠ |
-| 4. 한계와 결론 | 시드가 3개라 신뢰구간이 넓고, 정답 청취는 저자 1인이며, 비명과 환호의 경계는 음향만으로 가를 수 없어 비명 재현율은 그  | 3 | — | acc.(a).ext_f1.n; acc.(a).ext_map.n; acc.(a).f1_L.n; acc.(a).f1_S3.n; acc.(a).scream_S3.n; acc.(a).scream_S3.sd; acc.①′.ext_f1.n; acc.①′.ext_map.n; acc.①′.f1_L. | ✓ |
-| 4. 한계와 결론 | 시드가 3개라 신뢰구간이 넓고, 정답 청취는 저자 1인이며, 비명과 환호의 경계는 음향만으로 가를 수 없어 비명 재현율은 그  | 1 | — | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
-| 4. 한계와 결론 | 향후 과제로, CPU 몫의 80%를 차지하는 읽기와 위치 합산을 NPU에서 수행하려면 8비트 출력에 맞춘 재학습이 필요하다. | 80 | — | acc.간격 400.f1_L.mean; firmware.cpu_split.read_pct; firmware.cpu_split.read_share_med; firmware.cpu_split.read_share_worst; firmware.same_fw_fe_vs_ga.moosmann.ga | ✓ |
-| 4. 한계와 결론 | 향후 과제로, CPU 몫의 80%를 차지하는 읽기와 위치 합산을 NPU에서 수행하려면 8비트 출력에 맞춘 재학습이 필요하다. | 8 | — | acc.다 u800.scream_S3.sd; avg_power.configs.(a).share_datasheet_at_hi_pct; latency.②′.detail.infer1; listening.A_ext_scream/실사용만.?; welch.(a) − ④.test_f1_L[2]; w | ✓ |
-| 4. 한계와 결론 | NPU 전처리 (Gabor 필터뱅크)의 CPU 몫 대부분(80%)은 log를 NPU에서 수행할 수 없어 중간 결과를 int32 | 80 | NPU 전처리 (Gabor 필터뱅크) | acc.간격 400.f1_L.mean; firmware.cpu_split.read_pct; firmware.cpu_split.read_share_med; firmware.cpu_split.read_share_worst; firmware.same_fw_fe_vs_ga.moosmann.ga | ✓ |
+| 4. 한계 | 에너지는 직접 계측하지 않은 추정값이며 전력 출처에 따라 결론의 강도가 다르다(CPU log-mel 62.5 ms 구성의 우위 | 62.5 | 62.5 ms | 프레임 간격 ms | 상수 |
+| 4. 한계 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분이라, 가장 깊은  | 1 | 62.5 ms, 16 ms | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
+| 4. 한계 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분이라, 가장 깊은  | 1.9 | 62.5 ms, 16 ms | acc.다 u800.f1_L.sd; acc.다 u800.f1_S3.sd; avg_power.P_wait_lo_mW; avg_power.configs.다 u800.share_datasheet_at_hi_pct; avg_power.configs.다 u800.share_min_pct; edi | ✓ |
+| 4. 한계 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분이라, 가장 깊은  | 62.5 | 62.5 ms, 16 ms | 프레임 간격 ms | 상수 |
+| 4. 한계 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분이라, 가장 깊은  | 17 | 62.5 ms, 16 ms | avg_power.configs.가 u1000.share_max_pct; breakeven.NPU 전처리 (Gabor 필터뱅크) < 원본 파형 (전처리 없음).r_star; latency.다 u800.load; listening.T_test_scream/screaming_test.?;  | ✓ |
+| 4. 한계 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분이라, 가장 깊은  | 16 | 62.5 ms, 16 ms | 16 kHz / 16 프레임 / 16 ms | 상수 |
+| 4. 한계 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분이라, 가장 깊은  | 54 | 62.5 ms, 16 ms | acc.가 u1000.ext_f1.mean; avg_power.configs.①′.share_max_pct; avg_power.configs.다 u800.E_min_uJ; breakeven.CPU log-mel, 간격 50 ms < 원본 파형 (전처리 없음).by_source.datas | ✓ |
+| 4. 한계 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분이라, 가장 깊은  | 11 | 62.5 ms, 16 ms | avg_power.P_wait_hi_mW; breakeven.CPU log-mel, 간격 25 ms < CPU log-mel, 간격 16 ms.C_Y; listening.B_ext_glass/전체/verdict_first.?; listening.S_train_scream/yellshou | ✓ |
+| 4. 한계 | 판단 1회 에너지를 평균 전력으로 옮기면(데이터시트 기반 추정) 디지털 마이크를 유지하는 대기 전력이 대부분이라, 가장 깊은  | 42 | 62.5 ms, 16 ms | avg_power.configs.M4 CMSIS-NN.share_datasheet_at_hi_pct; avg_power.configs.M4 CMSIS-NN.share_min_pct; avg_power.configs.간격 400.share_max_pct; editions.ext_f1_re | ⚠ |
+| 4. 한계 | 시드가 3개라 신뢰구간이 넓고, 정답 청취는 저자 1인이며, 비명과 환호의 경계는 음향만으로 가를 수 없어 비명 재현율은 그  | 3 | — | acc.(a).ext_f1.n; acc.(a).ext_map.n; acc.(a).f1_L.n; acc.(a).f1_S3.n; acc.(a).scream_S3.n; acc.(a).scream_S3.sd; acc.①′.ext_f1.n; acc.①′.ext_map.n; acc.①′.f1_L. | ✓ |
+| 4. 한계 | 시드가 3개라 신뢰구간이 넓고, 정답 청취는 저자 1인이며, 비명과 환호의 경계는 음향만으로 가를 수 없어 비명 재현율은 그  | 1 | — | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
+| 5. 결론 및 향후 연구 | NPU 전처리의 CPU 몫 80%는 log를 NPU에서 수행할 수 없어 int32 중간 결과를 CPU로 읽어 오는 데이터 이동 | 80 | — | acc.간격 400.f1_L.mean; firmware.cpu_split.read_pct; firmware.cpu_split.read_share_med; firmware.cpu_split.read_share_worst; firmware.same_fw_fe_vs_ga.moosmann.ga | ✓ |
+| 5. 결론 및 향후 연구 | 전력계로 에너지를 직접 계측해 전력 출처 간 차이를 없애고, 실배치 분포의 배경과 복수 판정자 정답으로 데이터셋을 보강하며,  | 8 | — | acc.다 u800.scream_S3.sd; avg_power.configs.(a).share_datasheet_at_hi_pct; latency.②′.detail.infer1; listening.A_ext_scream/실사용만.?; welch.(a) − ④.test_f1_L[2]; w | ✓ |
 
 ## 구간별 에너지 계산 — 원본 파형(④) 대 CPU log-mel 62.5 ms(가), 추정(실측 지연 × 공개 전력)
 
