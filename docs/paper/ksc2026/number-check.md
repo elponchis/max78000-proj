@@ -2,7 +2,7 @@
 
 원고: `docs/paper/ksc2026/ksc2026_review.docx`. 방법: 문장마다 수치 토큰을 뽑고, numbers.json 의 어느 키가 그 표기(.0f/.1f/.2f/.3f/±/%/천 단위)를 내는지 찾은 뒤, 키 경로의 구성 id 가 문장에 언급된 구성(별칭 포함)과 맞는지 본다. 참고문헌·인용 번호·표/그림 번호는 제외.
 
-판정 집계: ✓ 215 · ⚠ 구성 확인 17 · 상수 42 · ✗ 미확인 0
+판정 집계: ✓ 215 · ⚠ 구성 확인 17 · 상수 43 · ✗ 미확인 0
 
 | 절 | 문장 (앞 70자) | 수치 | 문장의 구성 | numbers.json 키 (또는 상수 설명) | 판정 |
 |---|---|---|---|---|---|
@@ -69,15 +69,16 @@
 | 2. 시스템과 실험 설계 | 지연은 보드에서 SysTick(코어 클럭 사이클, 분해능 10 ns)으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, | 1,000 | CPU 추론 | firmware.cpu_split.n_iter; latency.②′ b64.log32.n_iter; latency.②′ b64f31.log32.n_iter; latency.②′ f31.log32.n_iter; latency.②′.log32.n_iter; latency.②′.new_fir | ✓ |
 | 2. 시스템과 실험 설계 | 지연은 보드에서 SysTick(코어 클럭 사이클, 분해능 10 ns)으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, | 100 | CPU 추론 | firmware.cpu_split.sum_vs_cpu_pct; listening.S_train_scream/screaming_train.n | ✓ |
 | 2. 시스템과 실험 설계 | 지연은 보드에서 SysTick(코어 클럭 사이클, 분해능 10 ns)으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, | 50 | CPU 추론 | 프레임 간격 ms / CNN 50 MHz | 상수 |
+| 2. 시스템과 실험 설계 | 지연은 보드에서 SysTick(코어 클럭 사이클, 분해능 10 ns)으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, | 24 | CPU 추론 | SysTick bit | 상수 |
 | 2. 시스템과 실험 설계 | 지연은 보드에서 SysTick(코어 클럭 사이클, 분해능 10 ns)으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, | 168 | CPU 추론 | SysTick 한계 ms | 상수 |
 | 2. 시스템과 실험 설계 | 지연은 보드에서 SysTick(코어 클럭 사이클, 분해능 10 ns)으로 1,000회 재어 최악값을 보고한다(전원 투입 직후, | 1 | CPU 추론 | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
 | 2. 시스템과 실험 설계 | 변형 3종의 지연은 펌웨어 안정화 대기(NPU 패스당 약 49 μs)를 포함하며, 같은 대기를 넣으면 NPU 전처리 (Gabo | 3 | 변형 3종, 변형 3종, 변형 3종, NPU 전처리 (Gabor 필터뱅크) | acc.(a).ext_f1.n; acc.(a).ext_map.n; acc.(a).f1_L.n; acc.(a).f1_S3.n; acc.(a).scream_S3.n; acc.(a).scream_S3.sd; acc.①′.ext_f1.n; acc.①′.ext_map.n; acc.①′.f1_L. | ✓ |
 | 2. 시스템과 실험 설계 | 변형 3종의 지연은 펌웨어 안정화 대기(NPU 패스당 약 49 μs)를 포함하며, 같은 대기를 넣으면 NPU 전처리 (Gabo | 49 | 변형 3종, 변형 3종, 변형 3종, NPU 전처리 (Gabor 필터뱅크) | firmware.stop_wait.us_per_pass; listening.A_ext_scream/실사용만.n; listening.S_train_scream/yellshout_test.X; variants.②′.measured.②′ f31.cpu_share_of_delta | ✓ |
 | 2. 시스템과 실험 설계 | 변형 3종의 지연은 펌웨어 안정화 대기(NPU 패스당 약 49 μs)를 포함하며, 같은 대기를 넣으면 NPU 전처리 (Gabo | 1.95 | 변형 3종, 변형 3종, 변형 3종, NPU 전처리 (Gabor 필터뱅크) | firmware.cpu_split.total_ms_this_run; firmware.stop_wait.fe_total_with_wait_ms; latency.②′.log32.session_new.total; latency.②′.new_firmware.detail.total; latenc | ✓ |
-| 2. 시스템과 실험 설계 | 정확도는 시드 1~3 평균 ± 표준편차, 오경보 300회/h. | 1 | — | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
-| 2. 시스템과 실험 설계 | 정확도는 시드 1~3 평균 ± 표준편차, 오경보 300회/h. | 3 | — | acc.(a).ext_f1.n; acc.(a).ext_map.n; acc.(a).f1_L.n; acc.(a).f1_S3.n; acc.(a).scream_S3.n; acc.(a).scream_S3.sd; acc.①′.ext_f1.n; acc.①′.ext_map.n; acc.①′.f1_L. | ✓ |
-| 2. 시스템과 실험 설계 | 정확도는 시드 1~3 평균 ± 표준편차, 오경보 300회/h. | 300 | — | 오경보/h | 상수 |
-| 2. 시스템과 실험 설계 | 지연은 보드 1,000회 최악값, 에너지는 추정(실측 지연 × 공개 전력; 데이터시트 / 선행연구 / Moosmann 순). | 1,000 | — | firmware.cpu_split.n_iter; latency.②′ b64.log32.n_iter; latency.②′ b64f31.log32.n_iter; latency.②′ f31.log32.n_iter; latency.②′.log32.n_iter; latency.②′.new_fir | ✓ |
+| 2. 시스템과 실험 설계 | 정확도는 시드 1~3 평균 ± 표준편차(그림 1의 세로 막대), 오경보 300회/h. | 1 | — | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
+| 2. 시스템과 실험 설계 | 정확도는 시드 1~3 평균 ± 표준편차(그림 1의 세로 막대), 오경보 300회/h. | 3 | — | acc.(a).ext_f1.n; acc.(a).ext_map.n; acc.(a).f1_L.n; acc.(a).f1_S3.n; acc.(a).scream_S3.n; acc.(a).scream_S3.sd; acc.①′.ext_f1.n; acc.①′.ext_map.n; acc.①′.f1_L. | ✓ |
+| 2. 시스템과 실험 설계 | 정확도는 시드 1~3 평균 ± 표준편차(그림 1의 세로 막대), 오경보 300회/h. | 300 | — | 오경보/h | 상수 |
+| 2. 시스템과 실험 설계 | 지연은 보드 1,000회 최악값(NPU 근사 log는 보드 미실측, 합성 사이클로 추정: 그림 1의 *), 에너지는 추정(실측 | 1,000 | NPU 근사 log | firmware.cpu_split.n_iter; latency.②′ b64.log32.n_iter; latency.②′ b64f31.log32.n_iter; latency.②′ f31.log32.n_iter; latency.②′.log32.n_iter; latency.②′.new_fir | ✓ |
 | 2. 시스템과 실험 설계 | 변형 3종은 펌웨어 안정화 대기 포함(2절). | 3 | 변형 3종, 변형 3종, 변형 3종 | acc.(a).ext_f1.n; acc.(a).ext_map.n; acc.(a).f1_L.n; acc.(a).f1_S3.n; acc.(a).scream_S3.n; acc.(a).scream_S3.sd; acc.①′.ext_f1.n; acc.①′.ext_map.n; acc.①′.f1_L. | ✓ |
 | 2. 시스템과 실험 설계 | 변형 3종은 펌웨어 안정화 대기 포함(2절). | 2 | 변형 3종, 변형 3종, 변형 3종 | acc.①′.ext_f1.sd; acc.②′ b64.ext_f1.sd; acc.②′ b64f31.ext_f1.sd; acc.②′ b64f31.ext_map.sd; acc.②′ b64f31.f1_L.sd; acc.②′ b64f31.f1_S3.sd; acc.②′.f1_S3.sd; acc.④ | ✓ |
 | 2. 시스템과 실험 설계 | NPU 전처리 계열의 정수 로그는 32비트 구현(64비트 구현과 출력 비트 일치, 교체분은 보드 실측 차이로 반영). | 32 | — | listening.B_ext_glass/전체/verdict_first.O | ✓ |
