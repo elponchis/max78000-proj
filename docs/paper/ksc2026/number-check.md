@@ -14,17 +14,17 @@
 | (제목·요약) | 반면 거친 log-mel을 CPU에 남기고 작은 2D CNN을 NPU에 올린 구성은 원본 파형 구성보다 macro-F1이 +0 | +0.085 | 원본 파형 | welch.가 u1000 − ④.test_f1_S3[0] | ⚠ |
 | (제목·요약) | 반면 거친 log-mel을 CPU에 남기고 작은 2D CNN을 NPU에 올린 구성은 원본 파형 구성보다 macro-F1이 +0 | 95 | 원본 파형 | latency.②′ b64f31.load; listening.S_train_scream/audioset_train.O | ✓ |
 | (제목·요약) | 반면 거친 log-mel을 CPU에 남기고 작은 2D CNN을 NPU에 올린 구성은 원본 파형 구성보다 macro-F1이 +0 | 0 | 원본 파형 | acc.(a).ext_f1.mean; acc.(a).ext_f1.sd; acc.(a).ext_map.sd; acc.(a).f1_L.sd; acc.(a).f1_S3.sd; acc.(a).scream_S3.mean; acc.(a).scream_S3.sd; acc.①′.ext_f1.sd; a | ✓ |
-| 1. 서론 및 관련 연구 | 벤더의 음성 키워드 참조 설계는 후자를 택하며, MFCC를 쓰는 소형 모델들과 비슷하거나 높은 정확도(96.3% 대 90.2~ | 96.3 | — | [4] 보고 정확도 % | 상수 |
-| 1. 서론 및 관련 연구 | 벤더의 음성 키워드 참조 설계는 후자를 택하며, MFCC를 쓰는 소형 모델들과 비슷하거나 높은 정확도(96.3% 대 90.2~ | 90.2 | — | [4] 비교 하한 % | 상수 |
-| 1. 서론 및 관련 연구 | 벤더의 음성 키워드 참조 설계는 후자를 택하며, MFCC를 쓰는 소형 모델들과 비슷하거나 높은 정확도(96.3% 대 90.2~ | 96.4 | — | [4] 비교 상한 % | 상수 |
-| 1. 서론 및 관련 연구 | (1) 전처리 위치를 양 끝(전부 CPU, 전부 NPU)과 그 사이로 나눈 10개 구성과 CPU 추론 대조군의 정확도·판단 1 | 1 | CPU 추론 | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
-| 1. 서론 및 관련 연구 | (1) 전처리 위치를 양 끝(전부 CPU, 전부 NPU)과 그 사이로 나눈 10개 구성과 CPU 추론 대조군의 정확도·판단 1 | 10 | CPU 추론 | firmware.stop_wait.ms_per_decision; latency.①′.pre; listening.B_ext_glass/전체.?; listening.S_train_scream/audioset_train.X; preproc.inc_v1_ms; welch.(a) − ④.ext_ | ✓ |
-| 1. 서론 및 관련 연구 | (1) 전처리 위치를 양 끝(전부 CPU, 전부 NPU)과 그 사이로 나눈 10개 구성과 CPU 추론 대조군의 정확도·판단 1 | 1 | CPU 추론 | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
-| 1. 서론 및 관련 연구 | (2) 필터뱅크·로그 압축·분할 등 전처리를 NPU 연산으로 옮긴 변형은 원본 파형 구성을 유의하게 넘지 못하고, 선형 부분만 | 2 | 변형 3종, 변형 3종, 변형 3종, 원본 파형 | acc.①′.ext_f1.sd; acc.②′ b64.ext_f1.sd; acc.②′ b64f31.ext_f1.sd; acc.②′ b64f31.ext_map.sd; acc.②′ b64f31.f1_L.sd; acc.②′ b64f31.f1_S3.sd; acc.②′.f1_S3.sd; acc.④ | ✓ |
-| 1. 서론 및 관련 연구 | (3) 거친 log-mel(프레임 간격 62.5 ms, 멜 32)을 CPU에 남기는 구성이 원본 파형 구성보다 정확도가 유의하 | 3 | 62.5 ms, 원본 파형 | acc.(a).ext_f1.n; acc.(a).ext_map.n; acc.(a).f1_L.n; acc.(a).f1_S3.n; acc.(a).scream_S3.n; acc.(a).scream_S3.sd; acc.①′.ext_f1.n; acc.①′.ext_map.n; acc.①′.f1_L. | ✓ |
-| 1. 서론 및 관련 연구 | (3) 거친 log-mel(프레임 간격 62.5 ms, 멜 32)을 CPU에 남기는 구성이 원본 파형 구성보다 정확도가 유의하 | 62.5 | 62.5 ms, 원본 파형 | 프레임 간격 ms | 상수 |
-| 1. 서론 및 관련 연구 | (3) 거친 log-mel(프레임 간격 62.5 ms, 멜 32)을 CPU에 남기는 구성이 원본 파형 구성보다 정확도가 유의하 | 32 | 62.5 ms, 원본 파형 | listening.B_ext_glass/전체/verdict_first.O | ✓ |
-| 1. 서론 및 관련 연구 | CPU 추론 대조군은 CMSIS-NN [8]으로 구현했고, 데이터는 FSD50K [9]·UrbanSound8K [10]·ESC | 50 | CPU 추론 | 프레임 간격 ms / CNN 50 MHz | 상수 |
+| 1. 서론 | 벤더의 음성 키워드 참조 설계는 후자를 택하며, MFCC를 쓰는 소형 모델들과 비슷하거나 높은 정확도(96.3% 대 90.2~ | 96.3 | — | [4] 보고 정확도 % | 상수 |
+| 1. 서론 | 벤더의 음성 키워드 참조 설계는 후자를 택하며, MFCC를 쓰는 소형 모델들과 비슷하거나 높은 정확도(96.3% 대 90.2~ | 90.2 | — | [4] 비교 하한 % | 상수 |
+| 1. 서론 | 벤더의 음성 키워드 참조 설계는 후자를 택하며, MFCC를 쓰는 소형 모델들과 비슷하거나 높은 정확도(96.3% 대 90.2~ | 96.4 | — | [4] 비교 상한 % | 상수 |
+| 1. 서론 | (1) 전처리 위치를 양 끝(전부 CPU, 전부 NPU)과 그 사이로 나눈 10개 구성과 CPU 추론 대조군의 정확도·판단 1 | 1 | CPU 추론 | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
+| 1. 서론 | (1) 전처리 위치를 양 끝(전부 CPU, 전부 NPU)과 그 사이로 나눈 10개 구성과 CPU 추론 대조군의 정확도·판단 1 | 10 | CPU 추론 | firmware.stop_wait.ms_per_decision; latency.①′.pre; listening.B_ext_glass/전체.?; listening.S_train_scream/audioset_train.X; preproc.inc_v1_ms; welch.(a) − ④.ext_ | ✓ |
+| 1. 서론 | (1) 전처리 위치를 양 끝(전부 CPU, 전부 NPU)과 그 사이로 나눈 10개 구성과 CPU 추론 대조군의 정확도·판단 1 | 1 | CPU 추론 | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
+| 1. 서론 | (2) 필터뱅크·로그 압축·분할 등 전처리를 NPU 연산으로 옮긴 변형은 원본 파형 구성을 유의하게 넘지 못하고, 선형 부분만 | 2 | 변형 3종, 변형 3종, 변형 3종, 원본 파형 | acc.①′.ext_f1.sd; acc.②′ b64.ext_f1.sd; acc.②′ b64f31.ext_f1.sd; acc.②′ b64f31.ext_map.sd; acc.②′ b64f31.f1_L.sd; acc.②′ b64f31.f1_S3.sd; acc.②′.f1_S3.sd; acc.④ | ✓ |
+| 1. 서론 | (3) 거친 log-mel(프레임 간격 62.5 ms, 멜 32)을 CPU에 남기는 구성이 원본 파형 구성보다 정확도가 유의하 | 3 | 62.5 ms, 원본 파형 | acc.(a).ext_f1.n; acc.(a).ext_map.n; acc.(a).f1_L.n; acc.(a).f1_S3.n; acc.(a).scream_S3.n; acc.(a).scream_S3.sd; acc.①′.ext_f1.n; acc.①′.ext_map.n; acc.①′.f1_L. | ✓ |
+| 1. 서론 | (3) 거친 log-mel(프레임 간격 62.5 ms, 멜 32)을 CPU에 남기는 구성이 원본 파형 구성보다 정확도가 유의하 | 62.5 | 62.5 ms, 원본 파형 | 프레임 간격 ms | 상수 |
+| 1. 서론 | (3) 거친 log-mel(프레임 간격 62.5 ms, 멜 32)을 CPU에 남기는 구성이 원본 파형 구성보다 정확도가 유의하 | 32 | 62.5 ms, 원본 파형 | listening.B_ext_glass/전체/verdict_first.O | ✓ |
+| 1. 서론 | CPU 추론 대조군은 CMSIS-NN [8]으로 구현했고, 데이터는 FSD50K [9]·UrbanSound8K [10]·ESC | 50 | CPU 추론 | 프레임 간격 ms / CNN 50 MHz | 상수 |
 | 2. 시스템과 실험 설계 | MAX78000FTHR 단독으로 온보드 마이크 16 kHz 입력을 1.024 s 창(16,384 샘플, int8)으로 받는다. | 16 | 50 ms | 16 kHz / 16 프레임 / 16 ms | 상수 |
 | 2. 시스템과 실험 설계 | MAX78000FTHR 단독으로 온보드 마이크 16 kHz 입력을 1.024 s 창(16,384 샘플, int8)으로 받는다. | 1.024 | 50 ms | 창 길이 s | 상수 |
 | 2. 시스템과 실험 설계 | MAX78000FTHR 단독으로 온보드 마이크 16 kHz 입력을 1.024 s 창(16,384 샘플, int8)으로 받는다. | 16,384 | 50 ms | 창 샘플 | 상수 |
