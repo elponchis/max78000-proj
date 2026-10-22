@@ -14,8 +14,6 @@
 | (제목·요약) | 반면 거친 log-mel을 CPU에 남기고 작은 2D CNN을 NPU에 올린 구성은 원본 파형 구성보다 macro-F1이 +0 | +0.085 | 원본 파형 | welch.가 u1000 − ④.test_f1_S3[0] | ⚠ |
 | (제목·요약) | 반면 거친 log-mel을 CPU에 남기고 작은 2D CNN을 NPU에 올린 구성은 원본 파형 구성보다 macro-F1이 +0 | 95 | 원본 파형 | latency.②′ b64f31.load; listening.S_train_scream/audioset_train.O | ✓ |
 | (제목·요약) | 반면 거친 log-mel을 CPU에 남기고 작은 2D CNN을 NPU에 올린 구성은 원본 파형 구성보다 macro-F1이 +0 | 0 | 원본 파형 | acc.(a).ext_f1.mean; acc.(a).ext_f1.sd; acc.(a).ext_map.sd; acc.(a).f1_L.sd; acc.(a).f1_S3.sd; acc.(a).scream_S3.mean; acc.(a).scream_S3.sd; acc.①′.ext_f1.sd; a | ✓ |
-| (제목·요약) | 판단 1회 추정 에너지(로그축)와 정확도: (a) 시험 데이터 macro-F1, (b) 외부 데이터 F1. | 1 | — | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
-| (제목·요약) | 색은 전처리 위치, 마커는 데이터시트 전력 기준, 가로 막대는 세 전력 출처의 범위; 주황 점선은 NPU 전처리 계열(Gabo | 3 | 변형 3종, 변형 3종, 변형 3종, NPU 전처리 (Gabor 필터뱅크) | acc.(a).ext_f1.n; acc.(a).ext_map.n; acc.(a).f1_L.n; acc.(a).f1_S3.n; acc.(a).scream_S3.n; acc.(a).scream_S3.sd; acc.①′.ext_f1.n; acc.①′.ext_map.n; acc.①′.f1_L. | ✓ |
 | 1. 서론 및 관련 연구 | 벤더의 음성 키워드 참조 설계는 후자를 택하며, MFCC를 쓰는 소형 모델들과 비슷하거나 높은 정확도(96.3% 대 90.2~ | 96.3 | — | [4] 보고 정확도 % | 상수 |
 | 1. 서론 및 관련 연구 | 벤더의 음성 키워드 참조 설계는 후자를 택하며, MFCC를 쓰는 소형 모델들과 비슷하거나 높은 정확도(96.3% 대 90.2~ | 90.2 | — | [4] 비교 하한 % | 상수 |
 | 1. 서론 및 관련 연구 | 벤더의 음성 키워드 참조 설계는 후자를 택하며, MFCC를 쓰는 소형 모델들과 비슷하거나 높은 정확도(96.3% 대 90.2~ | 96.4 | — | [4] 비교 상한 % | 상수 |
@@ -129,6 +127,8 @@
 | 1. 서론 및 관련 연구 | [표] CPU 추론 (원본 파형 가중치) \| 225.77 \| 2008 / 5599 / 5599 \| = 원본 파형 \| = 원본  | 2008 | CPU 추론, 원본 파형 | avg_power.configs.M4 CMSIS-NN.E_min_uJ; breakeven.원본 파형 (전처리 없음) (NPU 추론) < CPU 추론 (Cortex-M4F).by_source.datasheet.E_Y; breakeven.원본 파형 (전처리 없음) (NPU 추론) < CPU | ✓ |
 | 1. 서론 및 관련 연구 | [표] CPU 추론 (원본 파형 가중치) \| 225.77 \| 2008 / 5599 / 5599 \| = 원본 파형 \| = 원본  | 5599 | CPU 추론, 원본 파형 | avg_power.configs.M4 CMSIS-NN.E_max_uJ; breakeven.원본 파형 (전처리 없음) (NPU 추론) < CPU 추론 (Cortex-M4F).by_source.literature.E_Y; breakeven.원본 파형 (전처리 없음) (NPU 추론) < CP | ✓ |
 | 1. 서론 및 관련 연구 | [표] CPU 추론 (원본 파형 가중치) \| 225.77 \| 2008 / 5599 / 5599 \| = 원본 파형 \| = 원본  | 5599 | CPU 추론, 원본 파형 | avg_power.configs.M4 CMSIS-NN.E_max_uJ; breakeven.원본 파형 (전처리 없음) (NPU 추론) < CPU 추론 (Cortex-M4F).by_source.literature.E_Y; breakeven.원본 파형 (전처리 없음) (NPU 추론) < CP | ✓ |
+| 1. 서론 및 관련 연구 | 판단 1회 추정 에너지(로그축)와 정확도: (a) 시험 데이터 macro-F1, (b) 외부 데이터 F1. | 1 | — | acc.(a).ext_f1.sd; acc.(a).ext_map.mean; acc.(a).ext_map.sd; acc.(a).f1_L.mean; acc.(a).f1_L.sd; acc.(a).f1_S3.mean; acc.(a).f1_S3.sd; acc.①′.ext_f1.mean; acc.① | ✓ |
+| 1. 서론 및 관련 연구 | 색은 전처리 위치, 마커는 데이터시트 전력 기준, 가로 막대는 세 전력 출처의 범위; 주황 점선은 NPU 전처리 계열(Gabo | 3 | 변형 3종, 변형 3종, 변형 3종, NPU 전처리 (Gabor 필터뱅크) | acc.(a).ext_f1.n; acc.(a).ext_map.n; acc.(a).f1_L.n; acc.(a).f1_S3.n; acc.(a).scream_S3.n; acc.(a).scream_S3.sd; acc.①′.ext_f1.n; acc.①′.ext_map.n; acc.①′.f1_L. | ✓ |
 | 2. 시스템과 실험 설계 | MAX78000FTHR 단독으로 온보드 마이크 16 kHz 입력을 1.024 s 창(16,384 샘플, int8)으로 받는다. | 16 | 50 ms | 16 kHz / 16 프레임 / 16 ms | 상수 |
 | 2. 시스템과 실험 설계 | MAX78000FTHR 단독으로 온보드 마이크 16 kHz 입력을 1.024 s 창(16,384 샘플, int8)으로 받는다. | 1.024 | 50 ms | 창 길이 s | 상수 |
 | 2. 시스템과 실험 설계 | MAX78000FTHR 단독으로 온보드 마이크 16 kHz 입력을 1.024 s 창(16,384 샘플, int8)으로 받는다. | 16,384 | 50 ms | 창 샘플 | 상수 |
