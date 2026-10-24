@@ -1,0 +1,3306 @@
+{
+ "date": "2026-10-24",
+ "n_win": 256,
+ "configs": [
+  {
+   "label": "④ 원본 파형",
+   "config": "wave",
+   "prefix": "safesound-v4d-wave",
+   "family": "NPU 전량",
+   "between": "없음 (전부 ai8x conv)",
+   "runs": [
+    {
+     "seed": 1,
+     "ckpt": "safesound-v4d-wave_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "voice_conv1",
+       "thr": 1.0,
+       "wmax": 0.555535614490509,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0015362548828125,
+       "zero": 0.6827386474609375,
+       "p99": 0.3671875,
+       "last": false
+      },
+      {
+       "layer": "voice_conv2",
+       "thr": 0.0,
+       "wmax": 1.2810944318771362,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0019857416708002644,
+       "zero": 0.8329067331142527,
+       "p99": 0.4921875,
+       "last": false
+      },
+      {
+       "layer": "voice_conv3",
+       "thr": 1.0,
+       "wmax": 1.2918223142623901,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.000805082775297619,
+       "zero": 0.8116823226686508,
+       "p99": 0.4140625,
+       "last": false
+      },
+      {
+       "layer": "voice_conv4",
+       "thr": 0.0,
+       "wmax": 1.3737338781356812,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.001103302168715847,
+       "zero": 0.7618281463456285,
+       "p99": 0.5390625,
+       "last": false
+      },
+      {
+       "layer": "kws_conv1",
+       "thr": -1.0,
+       "wmax": 0.9433133006095886,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.013909912109375,
+       "zero": 0.8084574381510417,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv2",
+       "thr": 0.0,
+       "wmax": 1.0036810636520386,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.01763916015625,
+       "zero": 0.6807861328125,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv3",
+       "thr": 0.0,
+       "wmax": 1.9937092065811157,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.02421595982142857,
+       "zero": 0.8802957589285715,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv4",
+       "thr": 1.0,
+       "wmax": 1.1093003749847412,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0173492431640625,
+       "zero": 0.75634765625,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 2.0,
+       "wmax": 1.5321485996246338,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.8,
+       "zero": 0.01171875,
+       "p99": 5.146420898437505,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 2,
+     "ckpt": "safesound-v4d-wave-s2_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "voice_conv1",
+       "thr": 1.0,
+       "wmax": 0.4993401765823364,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.00158935546875,
+       "zero": 0.67917236328125,
+       "p99": 0.3828125,
+       "last": false
+      },
+      {
+       "layer": "voice_conv2",
+       "thr": 0.0,
+       "wmax": 1.3114101886749268,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.002036119895006614,
+       "zero": 0.8398705537987765,
+       "p99": 0.4921875,
+       "last": false
+      },
+      {
+       "layer": "voice_conv3",
+       "thr": 1.0,
+       "wmax": 1.4874851703643799,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.001014346168154762,
+       "zero": 0.8335910373263888,
+       "p99": 0.4296875,
+       "last": false
+      },
+      {
+       "layer": "voice_conv4",
+       "thr": 0.0,
+       "wmax": 1.0348366498947144,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0013314335724043717,
+       "zero": 0.7371272519637978,
+       "p99": 0.5390625,
+       "last": false
+      },
+      {
+       "layer": "kws_conv1",
+       "thr": -1.0,
+       "wmax": 0.9335745573043823,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.015087890625,
+       "zero": 0.8119059244791667,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv2",
+       "thr": 0.0,
+       "wmax": 1.1124610900878906,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.020577566964285716,
+       "zero": 0.6938374837239584,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv3",
+       "thr": 0.0,
+       "wmax": 1.4421032667160034,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.026143973214285715,
+       "zero": 0.8805803571428571,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv4",
+       "thr": 1.0,
+       "wmax": 1.1419947147369385,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.012847900390625,
+       "zero": 0.7779998779296875,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 2.0,
+       "wmax": 1.5604578256607056,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.796875,
+       "zero": 0.01171875,
+       "p99": 5.248493652343752,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 3,
+     "ckpt": "safesound-v4d-wave-s3_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "voice_conv1",
+       "thr": 1.0,
+       "wmax": 0.5162004232406616,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00155120849609375,
+       "zero": 0.6833380126953125,
+       "p99": 0.3671875,
+       "last": false
+      },
+      {
+       "layer": "voice_conv2",
+       "thr": 0.0,
+       "wmax": 1.1448649168014526,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.002369068287037037,
+       "zero": 0.8224981398809523,
+       "p99": 0.53125,
+       "last": false
+      },
+      {
+       "layer": "voice_conv3",
+       "thr": 1.0,
+       "wmax": 1.321901798248291,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0009000263516865079,
+       "zero": 0.8307097904265873,
+       "p99": 0.4296875,
+       "last": false
+      },
+      {
+       "layer": "voice_conv4",
+       "thr": 0.0,
+       "wmax": 0.9616036415100098,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0011953551912568306,
+       "zero": 0.7755026895491803,
+       "p99": 0.53125,
+       "last": false
+      },
+      {
+       "layer": "kws_conv1",
+       "thr": -1.0,
+       "wmax": 1.1610132455825806,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.010831705729166667,
+       "zero": 0.803643798828125,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv2",
+       "thr": 0.0,
+       "wmax": 0.8431196808815002,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.013981410435267858,
+       "zero": 0.7065778459821429,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv3",
+       "thr": 0.0,
+       "wmax": 1.8206044435501099,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.030284598214285714,
+       "zero": 0.8472433035714285,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv4",
+       "thr": 1.0,
+       "wmax": 1.5313588380813599,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0303955078125,
+       "zero": 0.7916259765625,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 2.0,
+       "wmax": 1.2616468667984009,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.80703125,
+       "zero": 0.01171875,
+       "p99": 5.599851074218753,
+       "last": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "label": "(a) NPU 근사 log (주)",
+   "config": "wave_logstage",
+   "prefix": "safesound-v4d-logstage",
+   "family": "NPU 근사 log",
+   "between": "없음 (구간선형 층도 ai8x)",
+   "runs": [
+    {
+     "seed": 1,
+     "ckpt": "safesound-v4d-logstage_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "voice_conv1",
+       "thr": 1.0,
+       "wmax": 0.28975293040275574,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.00221832275390625,
+       "zero": 0.4575689697265625,
+       "p99": 0.4375,
+       "last": false
+      },
+      {
+       "layer": "log_knot",
+       "thr": 0.0,
+       "wmax": 1.1801252365112305,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0009952545166015624,
+       "zero": 0.7251728057861329,
+       "p99": 0.4140625,
+       "last": false
+      },
+      {
+       "layer": "log_sum",
+       "thr": 4.0,
+       "wmax": 21.522348403930664,
+       "shift": 5,
+       "wide": false,
+       "sat": 0.00013641357421875,
+       "zero": 0.4222909545898437,
+       "p99": 0.3046875,
+       "last": false
+      },
+      {
+       "layer": "voice_conv2",
+       "thr": -1.0,
+       "wmax": 0.3018917739391327,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0006242378678902117,
+       "zero": 0.7636389353918651,
+       "p99": 0.3671875,
+       "last": false
+      },
+      {
+       "layer": "voice_conv3",
+       "thr": -1.0,
+       "wmax": 0.40276944637298584,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0008002387152777778,
+       "zero": 0.6275721958705357,
+       "p99": 0.4765625,
+       "last": false
+      },
+      {
+       "layer": "voice_conv4",
+       "thr": 0.0,
+       "wmax": 0.3087494373321533,
+       "shift": -1,
+       "wide": false,
+       "sat": 1.0672814207650273e-05,
+       "zero": 0.6426648416154371,
+       "p99": 0.296875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv1",
+       "thr": -1.0,
+       "wmax": 0.32530200481414795,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.000830078125,
+       "zero": 0.5352376302083334,
+       "p99": 0.46875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv2",
+       "thr": 0.0,
+       "wmax": 0.48810771107673645,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.00012352353050595238,
+       "zero": 0.5702325730096727,
+       "p99": 0.359375,
+       "last": false
+      },
+      {
+       "layer": "kws_conv3",
+       "thr": 0.0,
+       "wmax": 0.3537706434726715,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.00021763392857142858,
+       "zero": 0.6377622767857143,
+       "p99": 0.3125,
+       "last": false
+      },
+      {
+       "layer": "kws_conv4",
+       "thr": 1.0,
+       "wmax": 0.35383012890815735,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0,
+       "zero": 0.6373443603515625,
+       "p99": 0.21875,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.2632014751434326,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.78671875,
+       "zero": 0.0,
+       "p99": 5.841850585937502,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 2,
+     "ckpt": "safesound-v4d-logstage-s2_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "voice_conv1",
+       "thr": 1.0,
+       "wmax": 0.29055243730545044,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.002164306640625,
+       "zero": 0.44625030517578124,
+       "p99": 0.4296875,
+       "last": false
+      },
+      {
+       "layer": "log_knot",
+       "thr": 0.0,
+       "wmax": 1.1868267059326172,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.000882720947265625,
+       "zero": 0.7375798034667969,
+       "p99": 0.40625,
+       "last": false
+      },
+      {
+       "layer": "log_sum",
+       "thr": 3.0,
+       "wmax": 21.478546142578125,
+       "shift": 5,
+       "wide": false,
+       "sat": 0.00150726318359375,
+       "zero": 0.4009417724609375,
+       "p99": 0.5625,
+       "last": false
+      },
+      {
+       "layer": "voice_conv2",
+       "thr": 0.0,
+       "wmax": 0.32691213488578796,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0002887059771825397,
+       "zero": 0.725351162057705,
+       "p99": 0.3828125,
+       "last": false
+      },
+      {
+       "layer": "voice_conv3",
+       "thr": -1.0,
+       "wmax": 0.43555113673210144,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.001689608134920635,
+       "zero": 0.6447172619047619,
+       "p99": 0.53125,
+       "last": false
+      },
+      {
+       "layer": "voice_conv4",
+       "thr": 0.0,
+       "wmax": 0.36545753479003906,
+       "shift": -1,
+       "wide": false,
+       "sat": 2.1345628415300546e-05,
+       "zero": 0.6582404798497268,
+       "p99": 0.3046875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv1",
+       "thr": -1.0,
+       "wmax": 0.3078466057777405,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.00018717447916666668,
+       "zero": 0.545220947265625,
+       "p99": 0.3828125,
+       "last": false
+      },
+      {
+       "layer": "kws_conv2",
+       "thr": 0.0,
+       "wmax": 0.3820192515850067,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.00010753813244047619,
+       "zero": 0.5188511439732143,
+       "p99": 0.359375,
+       "last": false
+      },
+      {
+       "layer": "kws_conv3",
+       "thr": 0.0,
+       "wmax": 0.32727423310279846,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0002734375,
+       "zero": 0.61517578125,
+       "p99": 0.3203125,
+       "last": false
+      },
+      {
+       "layer": "kws_conv4",
+       "thr": 1.0,
+       "wmax": 0.31610679626464844,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0,
+       "zero": 0.6569061279296875,
+       "p99": 0.2265625,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.34788647294044495,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.784375,
+       "zero": 0.0,
+       "p99": 6.431323242187501,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 3,
+     "ckpt": "safesound-v4d-logstage-s3_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "voice_conv1",
+       "thr": 1.0,
+       "wmax": 0.28447428345680237,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0021759033203125,
+       "zero": 0.444013671875,
+       "p99": 0.4296875,
+       "last": false
+      },
+      {
+       "layer": "log_knot",
+       "thr": 0.0,
+       "wmax": 1.2144604921340942,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0010021209716796875,
+       "zero": 0.7064378356933594,
+       "p99": 0.421875,
+       "last": false
+      },
+      {
+       "layer": "log_sum",
+       "thr": 4.0,
+       "wmax": 21.506206512451172,
+       "shift": 5,
+       "wide": false,
+       "sat": 6.40869140625e-05,
+       "zero": 0.4099819946289063,
+       "p99": 0.296875,
+       "last": false
+      },
+      {
+       "layer": "voice_conv2",
+       "thr": -1.0,
+       "wmax": 0.2989557087421417,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0005173456101190476,
+       "zero": 0.7301480732266865,
+       "p99": 0.375,
+       "last": false
+      },
+      {
+       "layer": "voice_conv3",
+       "thr": -1.0,
+       "wmax": 0.30613136291503906,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0007750496031746031,
+       "zero": 0.6845441545758929,
+       "p99": 0.484375,
+       "last": false
+      },
+      {
+       "layer": "voice_conv4",
+       "thr": 0.0,
+       "wmax": 0.28614097833633423,
+       "shift": -1,
+       "wide": false,
+       "sat": 5.6032274590163936e-05,
+       "zero": 0.698671768271858,
+       "p99": 0.28125,
+       "last": false
+      },
+      {
+       "layer": "kws_conv1",
+       "thr": -1.0,
+       "wmax": 0.3535091280937195,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.000140380859375,
+       "zero": 0.6040974934895833,
+       "p99": 0.3359375,
+       "last": false
+      },
+      {
+       "layer": "kws_conv2",
+       "thr": 0.0,
+       "wmax": 0.2709294855594635,
+       "shift": -1,
+       "wide": false,
+       "sat": 2.0345052083333332e-05,
+       "zero": 0.5737188430059523,
+       "p99": 0.25,
+       "last": false
+      },
+      {
+       "layer": "kws_conv3",
+       "thr": 0.0,
+       "wmax": 0.2935086190700531,
+       "shift": -1,
+       "wide": false,
+       "sat": 5.580357142857143e-06,
+       "zero": 0.6701478794642857,
+       "p99": 0.1875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv4",
+       "thr": 1.0,
+       "wmax": 0.30044013261795044,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0,
+       "zero": 0.6193695068359375,
+       "p99": 0.125,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.23388773202896118,
+       "shift": -2,
+       "wide": true,
+       "sat": 0.7546875,
+       "zero": 0.0,
+       "p99": 6.1581640625000045,
+       "last": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "label": "(a) 보조 lr 1e-3",
+   "config": "wave_logstage",
+   "prefix": "safesound-v4d-logstage-lr1e3",
+   "family": "NPU 근사 log",
+   "between": "없음",
+   "runs": [
+    {
+     "seed": 1,
+     "ckpt": "safesound-v4d-logstage-lr1e3_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "voice_conv1",
+       "thr": 2.0,
+       "wmax": 0.5664681792259216,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00116058349609375,
+       "zero": 0.47876495361328125,
+       "p99": 0.3203125,
+       "last": false
+      },
+      {
+       "layer": "log_knot",
+       "thr": -1.0,
+       "wmax": 1.4343633651733398,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.00357879638671875,
+       "zero": 0.8528129577636718,
+       "p99": 0.515625,
+       "last": false
+      },
+      {
+       "layer": "log_sum",
+       "thr": 5.0,
+       "wmax": 21.639827728271484,
+       "shift": 5,
+       "wide": false,
+       "sat": 0.0,
+       "zero": 0.39639739990234374,
+       "p99": 0.3359375,
+       "last": false
+      },
+      {
+       "layer": "voice_conv2",
+       "thr": -1.0,
+       "wmax": 0.7474913001060486,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.003846506593088624,
+       "zero": 0.8616478329613095,
+       "p99": 0.6015625,
+       "last": false
+      },
+      {
+       "layer": "voice_conv3",
+       "thr": 0.0,
+       "wmax": 0.9344112277030945,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.001335022941468254,
+       "zero": 0.862061515687004,
+       "p99": 0.4453125,
+       "last": false
+      },
+      {
+       "layer": "voice_conv4",
+       "thr": 0.0,
+       "wmax": 0.6214632391929626,
+       "shift": 0,
+       "wide": false,
+       "sat": 7.470969945355191e-05,
+       "zero": 0.8293843920765027,
+       "p99": 0.3359375,
+       "last": false
+      },
+      {
+       "layer": "kws_conv1",
+       "thr": -2.0,
+       "wmax": 0.9323856830596924,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.004087320963541667,
+       "zero": 0.8864908854166667,
+       "p99": 0.609375,
+       "last": false
+      },
+      {
+       "layer": "kws_conv2",
+       "thr": -1.0,
+       "wmax": 0.6836764216423035,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0020810081845238095,
+       "zero": 0.8529227120535714,
+       "p99": 0.4921875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv3",
+       "thr": -1.0,
+       "wmax": 0.7190151214599609,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.004087611607142857,
+       "zero": 0.89080078125,
+       "p99": 0.625,
+       "last": false
+      },
+      {
+       "layer": "kws_conv4",
+       "thr": 2.0,
+       "wmax": 0.9067298769950867,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0001678466796875,
+       "zero": 0.81829833984375,
+       "p99": 0.2890625,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.300933837890625,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.72578125,
+       "zero": 0.0,
+       "p99": 6.615449218750008,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 2,
+     "ckpt": "safesound-v4d-logstage-lr1e3-s2_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "voice_conv1",
+       "thr": 2.0,
+       "wmax": 0.5526993274688721,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00118804931640625,
+       "zero": 0.4600155639648438,
+       "p99": 0.3203125,
+       "last": false
+      },
+      {
+       "layer": "log_knot",
+       "thr": -1.0,
+       "wmax": 1.4862799644470215,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.004064865112304687,
+       "zero": 0.8529411315917969,
+       "p99": 0.5625,
+       "last": false
+      },
+      {
+       "layer": "log_sum",
+       "thr": 5.0,
+       "wmax": 21.653844833374023,
+       "shift": 5,
+       "wide": false,
+       "sat": 0.0,
+       "zero": 0.39779052734375,
+       "p99": 0.3515625,
+       "last": false
+      },
+      {
+       "layer": "voice_conv2",
+       "thr": 0.0,
+       "wmax": 0.7632722854614258,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0010027204241071428,
+       "zero": 0.838997654183201,
+       "p99": 0.40625,
+       "last": false
+      },
+      {
+       "layer": "voice_conv3",
+       "thr": -1.0,
+       "wmax": 0.7394086122512817,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0033288380456349205,
+       "zero": 0.8700958736359127,
+       "p99": 0.5625,
+       "last": false
+      },
+      {
+       "layer": "voice_conv4",
+       "thr": -1.0,
+       "wmax": 0.6450834274291992,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0022946550546448087,
+       "zero": 0.8638735911885246,
+       "p99": 0.546875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv1",
+       "thr": -1.0,
+       "wmax": 0.7555276155471802,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0021830240885416666,
+       "zero": 0.871905517578125,
+       "p99": 0.4921875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv2",
+       "thr": -1.0,
+       "wmax": 0.8150596618652344,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0013296944754464285,
+       "zero": 0.8746047247023809,
+       "p99": 0.4453125,
+       "last": false
+      },
+      {
+       "layer": "kws_conv3",
+       "thr": -1.0,
+       "wmax": 0.9569218754768372,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0022963169642857143,
+       "zero": 0.90462890625,
+       "p99": 0.421875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv4",
+       "thr": 2.0,
+       "wmax": 0.8354399800300598,
+       "shift": 0,
+       "wide": false,
+       "sat": 1.52587890625e-05,
+       "zero": 0.844512939453125,
+       "p99": 0.1953125,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.23313382267951965,
+       "shift": -2,
+       "wide": true,
+       "sat": 0.728125,
+       "zero": 0.0,
+       "p99": 5.98858398437502,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 3,
+     "ckpt": "safesound-v4d-logstage-lr1e3-s3_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "voice_conv1",
+       "thr": 2.0,
+       "wmax": 0.5781950950622559,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00114227294921875,
+       "zero": 0.451544189453125,
+       "p99": 0.32039062499825377,
+       "last": false
+      },
+      {
+       "layer": "log_knot",
+       "thr": -1.0,
+       "wmax": 1.4887415170669556,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0037799835205078124,
+       "zero": 0.8363220977783203,
+       "p99": 0.5390625,
+       "last": false
+      },
+      {
+       "layer": "log_sum",
+       "thr": 5.0,
+       "wmax": 21.836151123046875,
+       "shift": 5,
+       "wide": false,
+       "sat": 0.0,
+       "zero": 0.3831158447265625,
+       "p99": 0.3671875,
+       "last": false
+      },
+      {
+       "layer": "voice_conv2",
+       "thr": 0.0,
+       "wmax": 0.7068848609924316,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0010737666377314814,
+       "zero": 0.8880440848214286,
+       "p99": 0.3828125,
+       "last": false
+      },
+      {
+       "layer": "voice_conv3",
+       "thr": -1.0,
+       "wmax": 0.8273759484291077,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0028860909598214285,
+       "zero": 0.8628956628224206,
+       "p99": 0.5234375,
+       "last": false
+      },
+      {
+       "layer": "voice_conv4",
+       "thr": -1.0,
+       "wmax": 0.6684759259223938,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0023400145150273225,
+       "zero": 0.8665564698599727,
+       "p99": 0.546875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv1",
+       "thr": -1.0,
+       "wmax": 0.7057759165763855,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.002362060546875,
+       "zero": 0.8543111165364583,
+       "p99": 0.5234375,
+       "last": false
+      },
+      {
+       "layer": "kws_conv2",
+       "thr": -1.0,
+       "wmax": 0.8757380843162537,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0018746512276785715,
+       "zero": 0.8712376185825893,
+       "p99": 0.46875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv3",
+       "thr": -1.0,
+       "wmax": 0.7905454635620117,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.003231026785714286,
+       "zero": 0.8850948660714286,
+       "p99": 0.5546875,
+       "last": false
+      },
+      {
+       "layer": "kws_conv4",
+       "thr": 2.0,
+       "wmax": 0.8031682968139648,
+       "shift": 0,
+       "wide": false,
+       "sat": 6.103515625e-05,
+       "zero": 0.8197021484375,
+       "p99": 0.2734375,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.364055335521698,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.76875,
+       "zero": 0.0,
+       "p99": 6.4190869140625,
+       "last": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "label": "가 u1000 (62.5 ms)",
+   "config": "mel_u1000",
+   "prefix": "safesound-v4d-melu1000",
+   "family": "CPU log-mel",
+   "between": "p1 이 CPU — 모델 밖",
+   "runs": [
+    {
+     "seed": 1,
+     "ckpt": "safesound-v4d-melu1000_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "conv1",
+       "thr": 0.0,
+       "wmax": 0.556279718875885,
+       "shift": 0,
+       "wide": false,
+       "sat": 7.724761962890625e-05,
+       "zero": 0.6656663417816162,
+       "p99": 0.40625,
+       "last": false
+      },
+      {
+       "layer": "conv2",
+       "thr": 1.0,
+       "wmax": 0.8399438261985779,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0002689361572265625,
+       "zero": 0.7031898498535156,
+       "p99": 0.40625,
+       "last": false
+      },
+      {
+       "layer": "conv3",
+       "thr": 0.0,
+       "wmax": 0.9853591918945312,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0010051727294921875,
+       "zero": 0.8358097076416016,
+       "p99": 0.5,
+       "last": false
+      },
+      {
+       "layer": "conv4",
+       "thr": 1.0,
+       "wmax": 0.6860941648483276,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00064849853515625,
+       "zero": 0.755889892578125,
+       "p99": 0.53125,
+       "last": false
+      },
+      {
+       "layer": "conv5",
+       "thr": 0.0,
+       "wmax": 0.7715650200843811,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.006500244140625,
+       "zero": 0.8121337890625,
+       "p99": 0.7890625,
+       "last": false
+      },
+      {
+       "layer": "conv6",
+       "thr": 0.0,
+       "wmax": 0.6688807010650635,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00030517578125,
+       "zero": 0.8389739990234375,
+       "p99": 0.421875,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.3994574248790741,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.75234375,
+       "zero": 0.0,
+       "p99": 5.38431396484375,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 2,
+     "ckpt": "safesound-v4d-melu1000-s2_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "conv1",
+       "thr": 0.0,
+       "wmax": 0.5592458844184875,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00013518333435058594,
+       "zero": 0.6118323802947998,
+       "p99": 0.40625,
+       "last": false
+      },
+      {
+       "layer": "conv2",
+       "thr": 1.0,
+       "wmax": 0.8020559549331665,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00032711029052734375,
+       "zero": 0.7295398712158203,
+       "p99": 0.40625,
+       "last": false
+      },
+      {
+       "layer": "conv3",
+       "thr": 0.0,
+       "wmax": 1.0104279518127441,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0011501312255859375,
+       "zero": 0.8522377014160156,
+       "p99": 0.484375,
+       "last": false
+      },
+      {
+       "layer": "conv4",
+       "thr": 1.0,
+       "wmax": 0.8071290850639343,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0001983642578125,
+       "zero": 0.7589340209960938,
+       "p99": 0.46875,
+       "last": false
+      },
+      {
+       "layer": "conv5",
+       "thr": 0.0,
+       "wmax": 0.7589176297187805,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0091094970703125,
+       "zero": 0.807037353515625,
+       "p99": 0.9140625,
+       "last": false
+      },
+      {
+       "layer": "conv6",
+       "thr": 0.0,
+       "wmax": 0.7817506790161133,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0005645751953125,
+       "zero": 0.855316162109375,
+       "p99": 0.40625,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.4909139573574066,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.7296875,
+       "zero": 0.0,
+       "p99": 5.621457519531261,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 3,
+     "ckpt": "safesound-v4d-melu1000-s3_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "conv1",
+       "thr": 0.0,
+       "wmax": 0.4996013045310974,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.00016999244689941406,
+       "zero": 0.6459729671478271,
+       "p99": 0.4296875,
+       "last": false
+      },
+      {
+       "layer": "conv2",
+       "thr": 1.0,
+       "wmax": 0.8488591909408569,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0002193450927734375,
+       "zero": 0.7044181823730469,
+       "p99": 0.4296875,
+       "last": false
+      },
+      {
+       "layer": "conv3",
+       "thr": 0.0,
+       "wmax": 0.8624904751777649,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00124359130859375,
+       "zero": 0.8554134368896484,
+       "p99": 0.53125,
+       "last": false
+      },
+      {
+       "layer": "conv4",
+       "thr": 1.0,
+       "wmax": 1.0715301036834717,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.00066375732421875,
+       "zero": 0.786773681640625,
+       "p99": 0.5234375,
+       "last": false
+      },
+      {
+       "layer": "conv5",
+       "thr": 0.0,
+       "wmax": 0.7769016027450562,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.005279541015625,
+       "zero": 0.8062896728515625,
+       "p99": 0.7109375,
+       "last": false
+      },
+      {
+       "layer": "conv6",
+       "thr": 0.0,
+       "wmax": 0.6467099785804749,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0003509521484375,
+       "zero": 0.86199951171875,
+       "p99": 0.390625,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.4114917516708374,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.72890625,
+       "zero": 0.0,
+       "p99": 5.4278149414062575,
+       "last": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "label": "다 u800 (50 ms)",
+   "config": "mel_u800",
+   "prefix": "safesound-v4d-melu800",
+   "family": "CPU log-mel",
+   "between": "p1 이 CPU — 모델 밖",
+   "runs": [
+    {
+     "seed": 1,
+     "ckpt": "safesound-v4d-melu800_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "conv1",
+       "thr": 0.0,
+       "wmax": 0.5820075869560242,
+       "shift": 0,
+       "wide": false,
+       "sat": 9.098052978515626e-05,
+       "zero": 0.6566707611083984,
+       "p99": 0.40625,
+       "last": false
+      },
+      {
+       "layer": "conv2",
+       "thr": 1.0,
+       "wmax": 0.8821607828140259,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.000226593017578125,
+       "zero": 0.7233993530273437,
+       "p99": 0.390625,
+       "last": false
+      },
+      {
+       "layer": "conv3",
+       "thr": 0.0,
+       "wmax": 1.0641446113586426,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.00099334716796875,
+       "zero": 0.8296875,
+       "p99": 0.5,
+       "last": false
+      },
+      {
+       "layer": "conv4",
+       "thr": 1.0,
+       "wmax": 0.7508545517921448,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00070953369140625,
+       "zero": 0.7505035400390625,
+       "p99": 0.5546875,
+       "last": false
+      },
+      {
+       "layer": "conv5",
+       "thr": 0.0,
+       "wmax": 0.8038773536682129,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0108184814453125,
+       "zero": 0.7786865234375,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "conv6",
+       "thr": 0.0,
+       "wmax": 0.7680650353431702,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0024261474609375,
+       "zero": 0.8161163330078125,
+       "p99": 0.640625,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.6439616680145264,
+       "shift": 0,
+       "wide": true,
+       "sat": 0.7484375,
+       "zero": 0.0,
+       "p99": 5.575847167968752,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 2,
+     "ckpt": "safesound-v4d-melu800-s2_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "conv1",
+       "thr": 0.0,
+       "wmax": 0.49911031126976013,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.00012607574462890624,
+       "zero": 0.6422840118408203,
+       "p99": 0.3828125,
+       "last": false
+      },
+      {
+       "layer": "conv2",
+       "thr": 1.0,
+       "wmax": 0.8011746406555176,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.000165557861328125,
+       "zero": 0.7122459411621094,
+       "p99": 0.3984375,
+       "last": false
+      },
+      {
+       "layer": "conv3",
+       "thr": 0.0,
+       "wmax": 1.0210455656051636,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0011932373046875,
+       "zero": 0.8453323364257812,
+       "p99": 0.515625,
+       "last": false
+      },
+      {
+       "layer": "conv4",
+       "thr": 1.0,
+       "wmax": 0.797921359539032,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00032806396484375,
+       "zero": 0.7647323608398438,
+       "p99": 0.4921875,
+       "last": false
+      },
+      {
+       "layer": "conv5",
+       "thr": 0.0,
+       "wmax": 0.8392621278762817,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0081939697265625,
+       "zero": 0.810455322265625,
+       "p99": 0.8359375,
+       "last": false
+      },
+      {
+       "layer": "conv6",
+       "thr": 0.0,
+       "wmax": 0.6472384929656982,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00067138671875,
+       "zero": 0.8318939208984375,
+       "p99": 0.3984375,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.39696675539016724,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.73515625,
+       "zero": 0.0,
+       "p99": 5.624643554687514,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 3,
+     "ckpt": "safesound-v4d-melu800-s3_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "conv1",
+       "thr": 0.0,
+       "wmax": 0.49889442324638367,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0001430511474609375,
+       "zero": 0.6275180816650391,
+       "p99": 0.421875,
+       "last": false
+      },
+      {
+       "layer": "conv2",
+       "thr": 1.0,
+       "wmax": 0.8809322118759155,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.000234222412109375,
+       "zero": 0.7191581726074219,
+       "p99": 0.4140625,
+       "last": false
+      },
+      {
+       "layer": "conv3",
+       "thr": 0.0,
+       "wmax": 0.7511124610900879,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0011871337890625,
+       "zero": 0.843670654296875,
+       "p99": 0.515625,
+       "last": false
+      },
+      {
+       "layer": "conv4",
+       "thr": 1.0,
+       "wmax": 0.8479189872741699,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00040435791015625,
+       "zero": 0.7608871459960938,
+       "p99": 0.5078125,
+       "last": false
+      },
+      {
+       "layer": "conv5",
+       "thr": 0.0,
+       "wmax": 0.8581182360649109,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0082244873046875,
+       "zero": 0.82733154296875,
+       "p99": 0.8515625,
+       "last": false
+      },
+      {
+       "layer": "conv6",
+       "thr": 0.0,
+       "wmax": 0.7813553214073181,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0003814697265625,
+       "zero": 0.849334716796875,
+       "p99": 0.421875,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.4993360638618469,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.7296875,
+       "zero": 0.00078125,
+       "p99": 5.291013183593752,
+       "last": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "label": "간격 400",
+   "config": "mel_h400",
+   "prefix": "safesound-v4d-melh400",
+   "family": "CPU log-mel",
+   "between": "p1 이 CPU — 모델 밖",
+   "runs": [
+    {
+     "seed": 1,
+     "ckpt": "safesound-v4d-melh400_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "conv1",
+       "thr": -1.0,
+       "wmax": 0.5144239664077759,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0031513214111328126,
+       "zero": 0.7236219882965088,
+       "p99": 0.6328125,
+       "last": false
+      },
+      {
+       "layer": "conv2",
+       "thr": 2.0,
+       "wmax": 0.7307177782058716,
+       "shift": 0,
+       "wide": false,
+       "sat": 3.032684326171875e-05,
+       "zero": 0.7824497222900391,
+       "p99": 0.3125,
+       "last": false
+      },
+      {
+       "layer": "conv3",
+       "thr": 0.0,
+       "wmax": 0.8587389588356018,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.000408935546875,
+       "zero": 0.8404621124267578,
+       "p99": 0.375,
+       "last": false
+      },
+      {
+       "layer": "conv4",
+       "thr": 1.0,
+       "wmax": 0.7003197073936462,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0004180908203125,
+       "zero": 0.7949081420898437,
+       "p99": 0.4453125,
+       "last": false
+      },
+      {
+       "layer": "conv5",
+       "thr": 1.0,
+       "wmax": 0.7959492802619934,
+       "shift": 0,
+       "wide": false,
+       "sat": 9.5367431640625e-05,
+       "zero": 0.8865432739257812,
+       "p99": 0.3125,
+       "last": false
+      },
+      {
+       "layer": "conv6",
+       "thr": 0.0,
+       "wmax": 0.6507157683372498,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0001220703125,
+       "zero": 0.8641204833984375,
+       "p99": 0.2890625,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.41109994053840637,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.52421875,
+       "zero": 0.00078125,
+       "p99": 6.140439453125,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 2,
+     "ckpt": "safesound-v4d-melh400-s2_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "conv1",
+       "thr": -1.0,
+       "wmax": 0.5200709104537964,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.003052043914794922,
+       "zero": 0.7058969020843506,
+       "p99": 0.625,
+       "last": false
+      },
+      {
+       "layer": "conv2",
+       "thr": 2.0,
+       "wmax": 0.645780086517334,
+       "shift": 0,
+       "wide": false,
+       "sat": 2.155303955078125e-05,
+       "zero": 0.7931188583374024,
+       "p99": 0.296875,
+       "last": false
+      },
+      {
+       "layer": "conv3",
+       "thr": 0.0,
+       "wmax": 0.9498373866081238,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0003261566162109375,
+       "zero": 0.846380615234375,
+       "p99": 0.3515625,
+       "last": false
+      },
+      {
+       "layer": "conv4",
+       "thr": 1.0,
+       "wmax": 0.8942226767539978,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00029144287109375,
+       "zero": 0.7972213745117187,
+       "p99": 0.390625,
+       "last": false
+      },
+      {
+       "layer": "conv5",
+       "thr": 0.0,
+       "wmax": 0.8315265774726868,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0046539306640625,
+       "zero": 0.8986625671386719,
+       "p99": 0.640625,
+       "last": false
+      },
+      {
+       "layer": "conv6",
+       "thr": 0.0,
+       "wmax": 0.6377650499343872,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0009918212890625,
+       "zero": 0.818267822265625,
+       "p99": 0.4921875,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.49945560097694397,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.68671875,
+       "zero": 0.0,
+       "p99": 6.514465332031263,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 3,
+     "ckpt": "safesound-v4d-melh400-s3_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "conv1",
+       "thr": 0.0,
+       "wmax": 0.49051252007484436,
+       "shift": -1,
+       "wide": false,
+       "sat": 3.77655029296875e-05,
+       "zero": 0.696702527999878,
+       "p99": 0.34375,
+       "last": false
+      },
+      {
+       "layer": "conv2",
+       "thr": 1.0,
+       "wmax": 1.2100685834884644,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.00016002655029296876,
+       "zero": 0.7597133636474609,
+       "p99": 0.34375,
+       "last": false
+      },
+      {
+       "layer": "conv3",
+       "thr": 0.0,
+       "wmax": 0.82945317029953,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0005977630615234375,
+       "zero": 0.8636661529541015,
+       "p99": 0.40625,
+       "last": false
+      },
+      {
+       "layer": "conv4",
+       "thr": 1.0,
+       "wmax": 0.7734729051589966,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00043182373046875,
+       "zero": 0.79989013671875,
+       "p99": 0.4375,
+       "last": false
+      },
+      {
+       "layer": "conv5",
+       "thr": 0.0,
+       "wmax": 0.7788465619087219,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00525665283203125,
+       "zero": 0.89312744140625,
+       "p99": 0.71875,
+       "last": false
+      },
+      {
+       "layer": "conv6",
+       "thr": 1.0,
+       "wmax": 0.6627670526504517,
+       "shift": 0,
+       "wide": false,
+       "sat": 3.0517578125e-05,
+       "zero": 0.788116455078125,
+       "p99": 0.34375,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 1.0,
+       "wmax": 0.5616973042488098,
+       "shift": 0,
+       "wide": true,
+       "sat": 0.71640625,
+       "zero": 0.0,
+       "p99": 6.347412109375001,
+       "last": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "label": "①′ (16 ms)",
+   "config": "mel_inc",
+   "prefix": "safesound-v4d-melinc",
+   "family": "CPU log-mel",
+   "between": "p1 이 CPU — 모델 밖",
+   "runs": [
+    {
+     "seed": 1,
+     "ckpt": "safesound-v4d-melinc_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "conv1",
+       "thr": -1.0,
+       "wmax": 0.4984014928340912,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.001844942569732666,
+       "zero": 0.722697913646698,
+       "p99": 0.5078125,
+       "last": false
+      },
+      {
+       "layer": "conv2",
+       "thr": 1.0,
+       "wmax": 0.5977236032485962,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0004993677139282227,
+       "zero": 0.7785196304321289,
+       "p99": 0.4296875,
+       "last": false
+      },
+      {
+       "layer": "conv3",
+       "thr": 0.0,
+       "wmax": 1.247379183769226,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0014884471893310547,
+       "zero": 0.8573477268218994,
+       "p99": 0.484375,
+       "last": false
+      },
+      {
+       "layer": "conv4",
+       "thr": 1.0,
+       "wmax": 0.6885676383972168,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0008554458618164062,
+       "zero": 0.7932748794555664,
+       "p99": 0.515625,
+       "last": false
+      },
+      {
+       "layer": "conv5",
+       "thr": 1.0,
+       "wmax": 0.9700989127159119,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.000499725341796875,
+       "zero": 0.8856620788574219,
+       "p99": 0.421875,
+       "last": false
+      },
+      {
+       "layer": "conv6",
+       "thr": 0.0,
+       "wmax": 0.7187213897705078,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0001678466796875,
+       "zero": 0.849273681640625,
+       "p99": 0.3125,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 2.0,
+       "wmax": 0.3094156086444855,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.6921875,
+       "zero": 0.0,
+       "p99": 6.239445800781252,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 2,
+     "ckpt": "safesound-v4d-melinc-s2_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "conv1",
+       "thr": -1.0,
+       "wmax": 0.4986949563026428,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.002115219831466675,
+       "zero": 0.6935082376003265,
+       "p99": 0.5859375,
+       "last": false
+      },
+      {
+       "layer": "conv2",
+       "thr": 2.0,
+       "wmax": 0.5969414114952087,
+       "shift": 0,
+       "wide": false,
+       "sat": 1.52587890625e-05,
+       "zero": 0.7854158878326416,
+       "p99": 0.3046875,
+       "last": false
+      },
+      {
+       "layer": "conv3",
+       "thr": 0.0,
+       "wmax": 0.9186385869979858,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0003113746643066406,
+       "zero": 0.8616940975189209,
+       "p99": 0.3359375,
+       "last": false
+      },
+      {
+       "layer": "conv4",
+       "thr": 1.0,
+       "wmax": 0.709770143032074,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00021457672119140625,
+       "zero": 0.8193836212158203,
+       "p99": 0.34375,
+       "last": false
+      },
+      {
+       "layer": "conv5",
+       "thr": 0.0,
+       "wmax": 0.8486747741699219,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0023365020751953125,
+       "zero": 0.9048900604248047,
+       "p99": 0.484375,
+       "last": false
+      },
+      {
+       "layer": "conv6",
+       "thr": 0.0,
+       "wmax": 0.6224851012229919,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.000396728515625,
+       "zero": 0.858856201171875,
+       "p99": 0.3671875,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 2.0,
+       "wmax": 0.3106233477592468,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.765625,
+       "zero": 0.0,
+       "p99": 6.11804931640626,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 3,
+     "ckpt": "safesound-v4d-melinc-s3_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "conv1",
+       "thr": -1.0,
+       "wmax": 0.47222983837127686,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0032263100147247314,
+       "zero": 0.7130125463008881,
+       "p99": 0.609375,
+       "last": false
+      },
+      {
+       "layer": "conv2",
+       "thr": 1.0,
+       "wmax": 0.827233612537384,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0006887912750244141,
+       "zero": 0.770203709602356,
+       "p99": 0.5,
+       "last": false
+      },
+      {
+       "layer": "conv3",
+       "thr": 1.0,
+       "wmax": 0.8386884331703186,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0001201629638671875,
+       "zero": 0.8698177337646484,
+       "p99": 0.296875,
+       "last": false
+      },
+      {
+       "layer": "conv4",
+       "thr": 1.0,
+       "wmax": 0.815254271030426,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0001049041748046875,
+       "zero": 0.8280839920043945,
+       "p99": 0.3125,
+       "last": false
+      },
+      {
+       "layer": "conv5",
+       "thr": 0.0,
+       "wmax": 0.7444943785667419,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.004673004150390625,
+       "zero": 0.8987712860107422,
+       "p99": 0.5859375,
+       "last": false
+      },
+      {
+       "layer": "conv6",
+       "thr": 0.0,
+       "wmax": 0.6284358501434326,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00018310546875,
+       "zero": 0.8375396728515625,
+       "p99": 0.3359375,
+       "last": false
+      },
+      {
+       "layer": "fc",
+       "thr": 2.0,
+       "wmax": 0.3688163459300995,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.7375,
+       "zero": 0.0,
+       "p99": 6.725671386718754,
+       "last": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "label": "②′ Gabor",
+   "config": "wave_fe",
+   "prefix": "safesound-v4d-fe",
+   "family": "NPU 전처리 ②′",
+   "between": "|·|·합·정수 로그·/128 (CPU)",
+   "runs": [
+    {
+     "seed": 1,
+     "ckpt": "safesound-v4d-fe_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 1.346023678779602,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.026097554279618473,
+       "zero": 0.0851491905120482,
+       "p99": 1.7449249267578182,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": -3.0,
+       "wmax": 0.4229997396469116,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.13835525512695312,
+       "zero": 0.6248228549957275,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 1.0,
+       "wmax": 0.718620777130127,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.012116432189941406,
+       "zero": 0.7970466613769531,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 0.0,
+       "wmax": 0.8640771508216858,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.010530471801757812,
+       "zero": 0.8779525756835938,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.7598055005073547,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.008880615234375,
+       "zero": 0.7830734252929688,
+       "p99": 0.953125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 1.0,
+       "wmax": 0.7437925338745117,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0034332275390625,
+       "zero": 0.8631439208984375,
+       "p99": 0.625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": -1.0,
+       "wmax": 0.7984517216682434,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.003082275390625,
+       "zero": 0.92529296875,
+       "p99": 0.546875,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 1.0,
+       "wmax": 0.3094928562641144,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.67578125,
+       "zero": 0.0,
+       "p99": 4.292705078125001,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 2,
+     "ckpt": "safesound-v4d-fe-s2_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 1.240788459777832,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.023081584149096387,
+       "zero": 0.08514992587537651,
+       "p99": 1.5831817626953182,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": -3.0,
+       "wmax": 0.4988708794116974,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.13811635971069336,
+       "zero": 0.6219420433044434,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 1.0,
+       "wmax": 0.7895339131355286,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.01308441162109375,
+       "zero": 0.7833251953125,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 0.0,
+       "wmax": 0.8827627301216125,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.008031845092773438,
+       "zero": 0.8883914947509766,
+       "p99": 0.9140625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.7050647139549255,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0037994384765625,
+       "zero": 0.770965576171875,
+       "p99": 0.8203125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 1.0,
+       "wmax": 0.6679121255874634,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.000946044921875,
+       "zero": 0.8558349609375,
+       "p99": 0.578125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": -1.0,
+       "wmax": 0.5267882943153381,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00469970703125,
+       "zero": 0.9260101318359375,
+       "p99": 0.625,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 1.0,
+       "wmax": 0.33389100432395935,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.721875,
+       "zero": 0.0,
+       "p99": 4.4831298828125,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 3,
+     "ckpt": "safesound-v4d-fe-s3_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 1.168200135231018,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.022903871344754016,
+       "zero": 0.08520850982053213,
+       "p99": 1.5735992431640682,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": -3.0,
+       "wmax": 0.4776736795902252,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.1354353427886963,
+       "zero": 0.6247951984405518,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 0.0,
+       "wmax": 0.9738788604736328,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.04539012908935547,
+       "zero": 0.8451938629150391,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 1.0,
+       "wmax": 0.954017162322998,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0012111663818359375,
+       "zero": 0.8657722473144531,
+       "p99": 0.6328125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.7986990213394165,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00122833251953125,
+       "zero": 0.763336181640625,
+       "p99": 0.6875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 0.0,
+       "wmax": 0.652391791343689,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0154266357421875,
+       "zero": 0.8605194091796875,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": 0.0,
+       "wmax": 0.544610857963562,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0001220703125,
+       "zero": 0.9080810546875,
+       "p99": 0.4609375,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 1.0,
+       "wmax": 0.4990767538547516,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.7015625,
+       "zero": 0.0,
+       "p99": 3.857624511718752,
+       "last": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "label": "②′ b64",
+   "config": "wave_fe_b64",
+   "prefix": "safesound-v4d-fe-b64",
+   "family": "NPU 전처리 ②′",
+   "between": "〃",
+   "runs": [
+    {
+     "seed": 1,
+     "ckpt": "safesound-v4d-fe-b64_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 0.9554033875465393,
+       "shift": 0,
+       "wide": true,
+       "sat": 0.050407195186997995,
+       "zero": 0.08450194822257781,
+       "p99": 2.62811279296875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": -3.0,
+       "wmax": 0.4346728026866913,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0969763994216919,
+       "zero": 0.5961105823516846,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 1.0,
+       "wmax": 0.6090013384819031,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.009667396545410156,
+       "zero": 0.7775931358337402,
+       "p99": 0.9765625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 0.0,
+       "wmax": 0.7011135816574097,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0075511932373046875,
+       "zero": 0.8793296813964844,
+       "p99": 0.8984375,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.8372611403465271,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.005615234375,
+       "zero": 0.7692375183105469,
+       "p99": 0.8671875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 0.0,
+       "wmax": 0.7117369174957275,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.01280975341796875,
+       "zero": 0.8412551879882812,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": -1.0,
+       "wmax": 0.6095005869865417,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0092926025390625,
+       "zero": 0.871612548828125,
+       "p99": 0.9609375,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 2.0,
+       "wmax": 0.7339580059051514,
+       "shift": 0,
+       "wide": true,
+       "sat": 0.76484375,
+       "zero": 0.0,
+       "p99": 4.72302856445313,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 2,
+     "ckpt": "safesound-v4d-fe-b64-s2_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 0.9381070137023926,
+       "shift": 0,
+       "wide": true,
+       "sat": 0.05175928322665663,
+       "zero": 0.08444385451964107,
+       "p99": 2.62030029296875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": -3.0,
+       "wmax": 0.46500450372695923,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0909278392791748,
+       "zero": 0.6017910242080688,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 1.0,
+       "wmax": 0.903377890586853,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.01062154769897461,
+       "zero": 0.8054943084716797,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 0.0,
+       "wmax": 0.7439781427383423,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.006310462951660156,
+       "zero": 0.8771657943725586,
+       "p99": 0.859375,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.7404563426971436,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00562286376953125,
+       "zero": 0.7937126159667969,
+       "p99": 0.875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 0.0,
+       "wmax": 0.7658553719520569,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0057373046875,
+       "zero": 0.872344970703125,
+       "p99": 0.8203125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": -1.0,
+       "wmax": 0.5567342042922974,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0030975341796875,
+       "zero": 0.89208984375,
+       "p99": 0.609375,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 2.0,
+       "wmax": 0.49839815497398376,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.7546875,
+       "zero": 0.0,
+       "p99": 4.730671386718758,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 3,
+     "ckpt": "safesound-v4d-fe-b64-s3_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 1.0275989770889282,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.01737320375251004,
+       "zero": 0.08521990795212099,
+       "p99": 1.34295654296875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": -3.0,
+       "wmax": 0.5148833990097046,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.08993196487426758,
+       "zero": 0.5435585975646973,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 1.0,
+       "wmax": 0.934934139251709,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.010307788848876953,
+       "zero": 0.7821249961853027,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 0.0,
+       "wmax": 0.8643662929534912,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.009213447570800781,
+       "zero": 0.8753595352172852,
+       "p99": 0.9609375,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.609957218170166,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.007457733154296875,
+       "zero": 0.7716903686523438,
+       "p99": 0.921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 0.0,
+       "wmax": 0.6364087462425232,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.005859375,
+       "zero": 0.872344970703125,
+       "p99": 0.85382812499995,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": -1.0,
+       "wmax": 0.6095584034919739,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0056915283203125,
+       "zero": 0.88250732421875,
+       "p99": 0.75,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 2.0,
+       "wmax": 0.49879375100135803,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.77421875,
+       "zero": 0.0,
+       "p99": 5.005031738281254,
+       "last": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "label": "②′ f31",
+   "config": "wave_fe_f31",
+   "prefix": "safesound-v4d-fe-f31",
+   "family": "NPU 전처리 ②′",
+   "between": "〃",
+   "runs": [
+    {
+     "seed": 1,
+     "ckpt": "safesound-v4d-fe-f31_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 1.1798665523529053,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.024880037729041165,
+       "zero": 0.0852102256682982,
+       "p99": 1.68212890625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": -3.0,
+       "wmax": 0.4676412045955658,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.12982817619077622,
+       "zero": 0.6204447592458417,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 1.0,
+       "wmax": 0.9398695826530457,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.007748921712239583,
+       "zero": 0.8327443440755208,
+       "p99": 0.9375,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 0.0,
+       "wmax": 0.8477475047111511,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.004730224609375,
+       "zero": 0.8817105974469867,
+       "p99": 0.78125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.7927635908126831,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0024007161458333335,
+       "zero": 0.7805735270182291,
+       "p99": 0.7109375,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 0.0,
+       "wmax": 0.6691040992736816,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.015289306640625,
+       "zero": 0.8181915283203125,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": 0.0,
+       "wmax": 0.5715779662132263,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0023345947265625,
+       "zero": 0.9073638916015625,
+       "p99": 0.5390625,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 1.0,
+       "wmax": 0.32460227608680725,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.6765625,
+       "zero": 0.0,
+       "p99": 5.141462402343752,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 2,
+     "ckpt": "safesound-v4d-fe-f31-s2_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 1.1115057468414307,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.025318069151606427,
+       "zero": 0.08514771978539157,
+       "p99": 1.68658447265625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": -3.0,
+       "wmax": 0.512519359588623,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.1313599617250504,
+       "zero": 0.6470466121550529,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 1.0,
+       "wmax": 0.9499995708465576,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.016988118489583332,
+       "zero": 0.7969228108723958,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 0.0,
+       "wmax": 0.8271064758300781,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00830078125,
+       "zero": 0.8963633946010044,
+       "p99": 0.921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.9402114152908325,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0028635660807291665,
+       "zero": 0.7714589436848959,
+       "p99": 0.75,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 0.0,
+       "wmax": 0.7564869523048401,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0173797607421875,
+       "zero": 0.845001220703125,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": 0.0,
+       "wmax": 0.7201838493347168,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00103759765625,
+       "zero": 0.9016876220703125,
+       "p99": 0.5234375,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 1.0,
+       "wmax": 0.49891120195388794,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.63125,
+       "zero": 0.0,
+       "p99": 5.228708496093751,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 3,
+     "ckpt": "safesound-v4d-fe-f31-s3_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 1.0692932605743408,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.023507849758408635,
+       "zero": 0.0852070390938755,
+       "p99": 1.6080841064453182,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": -3.0,
+       "wmax": 0.49980178475379944,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.13334003571541078,
+       "zero": 0.6389985853625882,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 0.0,
+       "wmax": 0.8295908570289612,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.046797688802083334,
+       "zero": 0.8403116861979166,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 1.0,
+       "wmax": 0.8667994737625122,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0017373221261160715,
+       "zero": 0.8686479840959821,
+       "p99": 0.640625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.8435690999031067,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0017496744791666667,
+       "zero": 0.7374114990234375,
+       "p99": 0.6953125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 0.0,
+       "wmax": 0.6522155404090881,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0118560791015625,
+       "zero": 0.8383026123046875,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": 0.0,
+       "wmax": 0.6907271146774292,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0006256103515625,
+       "zero": 0.907196044921875,
+       "p99": 0.5234375,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 1.0,
+       "wmax": 0.2829088866710663,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.659375,
+       "zero": 0.0,
+       "p99": 5.10463134765625,
+       "last": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "label": "②′ b64f31",
+   "config": "wave_fe_b64f31",
+   "prefix": "safesound-v4d-fe-b64f31",
+   "family": "NPU 전처리 ②′",
+   "between": "〃",
+   "runs": [
+    {
+     "seed": 1,
+     "ckpt": "safesound-v4d-fe-b64f31_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 0.9917065501213074,
+       "shift": 0,
+       "wide": true,
+       "sat": 0.05566369481833584,
+       "zero": 0.0844376039313504,
+       "p99": 2.76776123046875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": -3.0,
+       "wmax": 0.4765808880329132,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.08099562121975806,
+       "zero": 0.6207226168724799,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 0.0,
+       "wmax": 0.7650488615036011,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.03298543294270833,
+       "zero": 0.8453997294108073,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 1.0,
+       "wmax": 0.861452579498291,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0015890938895089285,
+       "zero": 0.8690861293247768,
+       "p99": 0.6171875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.7692265510559082,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0022455851236979165,
+       "zero": 0.7540995279947916,
+       "p99": 0.7109375,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 0.0,
+       "wmax": 0.7757476568222046,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00749969482421875,
+       "zero": 0.83013916015625,
+       "p99": 0.9140625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": -1.0,
+       "wmax": 0.6055862903594971,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.01784515380859375,
+       "zero": 0.8134765625,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 2.0,
+       "wmax": 1.0550565719604492,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.79296875,
+       "zero": 0.0,
+       "p99": 4.674636230468752,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 2,
+     "ckpt": "safesound-v4d-fe-b64f31-s2_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 0.9978395700454712,
+       "shift": 0,
+       "wide": true,
+       "sat": 0.052517810499811746,
+       "zero": 0.08444385451964107,
+       "p99": 2.69232177734375,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": -3.0,
+       "wmax": 0.48704156279563904,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.08340072631835938,
+       "zero": 0.6034830770184917,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 1.0,
+       "wmax": 0.7470459938049316,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.009319814046223958,
+       "zero": 0.8029126485188802,
+       "p99": 0.96875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 0.0,
+       "wmax": 0.7678275108337402,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.005159105573381696,
+       "zero": 0.867849622453962,
+       "p99": 0.8125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.9169422388076782,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.004544576009114583,
+       "zero": 0.7730051676432291,
+       "p99": 0.8203125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 1.0,
+       "wmax": 0.584135890007019,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0001220703125,
+       "zero": 0.8288497924804688,
+       "p99": 0.46875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": -1.0,
+       "wmax": 0.625803530216217,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00246429443359375,
+       "zero": 0.8765411376953125,
+       "p99": 0.484375,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 1.0,
+       "wmax": 0.5387587547302246,
+       "shift": 0,
+       "wide": true,
+       "sat": 0.721875,
+       "zero": 0.0,
+       "p99": 5.030117187500002,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 3,
+     "ckpt": "safesound-v4d-fe-b64f31-s3_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 1.018707036972046,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.017168772747238957,
+       "zero": 0.08521132871329067,
+       "p99": 1.3240966796875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": -3.0,
+       "wmax": 0.5359077453613281,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.08295249938964844,
+       "zero": 0.5583625916511782,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 0.0,
+       "wmax": 0.8709557056427002,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.03581720987955729,
+       "zero": 0.8552502950032552,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 1.0,
+       "wmax": 1.0749340057373047,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0015106201171875,
+       "zero": 0.8503919328962054,
+       "p99": 0.609375,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.7877998352050781,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0017649332682291667,
+       "zero": 0.7555745442708334,
+       "p99": 0.6796875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 0.0,
+       "wmax": 0.8084350824356079,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0053863525390625,
+       "zero": 0.8132858276367188,
+       "p99": 0.84375,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": -1.0,
+       "wmax": 0.644330620765686,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0079193115234375,
+       "zero": 0.864288330078125,
+       "p99": 0.9140625,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 2.0,
+       "wmax": 0.584358274936676,
+       "shift": 0,
+       "wide": true,
+       "sat": 0.75703125,
+       "zero": 0.0,
+       "p99": 5.199718017578129,
+       "last": true
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
