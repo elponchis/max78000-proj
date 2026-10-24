@@ -1,5 +1,5 @@
 {
- "date": "2026-10-24",
+ "date": "2026-10-25",
  "n_win": 256,
  "configs": [
   {
@@ -3296,6 +3296,588 @@
        "sat": 0.75703125,
        "zero": 0.0,
        "p99": 5.199718017578129,
+       "last": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "label": "②′ v2 (연결 끊음)",
+   "config": "wave_fe_v2",
+   "prefix": "safesound-v4d-fe-v2",
+   "family": "chain34",
+   "between": "〃 (qat_link_cut)",
+   "runs": [
+    {
+     "seed": 1,
+     "ckpt": "safesound-v4d-fe-v2_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 1.0874152183532715,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.02307766221134538,
+       "zero": 0.08522664878263052,
+       "p99": 1.6086242675781364,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": 0.0,
+       "wmax": 0.5091249346733093,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0018579959869384766,
+       "zero": 0.5537095069885254,
+       "p99": 0.5390625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 1.0,
+       "wmax": 0.9968586564064026,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0001506805419921875,
+       "zero": 0.7281360626220703,
+       "p99": 0.46875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 0.0,
+       "wmax": 1.0616686344146729,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0012950897216796875,
+       "zero": 0.8647918701171875,
+       "p99": 0.546875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.873897135257721,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00028228759765625,
+       "zero": 0.7717361450195312,
+       "p99": 0.53125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 0.0,
+       "wmax": 0.68445885181427,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0098419189453125,
+       "zero": 0.8622283935546875,
+       "p99": 0.9765625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": 0.0,
+       "wmax": 0.6458118557929993,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0001678466796875,
+       "zero": 0.90380859375,
+       "p99": 0.421875,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 0.0,
+       "wmax": 0.4991188049316406,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.71015625,
+       "zero": 0.0,
+       "p99": 3.884147949218753,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 2,
+     "ckpt": "safesound-v4d-fe-v2-s2_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 1.2963967323303223,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.023207086157128513,
+       "zero": 0.08518595867846386,
+       "p99": 1.59429931640625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": 0.0,
+       "wmax": 0.47332969307899475,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0006136894226074219,
+       "zero": 0.5655956268310547,
+       "p99": 0.609375,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 1.0,
+       "wmax": 0.8820430040359497,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00027561187744140625,
+       "zero": 0.7437667846679688,
+       "p99": 0.484375,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 0.0,
+       "wmax": 0.8048095703125,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0011444091796875,
+       "zero": 0.8413677215576172,
+       "p99": 0.5546875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.8322877287864685,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0008087158203125,
+       "zero": 0.7887649536132812,
+       "p99": 0.6171875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 0.0,
+       "wmax": 0.7807267308235168,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.01190185546875,
+       "zero": 0.8414306640625,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": 0.0,
+       "wmax": 0.5903187394142151,
+       "shift": 0,
+       "wide": false,
+       "sat": 4.57763671875e-05,
+       "zero": 0.883758544921875,
+       "p99": 0.4375,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 1.0,
+       "wmax": 0.4989560842514038,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.68046875,
+       "zero": 0.0,
+       "p99": 4.2335839843750005,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 3,
+     "ckpt": "safesound-v4d-fe-v2-s3_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 1.2727081775665283,
+       "shift": 1,
+       "wide": true,
+       "sat": 0.02421453391691767,
+       "zero": 0.08526684864457831,
+       "p99": 1.66448974609375,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": 0.0,
+       "wmax": 0.5443918704986572,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0004153251647949219,
+       "zero": 0.5685498714447021,
+       "p99": 0.5703125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 1.0,
+       "wmax": 0.8377091884613037,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00020694732666015625,
+       "zero": 0.7751874923706055,
+       "p99": 0.4296875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 0.0,
+       "wmax": 0.905185341835022,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0003643035888671875,
+       "zero": 0.8546295166015625,
+       "p99": 0.4609375,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.7205053567886353,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00029754638671875,
+       "zero": 0.749359130859375,
+       "p99": 0.5078125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 0.0,
+       "wmax": 0.6879106760025024,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00872802734375,
+       "zero": 0.851409912109375,
+       "p99": 0.9140625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": 0.0,
+       "wmax": 0.5930659770965576,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.000335693359375,
+       "zero": 0.8589324951171875,
+       "p99": 0.359375,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 1.0,
+       "wmax": 0.49851539731025696,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.7171875,
+       "zero": 0.00078125,
+       "p99": 4.4022241210937505,
+       "last": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "label": "②′ fe8 (p1 8비트)",
+   "config": "wave_fe8",
+   "prefix": "safesound-v4d-fe8",
+   "family": "chain34",
+   "between": "p1 8비트 + Abs, 합은 NPU; 로그만 CPU (qat_link_cut)",
+   "runs": [
+    {
+     "seed": 1,
+     "ckpt": "safesound-v4d-fe8_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 1.3043769598007202,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0011905532285391566,
+       "zero": 0.40859433829066266,
+       "p99": 0.390625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": 0.0,
+       "wmax": 0.48014357686042786,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0005292892456054688,
+       "zero": 0.5154769420623779,
+       "p99": 0.6796875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 1.0,
+       "wmax": 0.980009138584137,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0016355514526367188,
+       "zero": 0.7170248031616211,
+       "p99": 0.6328125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 0.0,
+       "wmax": 0.7588263750076294,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0032501220703125,
+       "zero": 0.8751087188720703,
+       "p99": 0.6796875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.8172367215156555,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.00077056884765625,
+       "zero": 0.7837905883789062,
+       "p99": 0.6328125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 0.0,
+       "wmax": 0.7738139033317566,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0102996826171875,
+       "zero": 0.8666229248046875,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": 0.0,
+       "wmax": 0.6415539383888245,
+       "shift": 0,
+       "wide": false,
+       "sat": 9.1552734375e-05,
+       "zero": 0.89996337890625,
+       "p99": 0.4296875,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 1.0,
+       "wmax": 0.35664644837379456,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.6796875,
+       "zero": 0.0,
+       "p99": 4.287180175781251,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 2,
+     "ckpt": "safesound-v4d-fe8-s2_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 1.314361333847046,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.001203054405120482,
+       "zero": 0.41432257349711343,
+       "p99": 0.390625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": 0.0,
+       "wmax": 0.5201113224029541,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0008456707000732422,
+       "zero": 0.5166671276092529,
+       "p99": 0.703125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 1.0,
+       "wmax": 0.950750470161438,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0013179779052734375,
+       "zero": 0.7560453414916992,
+       "p99": 0.59375,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 0.0,
+       "wmax": 0.9585429430007935,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0023517608642578125,
+       "zero": 0.8579998016357422,
+       "p99": 0.65625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.8236404061317444,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0022735595703125,
+       "zero": 0.76275634765625,
+       "p99": 0.6953125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 1.0,
+       "wmax": 0.7036080360412598,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0017242431640625,
+       "zero": 0.86260986328125,
+       "p99": 0.4453125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": -1.0,
+       "wmax": 0.5960727334022522,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0027923583984375,
+       "zero": 0.9025421142578125,
+       "p99": 0.4765625,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 1.0,
+       "wmax": 0.49857115745544434,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.6640625,
+       "zero": 0.0,
+       "p99": 4.105734863281255,
+       "last": true
+      }
+     ]
+    },
+    {
+     "seed": 3,
+     "ckpt": "safesound-v4d-fe8-s3_qat_best.pth.tar",
+     "layers": [
+      {
+       "layer": "fe",
+       "thr": 3.0,
+       "wmax": 1.4196891784667969,
+       "shift": 1,
+       "wide": false,
+       "sat": 0.0014033183515311245,
+       "zero": 0.4154172843718624,
+       "p99": 0.390625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv1",
+       "thr": 0.0,
+       "wmax": 0.47728946805000305,
+       "shift": -1,
+       "wide": false,
+       "sat": 0.0004911422729492188,
+       "zero": 0.5146229267120361,
+       "p99": 0.6796875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv2",
+       "thr": 1.0,
+       "wmax": 0.8307932615280151,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.0013179779052734375,
+       "zero": 0.7461471557617188,
+       "p99": 0.6015625,
+       "last": false
+      },
+      {
+       "layer": "cls.conv3",
+       "thr": 0.0,
+       "wmax": 0.9264397025108337,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.001895904541015625,
+       "zero": 0.8427238464355469,
+       "p99": 0.6328125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv4",
+       "thr": 1.0,
+       "wmax": 0.6883904933929443,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.000946044921875,
+       "zero": 0.7831878662109375,
+       "p99": 0.6328125,
+       "last": false
+      },
+      {
+       "layer": "cls.conv5",
+       "thr": 0.0,
+       "wmax": 0.6761252880096436,
+       "shift": 0,
+       "wide": false,
+       "sat": 0.011077880859375,
+       "zero": 0.845733642578125,
+       "p99": 0.9921875,
+       "last": false
+      },
+      {
+       "layer": "cls.conv6",
+       "thr": 0.0,
+       "wmax": 0.631212592124939,
+       "shift": 0,
+       "wide": false,
+       "sat": 7.62939453125e-05,
+       "zero": 0.8925933837890625,
+       "p99": 0.453125,
+       "last": false
+      },
+      {
+       "layer": "cls.fc",
+       "thr": 1.0,
+       "wmax": 0.4981676936149597,
+       "shift": -1,
+       "wide": true,
+       "sat": 0.6796875,
+       "zero": 0.0,
+       "p99": 4.9778344726562525,
        "last": true
       }
      ]

@@ -39,6 +39,9 @@ CONFIGS = [
     ("②′ b64",                  "wave_fe_b64",   "safesound-v4d-fe-b64",        "NPU 전처리 ②′", "〃"),
     ("②′ f31",                  "wave_fe_f31",   "safesound-v4d-fe-f31",        "NPU 전처리 ②′", "〃"),
     ("②′ b64f31",               "wave_fe_b64f31", "safesound-v4d-fe-b64f31",    "NPU 전처리 ②′", "〃"),
+    # chain34 (2026-10-24~25): 연결을 끊은 대조군과 fe8 — 결함이 사라졌는지 같은 자로 확인
+    ("②′ v2 (연결 끊음)",       "wave_fe_v2",    "safesound-v4d-fe-v2",         "chain34",       "〃 (qat_link_cut)"),
+    ("②′ fe8 (p1 8비트)",       "wave_fe8",      "safesound-v4d-fe8",           "chain34",       "p1 8비트 + Abs, 합은 NPU; 로그만 CPU (qat_link_cut)"),
 ]
 SAT_FLAG = 0.05     # 출력 포화 5 % 이상이면 표시 — 마지막 fc(로짓) 는 제외
 
