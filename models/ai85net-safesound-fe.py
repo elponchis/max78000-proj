@@ -349,6 +349,18 @@ def ai85safesoundfe_v2_b64f31(pretrained=False, **kwargs):
     return AI85SafeSoundFE(variant="b64f31", qat_link_cut=True, **kwargs)
 
 
+def ai85safesoundfe_v2_b64(pretrained=False, **kwargs):
+    """변형 b64 의 v2 (QAT 문턱 연결 끊음) — chain35 (H-1 유의 분기, 2026-10-24)."""
+    assert not pretrained
+    return AI85SafeSoundFE(variant="b64", qat_link_cut=True, **kwargs)
+
+
+def ai85safesoundfe_v2_f31(pretrained=False, **kwargs):
+    """변형 f31 의 v2 (QAT 문턱 연결 끊음) — chain35."""
+    assert not pretrained
+    return AI85SafeSoundFE(variant="f31", qat_link_cut=True, **kwargs)
+
+
 def ai85safesoundfe8(pretrained=False, **kwargs):
     """후속 연구 — ②′ 에 p1 8비트 + Abs + NPU 합산 (안 A-sum) 을 넣어 전체 QAT 재학습. 32 대역 × 16 프레임. 문턱 연결 끊음(v2 와 짝)."""
     assert not pretrained
@@ -393,6 +405,8 @@ models = [
     {'name': 'ai85safesoundfe_b64f31', 'min_input': 1, 'dim': 1},
     {'name': 'ai85safesoundfe_v2', 'min_input': 1, 'dim': 1},        # 후속 연구 대조군: ②′ + QAT 문턱 연결 끊음
     {'name': 'ai85safesoundfe_v2_b64f31', 'min_input': 1, 'dim': 1},
+    {'name': 'ai85safesoundfe_v2_b64', 'min_input': 1, 'dim': 1},
+    {'name': 'ai85safesoundfe_v2_f31', 'min_input': 1, 'dim': 1},
     {'name': 'ai85safesoundfe8', 'min_input': 1, 'dim': 1},          # 후속 연구: p1 8비트 + Abs + NPU 합산 (+ 연결 끊음)
     {'name': 'ai85safesoundfe8_b64', 'min_input': 1, 'dim': 1},
     {'name': 'ai85safesoundfe8_f31', 'min_input': 1, 'dim': 1},

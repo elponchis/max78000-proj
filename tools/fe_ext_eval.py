@@ -28,6 +28,8 @@ VARIANTS = {
     # 후속 연구 — p1 8비트 + Abs + NPU 합산 전체 QAT 재학습 (docs/results/npu-readback-design.md 7절)
     "fe_v2":      ("wave_fe_v2",      "safesound-v4d-fe-v2",      "②′ v2",         "fe_eval_fe_v2.json"),
     "fe_v2_b64f31": ("wave_fe_v2_b64f31", "safesound-v4d-fe-v2-b64f31", "②′ v2 b64f31", "fe_eval_fe_v2_b64f31.json"),
+    "fe_v2_b64":  ("wave_fe_v2_b64",  "safesound-v4d-fe-v2-b64",  "②′ v2 b64",  "fe_eval_fe_v2_b64.json"),
+    "fe_v2_f31":  ("wave_fe_v2_f31",  "safesound-v4d-fe-v2-f31",  "②′ v2 f31",  "fe_eval_fe_v2_f31.json"),
     "fe8":        ("wave_fe8",        "safesound-v4d-fe8",        "②′ fe8",        "fe_eval_fe8.json"),
     "fe8_b64f31": ("wave_fe8_b64f31", "safesound-v4d-fe8-b64f31", "②′ fe8 b64f31", "fe_eval_fe8_b64f31.json"),
 }

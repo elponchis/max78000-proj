@@ -53,7 +53,11 @@ CONFIGS = [("④", "wave", "safesound-v4d-wave"), ("가 u1000", "mel_u1000", "sa
            ("②′ b64f31", "wave_fe_b64f31", "safesound-v4d-fe-b64f31"),
            # 후속 연구 chain34 (2026-10-24, docs/results/npu-readback-design.md 7절) — ②′ v2 (QAT 문턱 연결 끊음) 와 fe8 (p1 8비트 + NPU 합산)
            ("②′ v2", "wave_fe_v2", "safesound-v4d-fe-v2"),
-           ("②′ fe8", "wave_fe8", "safesound-v4d-fe8")]
+           ("②′ fe8", "wave_fe8", "safesound-v4d-fe8"),
+           # chain35 (H-1 유의 분기) — 변형 3종의 v2
+           ("②′ v2 b64f31", "wave_fe_v2_b64f31", "safesound-v4d-fe-v2-b64f31"),
+           ("②′ v2 b64", "wave_fe_v2_b64", "safesound-v4d-fe-v2-b64"),
+           ("②′ v2 f31", "wave_fe_v2_f31", "safesound-v4d-fe-v2-f31")]
 
 
 def fsd_labels():
