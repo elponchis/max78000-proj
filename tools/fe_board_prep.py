@@ -18,7 +18,9 @@
     KAT 의 청크 0 은 앞 8 위치를 0 으로 채우고 프레임 −1 은 버린다. docs/results/fe-curve-design.md 5절 결과의 사용 4.
 
 사용:
-    OPENBLAS_NUM_THREADS=1 ~/ai8x-training/venv/bin/python tools/fe_board_prep.py [--variant b64|f31|b64f31] [--no-build]
+    OPENBLAS_NUM_THREADS=1 ~/ai8x-training/venv/bin/python tools/fe_board_prep.py [--variant b64|f31|b64f31] [--no-build] [--v2]
+  --v2 (2026-10-24): chain34/35 의 v2 체크포인트(QAT 문턱 연결 끊음)를 같은 절차로 — 실행 접두 `safesound-v4d-fe-v2[-<변형>]`,
+  펌웨어 `firmware/npu/safesound_fe_v2[_<변형>]_v4d`, 합성 접두 `safesound_fe_v2…`. 논문용 프로젝트는 건드리지 않는다.
 """
 import argparse
 import glob
@@ -89,6 +91,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--variant", choices=["fe", "b64", "f31", "b64f31"], default="fe")
     ap.add_argument("--no-build", action="store_true")
+    ap.add_argument("--v2", action="store_true",
+                    help="chain34/35 의 v2 체크포인트 (QAT 문턱 연결 끊음, safesound-v4d-fe-v2[-<변형>]) — 별도 프로젝트 safesound_fe_v2[_<변형>]_v4d 로 (논문 펌웨어는 그대로)")
     a = ap.parse_args()
     import torch
     import ai8x
@@ -99,12 +103,12 @@ def main():
     V = fe.VARIANTS[a.variant]
     n_band, n_frame, ppf, pool, lo_q8 = V["n_band"], V["n_frame"], V["pos_per_frame"], V["pool_pos"], V["lo_q8"]
     n_ch = 2 * n_band
-    suf = "" if a.variant == "fe" else f"_{a.variant}"
-    RUN = "safesound-v4d-fe" + ("" if a.variant == "fe" else f"-{a.variant}")
+    suf = ("_v2" if a.v2 else "") + ("" if a.variant == "fe" else f"_{a.variant}")
+    RUN = "safesound-v4d-fe" + ("-v2" if a.v2 else "") + ("" if a.variant == "fe" else f"-{a.variant}")
     P1, P2 = f"safesound_fe{suf}_p1_v4d", f"safesound_fe{suf}_p2_v4d"
     FW = os.path.join(REPO, "firmware", "npu", f"safesound_fe{suf}_v4d")
     NET = f"safesound_fe{suf}_v4d"
-    cfg = "wave_fe" + ("" if a.variant == "fe" else f"_{a.variant}")
+    cfg = "wave_fe" + ("_v2" if a.v2 else "") + ("" if a.variant == "fe" else f"_{a.variant}")
     p1_arch = "ai85safesoundfe_p1" + ("_b64" if n_band == 64 else "")
     P1_YAML = os.path.join(REPO, "synthesis", "safesound-fe-p1-hwc.yaml" if n_band == 32 else "safesound-fe-p1-b64-hwc.yaml")
     log_pfx = os.path.join(LOGD, f"synth_fe{suf}_v4d")
