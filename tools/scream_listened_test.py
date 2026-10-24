@@ -217,7 +217,15 @@ if __name__ == "__main__":
     rows_s = SL.load()
     rep = summary(rows_t, rows_s)
     if a.score:
-        rep["score"] = score(rows_t, rows_s, a.configs)
+        new = score(rows_t, rows_s, a.configs)
+        if a.configs and os.path.exists(OUT):
+            # 부분 채점(--configs)은 기존 구성을 지우지 않는다 — 그 구성만 갈아 끼운다 (2026-10-24, chain34 의 ②′ v2·fe8 추가용)
+            with open(OUT, encoding="utf-8") as f:
+                old = json.load(f).get("score")
+            if old:
+                old["configs"].update(new["configs"])
+                new = old
+        rep["score"] = new
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(rep, f, ensure_ascii=False, indent=1)
