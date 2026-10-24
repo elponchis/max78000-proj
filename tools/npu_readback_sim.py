@@ -44,7 +44,10 @@ VARIANTS = {   # fe_ext_eval.VARIANTS 와 같다
     "f31":    ("wave_fe_f31",    "safesound-v4d-fe-f31",    "②′ f31"),
     "b64f31": ("wave_fe_b64f31", "safesound-v4d-fe-b64f31", "②′ b64f31"),
 }
-SCHEMES = ["base", "A-sum", "A-avg", "B", "C"]
+SCHEMES = ["base", "A-sum", "A-avg", "B", "C", "A-sum1"]
+# A-sum1 (2026-10-24 사후 추가, 설계 문서 7절): A-sum 과 같되 **대역 배율 없음(g = 1)·시프트 0 고정**. 사전 등록 규칙(기준 q 와의 RMSE dB 최소)이
+# 고른 배율(g 2~4)은 포화 10.9 % 로 F1 을 −0.053 깎았는데, g = 1·s = 0 (포화 3.2 %, 0 이 20 %) 은 그대로 −0.008 이었다 (tools/fe8_check.py).
+# 즉 RMSE(dB) 는 F1 의 대리 지표로 나빴다 — 포화(큰 소리를 깎는 것)가 0(조용한 칸)보다 훨씬 해롭다. fe8 학습 그래프와 같은 자리의 값이다.
 SHIFTS = list(range(-6, 9))          # 출력 시프트 후보 (디바이스 −15..15 안)
 B_STEP = 4                           # 안 B: 병렬 복제의 시프트 간격 (24 dB)
 B_SAT = 1016                         # 안 B: 이 값 미만이면 그 복제를 쓴다 (최대 16·127 = 2032 의 절반)
@@ -126,31 +129,38 @@ class Front:
         s = a[:, 1::2][:, :, self.idx].sum(-1)
         return c, s
 
-    def q_of(self, lg):
-        return to_int8(lg - self.lg_g[None, :, None], self.lo, self.span)
+    def q_of(self, lg, E, lg_g=None):
+        """시프트 상수를 로그 뒤에 더하는 지름길은 E = 0 에서 틀린다 (log2_q8(0) = 0 이라 상수만 남아 −84 가 된다).
+        펌웨어는 실제 정수(0)의 로그를 취해 −128 을 낸다 → E = 0 은 바닥으로. (2026-10-24 fe8_check 가 발견; 그 전 결과(6절)는
+        조용한 프레임이 12 dB 떠 있었다 — 영향 범위는 설계 문서 7절.) lg_g: 대역 배율 보정 (기본 self.lg_g, A-sum1 은 0)."""
+        lg_g = self.lg_g if lg_g is None else lg_g
+        q = to_int8(lg - lg_g[None, :, None], self.lo, self.span)
+        return np.where(E > 0, q, np.int8(-128)).astype(np.int8)
 
     def base(self, y):
         mag = np.abs(y[:, 0::2]) + np.abs(y[:, 1::2])
         E = mag[:, :, self.idx].sum(-1)
         return to_int8(log2_q8(E), self.lo, self.span), E
 
-    def A_sum(self, y, s):
-        a = abs8(y, s, self.g2)
+    def A_sum(self, y, s, unit_gain=False):
+        """unit_gain: 대역 배율 없이 (A-sum1). fe8 학습 그래프(models/ai85net-safesound-fe.py p1_bits8)와 같은 정수 경로다."""
+        g2 = np.ones_like(self.g2) if unit_gain else self.g2
+        a = abs8(y, s, g2)
         c, sn = self.pooled(a)
         E = c + sn                                            # ≤ 16·127 = 2032 (k=8 합성곱 합, wide)
-        return self.q_of(log2_q8(E) + 256 * (7 - s)), a, E
+        return self.q_of(log2_q8(E) + 256 * (7 - s), E, np.zeros_like(self.lg_g) if unit_gain else None), a, E
 
     def A_avg(self, y, s):
         a = abs8(y, s, self.g2)
         c, sn = self.pooled(a)
         E = c // 8 + sn // 8                                  # 평균 풀링 floor, 1×1 wide
-        return self.q_of(log2_q8(E) + 256 * (10 - s)), a, E
+        return self.q_of(log2_q8(E) + 256 * (10 - s), E), a, E
 
     def C(self, y, s):
         a = abs8(y, s, self.g2)
         c, sn = self.pooled(a)
         v = np.minimum((c // 8 + sn // 8 + 1) // 2, 127)      # 1×1 가중치 0.5·(c+s) → int8 출력 (256칸 LUT 가 로그를 맡는다)
-        return self.q_of(log2_q8(v) + 256 * (11 - s)), a, v
+        return self.q_of(log2_q8(v) + 256 * (11 - s), v), a, v
 
     def B(self, y, s):
         """복제 3개 (s+4, s, s−4). (b,f) 마다 포화하지 않은 가장 높은 배율의 복제를 쓴다."""
@@ -165,7 +175,7 @@ class Front:
             pick = np.where(Es[k] < B_SAT, k, pick)
         E = np.choose(pick, Es)
         sk = np.choose(pick, [np.full(pick.shape, v, dtype=np.int64) for v in shifts])
-        q = self.q_of(log2_q8(E) + 256 * (7 - sk))
+        q = self.q_of(log2_q8(E) + 256 * (7 - sk), E)
         pk = np.broadcast_to(pick[..., None], pick.shape + (self.pool,))
         a_sel = np.concatenate([np.choose(pk, [A[:, 0::2][:, :, self.idx] for A in As]),
                                 np.choose(pk, [A[:, 1::2][:, :, self.idx] for A in As])], axis=1)   # 선택된 복제의 cos·sin 값
@@ -176,6 +186,8 @@ class Front:
             q, E = self.base(y); return q, None
         if scheme == "A-sum":
             return self.A_sum(y, s)[:2]
+        if scheme == "A-sum1":
+            return self.A_sum(y, s, unit_gain=True)[:2]
         if scheme == "A-avg":
             return self.A_avg(y, s)[:2]
         if scheme == "C":
@@ -343,6 +355,10 @@ def stage_sim(a):
         res["stats"][k] = sw[best]
         log(f"  {k:6s} 시프트 {best:+d}: RMSE {sw[best]['rmse_db']:.3f} dB, 포화 {100 * sw[best]['sat']:.2f}%, 0 {100 * sw[best]['zero']:.2f}%, "
             f"상관 평균 {sw[best]['corr_mean']:.4f} (최소 {sw[best]['corr_min']:.4f}), |Δq|>2 {100 * sw[best]['frac_gt2']:.2f}%")
+    shifts["A-sum1"] = 0                                      # 사후 추가 (7절): 배율 1·시프트 0 고정 — RMSE 규칙으로 고르지 않는다
+    res["stats"]["A-sum1"] = front.stats("A-sum1", y_tr, 0, q_b)
+    st = res["stats"]["A-sum1"]
+    log(f"  A-sum1 시프트 +0 (고정, 배율 1): RMSE {st['rmse_db']:.3f} dB, 포화 {100 * st['sat']:.2f}%, 0 {100 * st['zero']:.2f}%, 상관 {st['corr_mean']:.4f}")
     shifts["B"] = shifts["A-sum"]
     res["stats"]["B"] = front.stats("B", y_tr, shifts["B"], q_b)
     st = res["stats"]["B"]
@@ -404,7 +420,7 @@ def cost(L, variant_V, scheme, log_fix):
             cpu = cpu + n_val * (c_log - C_LOG) / F_CORE * 1e3   # 로그만 싸진다 (실측 CPU 몫에서 차감)
         return {"pre": cpu, "infer1": d["infer1"], "cfg1": d["cfg1"], "words": words, "n_log": n_val}
     mac_p1 = 64 * 2 * n * 8 * P
-    if scheme in ("A-sum", "B"):
+    if scheme in ("A-sum", "A-sum1", "B"):
         mac_b = 2 * n * n * 8 * (P - 7)
     else:
         mac_b = 2 * n * n * (P // 8)
@@ -459,7 +475,7 @@ def stage_report(a):
             sh = rs[0]["shifts"].get(k, 0)
             w0 = cost(L, V, "base", False)["words"]
             rows_tab.append((name, k, sh, w0, cs["words"], st.get("sat"), st.get("zero"), f("asis", "test_f1_L"), f("ft", "test_f1_L"), f("asis", "ext_f1_real31L"), f("ft", "ext_f1_real31L"), tot, Es))
-            lines.append(f"| {k} | {sh:+d}{'±4' if k == 'B' else ''} | {w0:,} → {cs['words']:,} | "
+            lines.append(f"| {k}{' (배율 1, 사후)' if k == 'A-sum1' else ''} | {sh:+d}{'±4' if k == 'B' else ''} | {w0:,} → {cs['words']:,} | "
                          + (f"{100 * st['sat']:.2f}% | {100 * st['zero']:.2f}% | {st['corr_mean']:.3f}/{st['corr_min']:.3f} | {st['rmse_db']:.2f}" if "sat" in st else "— | — | — | —")
                          + f" | {f('asis', 'test_f1_L'):.3f} | {f('ft', 'test_f1_L'):.3f} | {f('asis', 'ext_f1_real31L'):.3f} | {f('ft', 'ext_f1_real31L'):.3f} | "
                          f"{pre:.3f} | {cs['infer1']:.3f} | {tot:.2f} | {Es['datasheet']:.1f} / {Es['literature']:.1f} / {Es['moosmann']:.1f} |")
@@ -484,7 +500,7 @@ def stage_report(a):
         cpu = "CPU" in nm and "추론" not in nm
         ax.scatter(e, f1, marker="o" if cpu else "s", s=36, color="#1f77b4" if cpu else ("#d62728" if "NPU" in nm else "k"), zorder=3)
         ax.annotate(nm.replace("CPU log-mel, ", ""), (e, f1), textcoords="offset points", xytext=(5, 4), fontsize=7)
-    mk = {"A-sum": "^", "A-avg": "v", "B": "D", "C": "P"}
+    mk = {"A-sum": "^", "A-avg": "v", "B": "D", "C": "P", "A-sum1": "<"}
     for name, k, Es, f1ft, f1as, _, nseed in pts:
         if k == "base" or np.isnan(f1as):
             continue

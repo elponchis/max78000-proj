@@ -309,6 +309,13 @@ CONFIGS = {
     "wave_fe_b64": ("ai85net-safesound-fe.py", "AI85SafeSoundFE", "SafeSound"),
     "wave_fe_f31": ("ai85net-safesound-fe.py", "AI85SafeSoundFE", "SafeSound"),
     "wave_fe_b64f31": ("ai85net-safesound-fe.py", "AI85SafeSoundFE", "SafeSound"),
+    # 후속 연구 (docs/results/npu-readback-design.md 7절) — p1 8비트 + Abs + NPU 합산, 전체 QAT 재학습. 같은 모델 파일, p1_bits8 인자
+    "wave_fe_v2": ("ai85net-safesound-fe.py", "AI85SafeSoundFE", "SafeSound"),          # 대조군: ②′ + QAT 문턱 연결 끊음
+    "wave_fe_v2_b64f31": ("ai85net-safesound-fe.py", "AI85SafeSoundFE", "SafeSound"),
+    "wave_fe8": ("ai85net-safesound-fe.py", "AI85SafeSoundFE", "SafeSound"),
+    "wave_fe8_b64": ("ai85net-safesound-fe.py", "AI85SafeSoundFE", "SafeSound"),
+    "wave_fe8_f31": ("ai85net-safesound-fe.py", "AI85SafeSoundFE", "SafeSound"),
+    "wave_fe8_b64f31": ("ai85net-safesound-fe.py", "AI85SafeSoundFE", "SafeSound"),
     "wave_logstage": ("ai85net-safesound-logstage.py", "AI85SafeSoundLogStage",
                       "SafeSound"),
     # (c) NPU 필터뱅크 → CPU 정수 로그 → NPU 분류기.
@@ -381,6 +388,12 @@ CONFIG_KWARGS = {
     "wave_fe_b64": {"variant": "b64"},
     "wave_fe_f31": {"variant": "f31"},
     "wave_fe_b64f31": {"variant": "b64f31"},
+    "wave_fe_v2": {"qat_link_cut": True},
+    "wave_fe_v2_b64f31": {"variant": "b64f31", "qat_link_cut": True},
+    "wave_fe8": {"p1_bits8": True, "qat_link_cut": True},
+    "wave_fe8_b64": {"variant": "b64", "p1_bits8": True, "qat_link_cut": True},
+    "wave_fe8_f31": {"variant": "f31", "p1_bits8": True, "qat_link_cut": True},
+    "wave_fe8_b64f31": {"variant": "b64f31", "p1_bits8": True, "qat_link_cut": True},
     # cstage 도 추가 인자가 없다 (로그단 상수는 모델 파일의 모듈 상수)
     "wave_cstage": {},
     "wave_n16g4": {},

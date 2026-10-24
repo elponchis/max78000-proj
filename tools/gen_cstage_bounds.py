@@ -69,7 +69,13 @@ def main():
     print(f"레벨 {lo_lvl}..{hi_lvl}, 경계 {len(B)}개 "
           f"(SCALE_SH={a.scale_sh} LO_Q8={a.lo_q8} SPAN_Q8={a.span_q8})")
     assert len(B) == 255, "레벨이 256개가 아니다 — 상수를 확인할 것"
-    assert np.all(np.diff(B) > 0), "경계가 단조가 아니다"
+    # 비감소면 된다. 창 아래끝이 정수 해상도 지점(v ≈ 30) 아래로 내려가면(fe8 의 LO − 256 = 1023 → v ≈ 16)
+    # 작은 v 에서 정수 로그가 성겨 **도달 불가능한 레벨**이 생기고 그 경계는 이웃과 같은 값이 된다.
+    # torch.bucketize 는 같은 경계를 건너뛰므로 정수 경로(그 레벨을 내지 않는다)와 같다 — --verify 가 확인한다.
+    assert np.all(np.diff(B) >= 0), "경계가 감소한다 — 정수 로그 구현을 확인할 것"
+    n_flat = int((np.diff(B) == 0).sum())
+    if n_flat:
+        print(f"  도달 불가능한 레벨 {n_flat}개 (경계가 이웃과 같다 — 창 아래끝이 정수 해상도 아래. 8비트 입력(fe8)에서는 설계상 생긴다)")
 
     if a.verify:
         import torch                                 # noqa: PLC0415
