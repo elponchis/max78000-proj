@@ -1,0 +1,31 @@
+---
+# 후속 연구 fe8 의 1패스 (2층) — tools/fe_board_prep.py --fe8 가 만들었다 (docs/results/npu-readback-design.md 7.2, 합성기 수용 검사 1절 A-sum).
+#   models/ai85net-safesound-fe.py `ai85safesoundfe8` (p1_bits8=True) 의 p1 부분.
+#   입력  (64, L) int8 — ②′ 와 같은 판단 1회 청크 (L = 64 / 71)
+#   층 A  Conv1d(64 → 64, k=8) + Abs → 8비트 (출력 시프트는 체크포인트 fe.output_shift = quantize.py 값 − QAT 문턱)
+#   층 B  Conv1d(64 → 32, k=8), 가중치 64/128 고정 (cos·sin 같은 대역 8탭) → wide int32 = 64·Σa.  CPU 는 프레임 시작 위치만 읽는다.
+#   2패스(가 의 2D CNN)와 가중치 메모리를 나눠 쓴다 — 합성 시 --weight-start 로 2패스 뒤에 둔다.
+arch: ai85safesoundfe8_p1
+dataset: SafeSoundFEP1
+
+layers:
+  # ── 층 A (fe): Conv1d k=8, 64 → 64, Abs, 8비트, 패딩 없음
+  - pad: 0
+    activate: Abs
+    in_offset: 0x0000
+    out_offset: 0x2000
+    processors: 0xffffffffffffffff
+    data_format: HWC
+    operation: Conv1d
+    kernel_size: 8
+  # ── 층 B (sum): Conv1d k=8, 64 → 32, 가중치 0.5 고정, wide int32, 활성화 없음
+  - pad: 0
+    activate: None
+    in_offset: 0x2000
+    out_offset: 0x4000
+    processors: 0xffffffffffffffff
+    operation: Conv1d
+    kernel_size: 8
+    output_width: 32
+    output_processors: 0x00000000ffffffff
+    output: true

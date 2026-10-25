@@ -8,6 +8,7 @@
 //   cfg1   네트워크 전환 → p1 (층 수 레지스터 + p1 층 설정)
 //   infer1 p1 시작 ~ 완료 인터럽트
 //   cpu    CPU: |cos|+|sin| → 8위치 합 → log2_q8 → int8 (4프레임 × 32밴드) + 32×16 버퍼 밀기 + 입력 워드 포장
+//          (fe8, FE_P1_BITS8: |·|·합은 NPU 층 A·B 가 했다 → 프레임 시작 위치의 int32 한 워드씩 n×F′ 개만 읽어 log2_q8 → int8)
 //   load2  512 워드를 p2 입력 메모리에 적재
 //   cfg2   네트워크 전환 → p2
 //   infer2 p2 시작 ~ 완료
@@ -46,6 +47,14 @@
 // 128 채널은 8 (k<4: 채널 4g+k, k≥4: 채널 64+4g+k−4; 프로세서당 2채널). tools/fe_board_prep.py 가 기대 출력으로 검증한다.
 #ifndef FE_P1_OUT_STRIDE
 #define FE_P1_OUT_STRIDE 4
+#endif
+// fe8 (후속 연구, docs/results/npu-readback-design.md 7절, tools/fe_board_prep.py --fe8): p1 이 **2층**이다 — 층 A Conv1d(64→2n, k=8) + Abs (8비트)
+// → 층 B Conv1d(2n→n, k=8, 가중치 64/128 고정, wide int32) 가 cos+sin 의 8위치 합 E′·2^14 = 64·Σa 를 NPU 안에서 낸다. CPU 는 프레임 시작 위치
+// (FE_POS_PER_FRAME·f) 의 int32 **한 워드**만 읽어 로그를 취한다 (판단당 n×F′ 워드; ②′ 는 2n×8F′ 워드를 읽어 |·|·합을 했다). 이 빌드에서
+// FE_P1_OUT_ADDR/GROUPS/STRIDE 는 층 B 출력(n 채널 → 그룹 n/4, 위치당 4 워드, 채널 b = 그룹 b>>2 슬롯 b&3)이고 FE_LO_Q8 에 −256 이 이미 들어 있다.
+// 두 네트워크가 공유하는 층 슬롯이 2개가 되므로 FE_L0_REGS 는 층 0·1 의 합집합이다 (fe_kat.h 가 만든다). 지연·에너지는 보드 실측 전까지 추정.
+#ifndef FE_P1_BITS8
+#define FE_P1_BITS8 0
 #endif
 // -DFE_DEBUG: KAT 단계마다 UART 로 표식을 찍는다 (측정 밖, 디버그 전용 — 측정 빌드에서는 끈다)
 #ifdef FE_DEBUG
@@ -149,6 +158,7 @@ static inline void set_layer_count(uint32_t n)
 
 // 생성 cnn_configure 는 0 이 아닌 레지스터만 쓴다 (리셋 상태를 가정). 두 네트워크가 같은 층 0 슬롯을 쓰므로
 // 한쪽만 쓰는 레지스터(p1 의 1D·후처리, p2 의 Columns·TRAM ptr)가 남는다 → 전환 전에 합집합을 0 으로 (2026-10-17 보드 KAT 로 확인).
+// fe8 은 p1 이 2층이라 합집합이 층 0·1 (FE_N_SHARED_LAYERS) 에 걸친다 — fe_kat.h 의 FE_L0_REGS 가 그 합집합이다.
 static inline void clear_l0_regs(void)
 {
     static const uint32_t qbase[4] = { 0x50100000u, 0x50500000u, 0x50900000u, 0x50d00000u };
@@ -356,6 +366,17 @@ static uint32_t diag_first_bad(const uint32_t *ptr, uint32_t *word, uint32_t *go
 //   채널 c 의 위치 p 워드: 그룹 g = c>>2 의 기준 주소 + (4p + (c&3))·4.  밴드 b 는 채널 2b(cos)·2b+1(sin) — 같은 그룹.
 static inline __attribute__((always_inline)) void fe_cpu_frames_impl(int first_frame, int8_t (*lq)(int32_t, int32_t, int32_t))
 {
+#if FE_P1_BITS8
+    // fe8: 층 B 출력 (대역 b = 채널 b, 위치 p 워드 = 그룹 b>>2 기준 + (4p + (b&3))·4) 의 프레임 시작 위치 값이 곧 E′·2^14 (≥ 0)
+    for (int b = 0; b < FE_NBAND; b++) {
+        const volatile uint32_t *base = (const volatile uint32_t *)FE_P1_OUT_ADDR[b >> 2] + (b & 3);
+        for (int f = 0; f < FE_FRAMES_PER_HOP; f++) {
+            const int dst = first_frame + f;
+            if (dst < 0 || dst >= FE_NFRAME) continue;       // f31 계열 KAT 의 청크 0 프레임 −1
+            fb[b][dst] = lq(log2_q8(base[(FE_POS_PER_FRAME * f) * FE_P1_OUT_STRIDE]), FE_LO_Q8, FE_SPAN_Q8);
+        }
+    }
+#else
     for (int b = 0; b < FE_NBAND; b++) {
         const int c = 2 * b;                                   // cos 채널 (sin 은 c+1, 같은 블록의 다음 워드)
         const int g = (c & 63) >> 2, slot = (c & 3) + (c >= 64 ? 4 : 0);
@@ -373,6 +394,7 @@ static inline __attribute__((always_inline)) void fe_cpu_frames_impl(int first_f
             fb[b][dst] = lq(log2_q8(e), FE_LO_Q8, FE_SPAN_Q8);
         }
     }
+#endif
 }
 #ifdef FE_LOG_AB
 // -DFE_LOG_AB (feat/log32, fe-curve-design.md 10절): 옛 64비트 log2_q8_to_int8 (_ref) 과 새 32비트 구현을 한 바이너리에 넣고
@@ -427,6 +449,13 @@ static uint32_t split_rd, split_lg;
 static void fe_cpu_hop(void)
 {
     uint32_t s0 = tick();
+#if FE_P1_BITS8
+    for (int b = 0; b < FE_NBAND; b++) {                       // (a) fe8: 층 B 출력 읽기만 (n×F′ 워드)
+        const volatile uint32_t *base = (const volatile uint32_t *)FE_P1_OUT_ADDR[b >> 2] + (b & 3);
+        for (int f = 0; f < FE_FRAMES_PER_HOP; f++)
+            e_hop[b][f] = base[(FE_POS_PER_FRAME * f) * FE_P1_OUT_STRIDE];
+    }
+#else
     for (int b = 0; b < FE_NBAND; b++) {                       // (a) 읽기 + |·| + 합
         const int c = 2 * b;
         const int g = (c & 63) >> 2, slot = (c & 3) + (c >= 64 ? 4 : 0);
@@ -442,6 +471,7 @@ static void fe_cpu_hop(void)
             e_hop[b][f] = e;
         }
     }
+#endif
     uint32_t s1 = tick();
     split_phase_b_sel();                                       // (b) 로그 + 밀기 (+ 아래 포장)
     const int8_t *q = &fb[0][0];
@@ -731,8 +761,15 @@ repeat_round:
         printf("\n=== SafeSound NPU measure: %s ===\n", NET_NAME);
         printf("build %s %s  SystemCoreClock %lu Hz  N_ITER %d\n", __DATE__, __TIME__,
                (unsigned long)SystemCoreClock, N_ITER);
+#if FE_P1_BITS8
+        printf("two networks co-resident: p1 fe8 = Conv1d 64->%d k8 Abs 8bit (out shift %d) + sum Conv1d ->%d k8 wide, in %d pos (weights %lu B) + p2 1x%dx%d (weights %lu B)\n",
+               2 * FE_NBAND, (int)FE_P1_OUT_SHIFT, FE_P1_OUT_CH, FE_P1_IN_WORDS, (unsigned long)FE_P1_WEIGHT_BYTES, FE_NBAND, FE_NFRAME, (unsigned long)FE_P2_WEIGHT_BYTES);
+        printf("cpu stage reads %d int32 words per decision (p1 layer-B frame positions), LO_Q8 %d (includes -256)\n",
+               FE_NBAND * FE_FRAMES_PER_HOP, FE_LO_Q8);
+#else
         printf("two networks co-resident: p1 Conv1d 64->%d k8 wide, in %d pos (weights %lu B) + p2 1x%dx%d (weights %lu B)\n",
                FE_P1_OUT_CH, FE_P1_IN_WORDS, (unsigned long)FE_P1_WEIGHT_BYTES, FE_NBAND, FE_NFRAME, (unsigned long)FE_P2_WEIGHT_BYTES);
+#endif
         printf("KAT p1 sampleoutput (chunk %d): %s\n", FE_NCHUNK - 1, kat_p1 == CNN_OK ? "PASS (bit-exact)" : "FAIL");
         printf("KAT cpu feature vs host integer path: %s (%lu / %d mismatches)\n",
                feat_bad == 0 ? "PASS (bit-exact)" : "FAIL", (unsigned long)feat_bad, FE_NBAND * FE_NFRAME);

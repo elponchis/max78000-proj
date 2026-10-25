@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""구성 ②′ (와 곡선 변형 b64 / f31 / b64f31) 보드 실측 준비 — 시드 1 체크포인트를 p1·p2 로 갈라 합성하고, 두 네트워크 측정 펌웨어를 조립·빌드한다.
+"""구성 ②′ (와 곡선 변형 b64 / f31 / b64f31, 후속 연구 v2 · fe8) 보드 실측 준비 — 시드 1 체크포인트를 p1·p2 로 갈라 합성하고, 두 네트워크 측정 펌웨어를 조립·빌드한다.
 
 하는 일 (WSL2, ai8x-training venv):
   1. `safesound-v4d-fe[-<변형>]` 시드 1 QAT 체크포인트 → p1 (`fe.*`, arch ai85safesoundfe_p1[_b64]) / p2 (`cls.*`, arch ai85safesoundmelnet_p4)
@@ -18,9 +18,16 @@
     KAT 의 청크 0 은 앞 8 위치를 0 으로 채우고 프레임 −1 은 버린다. docs/results/fe-curve-design.md 5절 결과의 사용 4.
 
 사용:
-    OPENBLAS_NUM_THREADS=1 ~/ai8x-training/venv/bin/python tools/fe_board_prep.py [--variant b64|f31|b64f31] [--no-build] [--v2]
+    OPENBLAS_NUM_THREADS=1 ~/ai8x-training/venv/bin/python tools/fe_board_prep.py [--variant b64|f31|b64f31] [--no-build] [--v2 | --fe8]
   --v2 (2026-10-24): chain34/35 의 v2 체크포인트(QAT 문턱 연결 끊음)를 같은 절차로 — 실행 접두 `safesound-v4d-fe-v2[-<변형>]`,
   펌웨어 `firmware/npu/safesound_fe_v2[_<변형>]_v4d`, 합성 접두 `safesound_fe_v2…`. 논문용 프로젝트는 건드리지 않는다.
+  --fe8 (2026-10-25, docs/results/npu-readback-design.md 7절): chain34b 의 fe8 체크포인트 (`safesound-v4d-fe8[-<변형>]`, p1 8비트 + Abs + NPU 합산).
+  p1 이 **2층**이 된다 — 층 A = Conv1d(64→2n, k=8) + Abs, 8비트 (출력 시프트 = quantize.py 가 정한 값 − 문턱) /
+  층 B = Conv1d(2n→n, k=8), 가중치 64/128 고정, wide int32 (E′·2^14 = 64·Σa, 정수 정확; 체크포인트에 `sum.*` 로 덧붙인다, YAML
+  `synthesis/safesound-fe8-p1[-b64]-hwc.yaml` 은 이 스크립트가 만든다). CPU 는 층 B 출력의 **프레임 시작 위치 한 워드**(n×F′ 개)만 읽어
+  로그를 취한다 (LO_Q8 − 256). 호스트 정수 경로: a = sat(floor(y_int·2^(s−7) + 0.5)) → |·|·127 상한 (디바이스 순서) → E′ = 64·Σ_8위치 (a_cos + a_sin)
+  → 학습 그래프 `fe()`·`frontend()`·`intlog()` 와 비트 대조. 펌웨어 `firmware/npu/safesound_fe8[_<변형>]_v4d`, 측정 main 은 FE_P1_BITS8 분기.
+  보드에 올려 재면 ②′ 와 같은 KAT 셋(p1 = 층 B 기대 출력, CPU 특징, p2) 과 구간 지연이 나온다 — **지연·에너지는 보드 실측 전까지 전부 추정**이다.
 """
 import argparse
 import glob
@@ -46,6 +53,40 @@ from log2_q8 import log2_q8, to_int8                # noqa: E402
 
 HOP = 64                                            # 판단 1회의 새 위치 수 (4,096 샘플 / 접기 64)
 NCH = 4                                             # 창 256 위치 = 청크 4개
+SUM_W = 64                                          # fe8 층 B 의 고정 가중치 (int8 64 = 0.5) — models/ai85net-safesound-fe.py E8_SCALE
+
+FE8_P1_YAML = """---
+# 후속 연구 fe8 의 1패스 (2층) — tools/fe_board_prep.py --fe8 가 만들었다 (docs/results/npu-readback-design.md 7.2, 합성기 수용 검사 1절 A-sum).
+#   models/ai85net-safesound-fe.py `ai85safesoundfe8{arch_suf}` (p1_bits8=True) 의 p1 부분.
+#   입력  (64, L) int8 — ②′ 와 같은 판단 1회 청크 (L = 64 / 71)
+#   층 A  Conv1d(64 → {n_ch}, k=8) + Abs → 8비트 (출력 시프트는 체크포인트 fe.output_shift = quantize.py 값 − QAT 문턱)
+#   층 B  Conv1d({n_ch} → {n_band}, k=8), 가중치 64/128 고정 (cos·sin 같은 대역 8탭) → wide int32 = 64·Σa.  CPU 는 프레임 시작 위치만 읽는다.
+#   2패스(가 의 2D CNN)와 가중치 메모리를 나눠 쓴다 — 합성 시 --weight-start 로 2패스 뒤에 둔다.
+arch: ai85safesoundfe8_p1{arch_suf}
+dataset: SafeSoundFEP1
+
+layers:
+  # ── 층 A (fe): Conv1d k=8, 64 → {n_ch}, Abs, 8비트, 패딩 없음
+  - pad: 0
+    activate: Abs
+    in_offset: 0x0000
+    out_offset: 0x2000
+    processors: 0xffffffffffffffff
+    data_format: HWC
+    operation: Conv1d
+    kernel_size: 8
+  # ── 층 B (sum): Conv1d k=8, {n_ch} → {n_band}, 가중치 0.5 고정, wide int32, 활성화 없음
+  - pad: 0
+    activate: None
+    in_offset: 0x2000
+    out_offset: 0x4000
+    processors: 0xffffffffffffffff
+    operation: Conv1d
+    kernel_size: 8
+    output_width: 32
+    output_processors: 0x{out_mask:016x}
+    output: true
+"""
 
 
 def load_mod(path, name):
@@ -87,13 +128,29 @@ def u32(v):
     return int(v) & 0xFFFFFFFF
 
 
+def abs8(y, s):
+    """디바이스의 8비트 출력 단계 (tools/npu_readback_sim.abs8, 배율 1): y int64 → floor(y·2^(s−7) + 0.5) → 포화 ±128 → |·| → 127 상한.
+    izer/simulate.py 와 같은 순서 (반올림 → 포화 → Abs). fe8 학습 그래프(frontend)도 이 순서다."""
+    if s < 7:
+        r = np.floor_divide(y + (1 << (6 - s)), 1 << (7 - s))
+    elif s == 7:
+        r = y
+    else:
+        r = y << (s - 7)
+    r = np.clip(r, -128, 127)
+    return np.minimum(np.abs(r), 127)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--variant", choices=["fe", "b64", "f31", "b64f31"], default="fe")
     ap.add_argument("--no-build", action="store_true")
     ap.add_argument("--v2", action="store_true",
                     help="chain34/35 의 v2 체크포인트 (QAT 문턱 연결 끊음, safesound-v4d-fe-v2[-<변형>]) — 별도 프로젝트 safesound_fe_v2[_<변형>]_v4d 로 (논문 펌웨어는 그대로)")
+    ap.add_argument("--fe8", action="store_true",
+                    help="chain34b 의 fe8 체크포인트 (p1 8비트 + Abs + NPU 합산, safesound-v4d-fe8[-<변형>]) — p1 2층 합성, 프로젝트 safesound_fe8[_<변형>]_v4d (모듈 설명)")
     a = ap.parse_args()
+    assert not (a.v2 and a.fe8), "--v2 와 --fe8 은 함께 쓰지 않는다 (fe8 은 이미 연결을 끊고 학습했다)"
     import torch
     import ai8x
     ai8x.set_device(85, False, False)
@@ -103,15 +160,22 @@ def main():
     V = fe.VARIANTS[a.variant]
     n_band, n_frame, ppf, pool, lo_q8 = V["n_band"], V["n_frame"], V["pos_per_frame"], V["pool_pos"], V["lo_q8"]
     n_ch = 2 * n_band
-    suf = ("_v2" if a.v2 else "") + ("" if a.variant == "fe" else f"_{a.variant}")
-    RUN = "safesound-v4d-fe" + ("-v2" if a.v2 else "") + ("" if a.variant == "fe" else f"-{a.variant}")
-    P1, P2 = f"safesound_fe{suf}_p1_v4d", f"safesound_fe{suf}_p2_v4d"
-    FW = os.path.join(REPO, "firmware", "npu", f"safesound_fe{suf}_v4d")
-    NET = f"safesound_fe{suf}_v4d"
-    cfg = "wave_fe" + ("_v2" if a.v2 else "") + ("" if a.variant == "fe" else f"_{a.variant}")
-    p1_arch = "ai85safesoundfe_p1" + ("_b64" if n_band == 64 else "")
-    P1_YAML = os.path.join(REPO, "synthesis", "safesound-fe-p1-hwc.yaml" if n_band == 32 else "safesound-fe-p1-b64-hwc.yaml")
-    log_pfx = os.path.join(LOGD, f"synth_fe{suf}_v4d")
+    bits8 = a.fe8
+    lo_eff = lo_q8 + (fe.LO8_SHIFT_Q8 if bits8 else 0)                                         # fe8: 로그 창을 log2 −1 (E′ = E/2)
+    vsuf = "" if a.variant == "fe" else f"_{a.variant}"
+    proj = ("safesound_fe8" if bits8 else "safesound_fe" + ("_v2" if a.v2 else "")) + vsuf      # 프로젝트 이름: safesound_fe / _fe_v2 / _fe8 [+ _변형]
+    RUN = "safesound-v4d-" + ("fe8" if bits8 else "fe" + ("-v2" if a.v2 else "")) + vsuf.replace("_", "-")
+    P1, P2 = f"{proj}_p1_v4d", f"{proj}_p2_v4d"
+    FW = os.path.join(REPO, "firmware", "npu", f"{proj}_v4d")
+    NET = f"{proj}_v4d"
+    cfg = "wave_" + ("fe8" if bits8 else "fe" + ("_v2" if a.v2 else "")) + vsuf
+    arch_suf = "_b64" if n_band == 64 else ""
+    p1_arch = ("ai85safesoundfe8_p1" if bits8 else "ai85safesoundfe_p1") + arch_suf
+    if bits8:
+        P1_YAML = os.path.join(REPO, "synthesis", f"safesound-fe8-p1{arch_suf.replace('_', '-')}-hwc.yaml")
+    else:
+        P1_YAML = os.path.join(REPO, "synthesis", "safesound-fe-p1-hwc.yaml" if n_band == 32 else "safesound-fe-p1-b64-hwc.yaml")
+    log_pfx = os.path.join(LOGD, f"synth_{proj[len('safesound_'):]}_v4d")
     # 청크 규약 (모듈 docstring)
     if ppf == 16:
         PRE, IN_POS, F0 = 0, HOP, 0
@@ -119,14 +183,21 @@ def main():
         PRE, IN_POS, F0 = 8, HOP + 7, -1
     else:
         sys.exit(f"지원하지 않는 pos_per_frame {ppf}")
-    OUT_POS = IN_POS - fe.KERNEL + 1                                                        # 57 / 64
+    OUT_POS = IN_POS - fe.KERNEL + 1                                                        # 층 A 유효 출력: 57 / 64
     FPH = OUT_POS // ppf if ppf == 8 else (OUT_POS - pool) // ppf + 1                        # 홉당 프레임: 8 / 4
     assert FPH * NCH + (F0 if F0 < 0 else 0) == n_frame, (FPH, n_frame)
-    print(f"0) 변형 {a.variant}: 대역 {n_band} × 프레임 {n_frame} (홉 {ppf} 위치, 적분 {pool}), LO_Q8 {lo_q8}; p1 {p1_arch} 입력 {IN_POS} 위치 → 출력 {OUT_POS}, "
-          f"홉당 {FPH} 프레임 (첫 프레임 오프셋 {F0}); 실행 {RUN}, 펌웨어 {os.path.relpath(FW, REPO)}")
+    # CPU 가 읽는 p1 출력: ②′ 는 층 A 그대로 (2n 채널 × OUT_POS 위치), fe8 은 층 B (n 채널 × OUT_POS−7 위치)
+    OUT_POS_RD = OUT_POS - fe.KERNEL + 1 if bits8 else OUT_POS                              # fe8: 50 / 57
+    if bits8:
+        assert ppf * (FPH - 1) <= OUT_POS_RD - 1, "마지막 프레임의 합 위치가 층 B 출력 밖이다"
+    print(f"0) 변형 {a.variant}{' + fe8 (p1 8비트·NPU 합산)' if bits8 else (' v2' if a.v2 else '')}: 대역 {n_band} × 프레임 {n_frame} (홉 {ppf} 위치, 적분 {pool}), "
+          f"LO_Q8 {lo_eff}{f' (= {lo_q8} − 256)' if bits8 else ''}; p1 {p1_arch} 입력 {IN_POS} 위치 → 층 A 출력 {OUT_POS}"
+          f"{f' → 층 B 출력 {OUT_POS_RD}' if bits8 else ''}, 홉당 {FPH} 프레임 (첫 프레임 오프셋 {F0}); 실행 {RUN}, 펌웨어 {os.path.relpath(FW, REPO)}")
 
     # ── 1. 체크포인트 가르기 ─────────────────────────────────────────────────
-    ck_path = sorted(glob.glob(os.path.join(LOGD, f"{RUN}___*", f"{RUN}_qat_best.pth.tar")))[-1]
+    cands = sorted(glob.glob(os.path.join(LOGD, f"{RUN}___*", f"{RUN}_qat_best.pth.tar")))
+    assert cands, f"{RUN} 의 시드 1 QAT 체크포인트가 없다 ({LOGD}/{RUN}___*/)"
+    ck_path = cands[-1]
     ck = torch.load(ck_path, map_location="cpu", weights_only=False)
     sd = ck["state_dict"]
     sd_p1 = {k: v for k, v in sd.items() if k.startswith("fe.")}
@@ -136,7 +207,8 @@ def main():
     p2_f, p2_q = os.path.join(SYN, f"{RUN}-p2.pth.tar"), os.path.join(SYN, f"{RUN}-p2-q8.pth.tar")
     torch.save({"epoch": ck["epoch"], "state_dict": sd_p1, "arch": p1_arch, "extras": {"from": os.path.relpath(ck_path, REPO)}}, p1_f)
     torch.save({"epoch": ck["epoch"], "state_dict": sd_p2, "arch": "ai85safesoundmelnet_p4", "extras": {"from": os.path.relpath(ck_path, REPO)}}, p2_f)
-    print(f"1) 체크포인트 {os.path.relpath(ck_path, REPO)} (epoch {ck['epoch']}) → p1 {len(sd_p1)}키 / p2 {len(sd_p2)}키")
+    print(f"1) 체크포인트 {os.path.relpath(ck_path, REPO)} (epoch {ck['epoch']}) → p1 {len(sd_p1)}키 / p2 {len(sd_p2)}키"
+          + (f"; fe 문턱 {float(sd['fe.activation_threshold']):+.0f}, cls.conv1 문턱 {float(sd['cls.conv1.activation_threshold']):+.0f}" if bits8 or a.v2 else ""))
 
     # ── 2. 샘플 창 ───────────────────────────────────────────────────────────
     win = np.load(os.path.join(SYN, "sample_safesound-v4d-wave.npy")).astype(np.int64)     # (128, 128): x[r][c] = s[128c + r]
@@ -151,34 +223,55 @@ def main():
     py = os.path.join(S, "venv", "bin", "python")
     run([py, "quantize.py", p1_f, p1_q, "--device", "MAX78000"], S, f"{log_pfx}-quantize-p1.out")
     run([py, "quantize.py", p2_f, p2_q, "--device", "MAX78000"], S, f"{log_pfx}-quantize-p2.out")
-    Wq = torch.load(p1_q, map_location="cpu", weights_only=False)["state_dict"]["fe.op.weight"].numpy().astype(np.int64)   # (n_ch, 64, 8) int8 값
+    q8_p1 = torch.load(p1_q, map_location="cpu", weights_only=False)
+    Wq = q8_p1["state_dict"]["fe.op.weight"].numpy().astype(np.int64)                        # (n_ch, 64, 8) int8 값
     assert Wq.shape == (n_ch, fe.FOLD, fe.KERNEL) and Wq.min() >= -128 and Wq.max() <= 127 and np.all(Wq == np.round(Wq))
+    s_out = int(q8_p1["state_dict"]["fe.output_shift"].item())                             # 디바이스 출력 시프트 (8비트 층에서만 뜻이 있다)
     # y[o][p] = Σ_j Σ_r W[o][r][j] X[r][p+j]  — 정확한 정수 (int64), 창 전체 유효 위치 0..248
     y = np.zeros((n_ch, fe.NVALID), dtype=np.int64)
     for j in range(fe.KERNEL):
         y += Wq[:, :, j] @ X[:, j:j + fe.NVALID]
     assert np.abs(y).max() < 2 ** 31
-    mag = np.abs(y[0::2]) + np.abs(y[1::2])                                                 # (n_band, 249)
     idx = (np.arange(n_frame) * ppf)[:, None] + np.arange(pool)[None, :]
-    E = mag[:, idx].sum(-1)                                                                  # (n_band, n_frame) 정수
+    if bits8:
+        a8 = abs8(y, s_out)                                                                 # 층 A 디바이스 출력 |·| (n_ch, 249), 0..127
+        mag = a8[0::2] + a8[1::2]                                                           # (n_band, 249)
+        E = SUM_W * mag[:, idx].sum(-1)                                                     # 층 B 정수 출력 = E′·2^14 (n_band, n_frame) ≤ 64·16·127
+    else:
+        a8 = None
+        mag = np.abs(y[0::2]) + np.abs(y[1::2])                                             # (n_band, 249)
+        E = mag[:, idx].sum(-1)                                                             # (n_band, n_frame) 정수
     assert E.max() <= 0xFFFFFFFF
-    q = to_int8(log2_q8(E.ravel()), lo_q8, fe.SPAN_Q8).astype(np.int64).reshape(n_band, n_frame)
+    q = to_int8(log2_q8(E.ravel()), lo_eff, fe.SPAN_Q8).astype(np.int64).reshape(n_band, n_frame)
     # 학습 그래프와 대조 (QAT 모드, 같은 체크포인트)
     E_mod = load_mod(os.path.join(REPO, "tools", "eval_confusion.py"), "eval_confusion")
     model = E_mod.load_model(ck_path, 5, T, simulate=False, config=cfg)
+    assert model.lo_q8 == lo_eff, (model.lo_q8, lo_eff)
+    assert bool(model.p1_bits8) == bits8
     with torch.no_grad():
         x = torch.tensor(win, dtype=torch.float32)[None] / 128.0
         e_t = model.frontend(x)
         q_t = model.intlog(e_t)[0].numpy().astype(np.int64)
+        if bits8:
+            x2 = x.transpose(1, 2).reshape(1, -1).reshape(1, fe.NPOS, fe.FOLD).transpose(1, 2)
+            a_t = (model.fe(x2).abs().clamp(max=127.0 / 128.0) * 128).round()[0].numpy().astype(np.int64)   # 그래프의 8비트 단계 (디바이스 순서)
+            w = model.fe.op.weight.detach()
+            s_train = int((model.fe.calc_out_shift(torch.flatten(w), model.fe.output_shift.detach()) - model.fe.activation_threshold).clamp(-15., 15.))
     e_scaled = e_t[0].numpy().astype(np.float64) * (1 << fe.SCALE_SH)
     d_q = int((q_t != q).sum())
+    if bits8:
+        d_a = int((a_t != a8).sum())
+        print(f"3) fe8 8비트 단계: 디바이스 출력 시프트 {s_out:+d} (quantize.py) / 학습 그래프 {s_train:+d}; 학습 그래프 a 와 정수 경로 불일치 {d_a} / {a8.size}; "
+              f"포화(127) {100 * (a8 == 127).mean():.2f} %, 0 {100 * (a8 == 0).mean():.2f} % (창 전체 249 위치)")
+        assert s_train == s_out, "quantize.py 의 출력 시프트가 학습 그래프와 다르다"
+        assert d_a == 0, "8비트 단계가 학습 그래프와 다르다 — 반올림·포화·|·| 순서 또는 시프트를 확인할 것"
     print(f"3) 정수 프론트엔드: E 범위 [{E.min()}, {E.max()}], q 범위 [{q.min()}, {q.max()}]; "
           f"학습 그래프 q 와 불일치 {d_q} / {q.size}  (E·2^14 − 정수 E 최대 |차| {np.abs(e_scaled - E).max():.3f})")
     if d_q:
         bad = np.argwhere(q_t != q)[:5]
         for b, f in bad:
             print(f"   (b={b}, f={f}) 정수 E {E[b, f]}  float E·2^14 {e_scaled[b, f]:.3f}  q 정수 {q[b, f]}  q 학습 {q_t[b, f]}")
-    assert d_q <= 2, "정수 경로와 학습 그래프가 다르다 — 스케일 규약을 확인할 것"
+    assert d_q <= (0 if bits8 else 2), "정수 경로와 학습 그래프가 다르다 — 스케일 규약을 확인할 것"
 
     # ── 4. 합성 (p2 먼저, p1 은 p2 커널 뒤) ──────────────────────────────────
     np.save(os.path.join(S, "tests", "sample_safesoundfep2.npy"), q[None].astype(np.int64))
@@ -192,6 +285,18 @@ def main():
                "#   safesound-melu1000-hwc.yaml 과 층 설정이 같고 dataset 이름만 다르다 (샘플 파일 sample_safesoundfep2.npy).\n"
                "#   tools/fe_board_prep.py 가 만들었다.\n")
         open(P2_YAML, "w", encoding="utf-8").write(hdr + src)
+    if bits8:
+        # 층 B (합산) 를 양자화된 p1 체크포인트에 덧붙인다 — 가중치 64 (= 0.5) 고정, 시프트 0. 키 순서 = 층 순서 (fe → sum).
+        Wsum = np.zeros((n_band, n_ch, fe.KERNEL), dtype=np.float32)
+        for b in range(n_band):
+            Wsum[b, 2 * b, :] = SUM_W
+            Wsum[b, 2 * b + 1, :] = SUM_W
+        q8_p1["state_dict"]["sum.op.weight"] = torch.from_numpy(Wsum)
+        q8_p1["state_dict"]["sum.output_shift"] = torch.tensor([0.0])
+        torch.save(q8_p1, p1_q)
+        if not os.path.isfile(P1_YAML):
+            open(P1_YAML, "w", encoding="utf-8").write(FE8_P1_YAML.format(arch_suf=arch_suf, n_ch=n_ch, n_band=n_band, out_mask=(1 << n_band) - 1))
+            print(f"   YAML 생성 {os.path.relpath(P1_YAML, REPO)}")
     common = ["--verbose", "--test-dir", OUT, "--device", "MAX78000", "--compact-data", "--mexpress", "--timer", "0",
               "--display-checkpoint", "--overwrite"]
     run([py, "ai8xize.py", "--prefix", P2, "--checkpoint-file", p2_q, "--config-file", P2_YAML, "--softmax"] + common,
@@ -210,31 +315,49 @@ def main():
     off1 = [int(v) for v in re.search(r"Kernel offset\s*=\s*\[([^\]]*)\]", log1).group(1).split(",")]
     ln1 = [int(v) for v in re.search(r"Kernel length\s*=\s*\[([^\]]*)\]", log1).group(1).split(",")]
     assert min(off1) >= end, "p1 커널이 p2 와 겹친다"
+    assert len(off1) == (2 if bits8 else 1), ("p1 층 수", off1)
     print(f"4) 합성: p2 커널 {off}+{ln} → 끝 {end}; p1 --weight-start {ws} → {off1}+{ln1}. "
           f"사이클 p1 {cyc['p1']:,} / p2 {cyc['p2']:,}; 가중치 p1 {wb['p1']:,} + p2 {wb['p2']:,} = {wb['p1'] + wb['p2']:,} B")
 
-    # p1 기대 출력(청크 3) == 정수 conv ?  블록 16개(프로세서 4개씩), 위치 p 마다 STRIDE 워드:
-    #   64 채널: 워드 4p + k → 채널 4g + k.  128 채널(프로세서당 2채널): 워드 8p + k → k<4 채널 4g+k, k≥4 채널 64+4g+k−4 (2026-10-19 합성기 출력으로 확인)
+    # p1 기대 출력(청크 3) == 정수 경로 ?
+    #   ②′: 층 A 출력 그대로 — 블록 16개(프로세서 4개씩), 위치 p 마다 STRIDE 워드:
+    #     64 채널: 워드 4p + k → 채널 4g + k.  128 채널(프로세서당 2채널): 워드 8p + k → k<4 채널 4g+k, k≥4 채널 64+4g+k−4 (2026-10-19 합성기 출력으로 확인)
+    #   fe8: 층 B 출력 (n 채널, 프로세서당 1채널) — 블록 n/4 개, 위치당 4 워드, 채널 4g + k. 값 = 64·Σ_{j<8} (a[2b][p+j] + a[2b+1][p+j]).
     so1 = parse_sample_output(os.path.join(OUT, P1, "sampleoutput.h"))
     c3 = NCH - 1
     p_lo = c3 * HOP - PRE
-    y3 = y[:, p_lo:p_lo + OUT_POS]                                                           # 청크 3 의 유효 위치 (n_ch, OUT_POS)
-    assert y3.shape == (n_ch, OUT_POS)
-    n_grp = 16
-    stride = n_ch // 16                                                                      # 4 / 8
-    assert len(so1) == n_grp, (len(so1), n_grp)
+    if bits8:
+        a3 = a8[:, p_lo:p_lo + OUT_POS]                                                     # 청크 3 의 층 A 출력 (n_ch, OUT_POS)
+        y_rd = np.zeros((n_band, OUT_POS_RD), dtype=np.int64)
+        for j in range(fe.KERNEL):
+            y_rd += a3[0::2, j:j + OUT_POS_RD] + a3[1::2, j:j + OUT_POS_RD]
+        y_rd *= SUM_W                                                                       # (n_band, OUT_POS_RD) 층 B 정수 출력
+        for f in range(FPH):                                                                # 프레임 합 == 층 B 의 프레임 시작 위치 값
+            dst = c3 * FPH + F0 + f
+            if 0 <= dst < n_frame:
+                assert np.array_equal(E[:, dst], y_rd[:, ppf * f]), (f, dst)
+        n_grp, stride, rd_ch = n_band // 4, 4, n_band
+        assert n_band % 4 == 0 and n_band <= 64
 
-    def ch_of(g, k):
-        return 4 * g + k if k < 4 else 64 + 4 * g + (k - 4)
+        def ch_of(g, k):
+            return 4 * g + k
+    else:
+        y_rd = y[:, p_lo:p_lo + OUT_POS]                                                    # 청크 3 의 유효 위치 (n_ch, OUT_POS)
+        n_grp, stride, rd_ch = 16, n_ch // 16, n_ch                                         # 4 / 8
+
+        def ch_of(g, k):
+            return 4 * g + k if k < 4 else 64 + 4 * g + (k - 4)
+    assert y_rd.shape == (rd_ch, OUT_POS_RD)
+    assert len(so1) == n_grp, (len(so1), n_grp)
     bad1 = 0
     for g, (addr, mask, words) in enumerate(so1):
-        assert len(words) == stride * OUT_POS, (g, len(words), stride, OUT_POS)
-        exp = [u32(y3[ch_of(g, i % stride), i // stride]) for i in range(len(words))]
-        bad1 += sum(a != b for a, b in zip(words, exp))
-    print(f"   p1 기대 출력(합성기) vs 정수 conv: 불일치 {bad1} / {sum(len(w) for _, _, w in so1)} "
-          f"({'OK' if bad1 == 0 else 'FAIL'}); 블록 {n_grp}개 × 위치당 {stride} 워드, 주소 {[hex(a) for a, _, _ in so1[:4]]} … {hex(so1[-1][0])}")
+        assert len(words) == stride * OUT_POS_RD, (g, len(words), stride, OUT_POS_RD)
+        exp = [u32(y_rd[ch_of(g, i % stride), i // stride]) for i in range(len(words))]
+        bad1 += sum(a_ != b for a_, b in zip(words, exp))
+    print(f"   p1 기대 출력(합성기{', 층 B' if bits8 else ''}) vs 정수 경로: 불일치 {bad1} / {sum(len(w) for _, _, w in so1)} "
+          f"({'OK' if bad1 == 0 else 'FAIL'}); 블록 {n_grp}개 × 위치당 {stride} 워드 × {OUT_POS_RD} 위치, 주소 {[hex(a_) for a_, _, _ in so1[:4]]} … {hex(so1[-1][0])}")
     assert bad1 == 0
-    out_addr = [a for a, _, _ in so1]
+    out_addr = [a_ for a_, _, _ in so1]
 
     # 청크 입력 워드 포장 == 생성 sampledata.h ?  (그룹 g 의 워드 p = 채널 4g..4g+3 의 바이트, LE)
     def pack_chunk(Xc):
@@ -252,8 +375,9 @@ def main():
     bad_in = sum(int(np.any(np.array(parse_macro_words(sd_path, f"SAMPLE_INPUT_{4 * g}"), dtype=np.uint32) != pk3[g])) for g in range(16))
     print(f"   청크 입력 포장 vs 생성 sampledata.h: 다른 그룹 {bad_in} / 16 ({'OK' if bad_in == 0 else 'FAIL'})")
     assert bad_in == 0
-    out_offset = int(re.search(r"Output offset\s*=\s*\[(0x[0-9a-f]+)\]", log1).group(1), 16)
-    assert out_addr == [a + out_offset for a in in_addr], (out_addr[:2], in_addr[:2], hex(out_offset))
+    out_offsets = [int(v, 16) for v in re.findall(r"0x[0-9a-f]+", re.search(r"Output offset\s*=\s*\[([^\]]*)\]", log1).group(1))]
+    out_offset = out_offsets[-1]                                                            # CPU 가 읽는(마지막) 층의 출력 오프셋
+    assert out_addr == [a_ + out_offset for a_ in in_addr[:n_grp]], (out_addr[:2], in_addr[:2], hex(out_offset))
 
     # p2: 입력 적재 주소·워드 수, 기대 로짓, simulate 모드 PyTorch 와 대조
     main2 = open(os.path.join(OUT, P2, "main.c"), encoding="utf-8").read()
@@ -269,22 +393,28 @@ def main():
         lg_sim = model_sim.cls(torch.tensor(q, dtype=torch.float32)[None, None])[0].numpy()
     print(f"   p2 기대 로짓(합성기) {logits}  simulate 모드 PyTorch {lg_sim.astype(np.int64).tolist()} "
           f"({'일치' if np.array_equal(np.array(logits), lg_sim.astype(np.int64)) else '다름 — 참고'}); argmax {int(np.argmax(logits))}")
-    # 두 네트워크가 층 0 에 쓰는 레지스터(사분면 0 기준 오프셋)의 합집합 — 전환 때 먼저 0 으로 지운다.
+    # 두 네트워크가 **같은 층 슬롯**에 쓰는 레지스터(사분면 0 기준 오프셋)의 합집합 — 전환 때 먼저 0 으로 지운다.
     #   생성 코드는 0 이 아닌 레지스터만 쓰므로, 한쪽만 쓰는 레지스터(p1 의 1D·후처리, p2 의 Columns·TRAM)가 다른 쪽에 남는다 (2026-10-17 보드에서 p2 KAT 실패로 확인).
-    #   레지스터 주소 = 사분면 기준 + 0x10 + 종류·0x80 + 층·4 → 층 0 은 (addr − base − 0x10) % 0x80 == 0.
-    def l0_regs(cnn_c):
+    #   레지스터 주소 = 사분면 기준 + 0x10 + 종류·0x80 + 층·4 → 층 L 은 ((addr − base − 0x10) % 0x80) // 4 == L.
+    #   p1 이 쓰는 슬롯 수 = p1 층 수 (②′ 1 → 층 0 만, 옛 FE_L0_REGS 와 같다; fe8 2 → 층 0·1). p2 만 쓰는 슬롯(L ≥ p1 층 수)은 p1 이 건드리지 않아 그대로 남아도 된다.
+    cnn1_c = open(os.path.join(OUT, P1, "cnn.c")).read()
+    cnn2_c = open(os.path.join(OUT, P2, "cnn.c")).read()
+    p2_layers = int(re.search(r"0x50100008\) = (0x[0-9a-f]+); // Layer count", cnn2_c).group(1), 16)
+    m1 = re.search(r"0x50100008\) = (0x[0-9a-f]+); // Layer count", cnn1_c)
+    p1_layers = int(m1.group(1), 16) if m1 else 0                                           # 레지스터 값 = 층 수 − 1 (1층이면 생성 코드가 쓰지 않는다 → 0)
+    n_shared = p1_layers + 1
+    assert n_shared == (2 if bits8 else 1), (n_shared, bits8)
+
+    def shared_regs(cnn_c):
         body = re.search(r"int cnn_configure\(void\)\s*\{(.*?)\n\}", cnn_c, re.S).group(1)
         regs = set()
-        for a in re.findall(r"\*\(\(volatile uint32_t \*\) (0x50[159d]00[0-9a-f]{3})\)", body):
-            off = int(a, 16) & 0xFFFF
-            if (off - 0x10) % 0x80 == 0:
-                regs.add(off)
+        for a_ in re.findall(r"\*\(\(volatile uint32_t \*\) (0x50[159d]00[0-9a-f]{3})\)", body):
+            off_ = int(a_, 16) & 0xFFFF
+            if ((off_ - 0x10) % 0x80) // 4 < n_shared:
+                regs.add(off_)
         return regs
-    l0 = sorted(l0_regs(open(os.path.join(OUT, P1, "cnn.c")).read()) | l0_regs(open(os.path.join(OUT, P2, "cnn.c")).read()))
-    print(f"   층 0 레지스터 합집합 {len(l0)}개: {[hex(o) for o in l0]}")
-    p2_layers = int(re.search(r"0x50100008\) = (0x[0-9a-f]+); // Layer count", open(os.path.join(OUT, P2, "cnn.c")).read()).group(1), 16)
-    m1 = re.search(r"0x50100008\) = (0x[0-9a-f]+); // Layer count", open(os.path.join(OUT, P1, "cnn.c")).read())
-    p1_layers = int(m1.group(1), 16) if m1 else 0
+    l0 = sorted(shared_regs(cnn1_c) | shared_regs(cnn2_c))
+    print(f"   공유 층 슬롯 {n_shared}개의 레지스터 합집합 {len(l0)}개: {[hex(o) for o in l0]}")
 
     # ── 5. 펌웨어 프로젝트 조립 ──────────────────────────────────────────────
     os.makedirs(FW, exist_ok=True)
@@ -295,7 +425,7 @@ def main():
                 "#ifdef MEASURE_BUILD\n#undef CNN_START\n#undef CNN_COMPLETE\n#undef SYS_START\n#undef SYS_COMPLETE\n"
                 "#undef CNN_INFERENCE_TIMER\n#define CNN_START\n#define CNN_COMPLETE\n#define SYS_START\n#define SYS_COMPLETE\n#endif\n")
     # p1 생성 cnn.c → cnn_p1.c (접두어 p1_; ISR·memcpy32 는 p2 쪽 것을 쓴다)
-    c1 = open(os.path.join(OUT, P1, "cnn.c"), encoding="utf-8").read()
+    c1 = cnn1_c
     c1 = re.sub(r"\bcnn_(enable|disable|init|configure|load_weights|verify_weights|load_bias|start|stop|continue|unload|boost_enable|boost_disable)\b",
                 r"p1_cnn_\1", c1)
     c1 = c1.replace("void CNN_ISR(void)", "void p1_CNN_ISR_unused(void)").replace("MXC_NVIC_SetVector(CNN_IRQn, CNN_ISR)", "MXC_NVIC_SetVector(CNN_IRQn, p1_CNN_ISR_unused)")
@@ -315,22 +445,25 @@ def main():
         rows = [", ".join(flat[i:i + per]) for i in range(0, len(flat), per)]
         return f"static const {ctype} {name}[{len(flat)}] = {{\n  " + ",\n  ".join(rows) + "\n};\n"
     lines = ["// @generated — tools/fe_board_prep.py. 손으로 고치지 말 것.",
-             f"// 변형 {a.variant}: 대역 {n_band} × 프레임 {n_frame}, p1 입력 {IN_POS} 위치 (직전 {PRE} + 새 {IN_POS - PRE}) → 출력 {OUT_POS}, 홉당 {FPH} 프레임.",
+             f"// 변형 {a.variant}{' + fe8' if bits8 else (' v2' if a.v2 else '')}: 대역 {n_band} × 프레임 {n_frame}, p1 입력 {IN_POS} 위치 (직전 {PRE} + 새 {IN_POS - PRE}) → "
+             f"층 A 출력 {OUT_POS}{f' → 층 B 출력 {OUT_POS_RD} (CPU 가 읽는 것)' if bits8 else ''}, 홉당 {FPH} 프레임.",
              f"// 창: data/synth/sample_safesound-v4d-wave.npy (시험셋, ④ 합성과 같은 창). 체크포인트 {os.path.relpath(ck_path, REPO)}",
              "#include <stdint.h>",
              f"#define FE_NBAND {n_band}", f"#define FE_NFRAME {n_frame}", f"#define FE_POS_PER_FRAME {ppf}",
              f"#define FE_POOL_POS {pool}", f"#define FE_NCHUNK {NCH}", f"#define FE_FRAMES_PER_HOP {FPH}", f"#define FE_FRAME0_OFFSET ({F0})",
-             f"#define FE_LO_Q8 {lo_q8}", f"#define FE_SPAN_Q8 {fe.SPAN_Q8}", f"#define FE_SCALE_SH {fe.SCALE_SH}",
-             f"#define FE_P1_LAYER_COUNT {p1_layers}", f"#define FE_P2_LAYER_COUNT {p2_layers}",
-             f"#define FE_P1_IN_GROUPS 16", f"#define FE_P1_IN_WORDS {IN_POS}", f"#define FE_P1_OUT_GROUPS {n_grp}", f"#define FE_P1_OUT_CH {n_ch}",
-             f"#define FE_P1_OUT_STRIDE {stride}",
+             f"#define FE_LO_Q8 {lo_eff}", f"#define FE_SPAN_Q8 {fe.SPAN_Q8}", f"#define FE_SCALE_SH {fe.SCALE_SH}",
+             f"#define FE_P1_BITS8 {1 if bits8 else 0}" + ("   // fe8: p1 2층 (Abs 8비트 → 합산 wide), CPU 는 층 B 의 프레임 시작 워드만 읽는다; FE_LO_Q8 에 −256 포함" if bits8 else ""),
+             f"#define FE_P1_OUT_SHIFT ({s_out})" + ("   // 층 A 디바이스 출력 시프트 (참고 — CPU 는 쓰지 않는다; 학습이 게인을 정했다)" if bits8 else "   // wide 층: 디바이스가 걸지 않는다 (참고)"),
+             f"#define FE_P1_LAYER_COUNT {p1_layers}", f"#define FE_P2_LAYER_COUNT {p2_layers}", f"#define FE_N_SHARED_LAYERS {n_shared}",
+             f"#define FE_P1_IN_GROUPS 16", f"#define FE_P1_IN_WORDS {IN_POS}", f"#define FE_P1_OUT_GROUPS {n_grp}", f"#define FE_P1_OUT_CH {rd_ch}",
+             f"#define FE_P1_OUT_STRIDE {stride}", f"#define FE_P1_OUT_POS {OUT_POS_RD}",
              f"#define FE_P2_IN_ADDR 0x{p2_in_addr:08x}u", f"#define FE_P2_IN_WORDS {p2_in_words}",
              f"#define FE_P1_WEIGHT_BYTES {wb['p1']}", f"#define FE_P2_WEIGHT_BYTES {wb['p2']}", f"#define FE_P2_WEIGHT_END {end}",
              f"#define FE_N_L0_REGS {len(l0)}",
-             "// 두 네트워크가 층 0 에 쓰는 레지스터 오프셋(사분면 기준) 합집합 — 전환 전에 0 으로 지운다 (fe_measure_main.c switch_to_*)",
+             f"// 두 네트워크가 공유하는 층 슬롯({n_shared}개)에 쓰는 레지스터 오프셋(사분면 기준) 합집합 — 전환 전에 0 으로 지운다 (fe_measure_main.c switch_to_*)",
              "static const uint32_t FE_L0_REGS[" + str(len(l0)) + "] = { " + ", ".join(f"0x{o:04x}u" for o in l0) + " };",
-             "static const uint32_t FE_P1_IN_ADDR[16] = { " + ", ".join(f"0x{a:08x}u" for a in in_addr) + " };",
-             f"static const uint32_t FE_P1_OUT_ADDR[{n_grp}] = {{ " + ", ".join(f"0x{a:08x}u" for a in out_addr) + " };",
+             "static const uint32_t FE_P1_IN_ADDR[16] = { " + ", ".join(f"0x{a_:08x}u" for a_ in in_addr) + " };",
+             f"static const uint32_t FE_P1_OUT_ADDR[{n_grp}] = {{ " + ", ".join(f"0x{a_:08x}u" for a_ in out_addr) + " };",
              f"// 청크 c, 그룹 g(채널 4g..4g+3), 위치 p 의 입력 워드 (LE 바이트 = 연속 샘플 4개)",
              f"static const uint32_t fe_chunk_in[{NCH}][16][{IN_POS}] = {{"]
     for c in range(NCH):
