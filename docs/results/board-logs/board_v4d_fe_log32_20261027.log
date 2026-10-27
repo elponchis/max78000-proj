@@ -1,0 +1,75 @@
+
+=== SafeSound NPU measure: safesound_fe_v4d ===
+build Oct 20 2026 18:52:09  SystemCoreClock 100000000 Hz  N_ITER 1000
+two networks co-resident: p1 Conv1d 64->64 k8 wide, in 64 pos (weights 32768 B) + p2 1x32x16 (weights 156192 B)
+KAT p1 sampleoutput (chunk 3): PASS (bit-exact)
+KAT cpu feature vs host integer path: PASS (bit-exact) (0 / 512 mismatches)
+KAT sampleoutput: PASS (bit-exact)
+  class 0: raw -22884
+  class 1: raw -29088
+  class 2: raw 21288
+  class 3: raw -18276
+  class 4: raw 8228
+core clock 100000000 Hz  CNN clock PCLK 50000000 Hz / 1  wait: busy (no sleep)
+counter: SysTick (DWT CYCCNT not running)
+1000 iterations, output mismatches: 0  (p1 0, feature 0, p2 0)
+load1   cycles min 27586  med 27586  mean 27586  max 27627
+load1   us     min 275.86  med 275.86  max 276.27
+cfg1    cycles min 2592  med 2592  mean 2592  max 2592
+cfg1    us     min 25.92  med 25.92  max 25.92
+infer1  cycles min 12929  med 12929  mean 12929  max 12929
+infer1  us     min 129.29  med 129.29  max 129.29
+cpu     cycles min 70434  med 70434  mean 70434  max 70434
+cpu     us     min 704.34  med 704.34  max 704.34
+load2   cycles min 13367  med 13367  mean 13367  max 13367
+load2   us     min 133.67  med 133.67  max 133.67
+cfg2    cycles min 8929  med 8929  mean 8929  max 8929
+cfg2    us     min 89.29  med 89.29  max 89.29
+infer2  cycles min 58066  med 58066  mean 58066  max 58066
+infer2  us     min 580.66  med 580.66  max 580.66
+unload  cycles min 785  med 785  mean 785  max 785
+unload  us     min 7.85  med 7.85  max 7.85
+total   cycles min 194688  med 194688  mean 194688  max 194729
+total   us     min 1946.88  med 1946.88  max 1947.29
+=== PASS A (log64 ref): 1000 iterations, output mismatches: 0  (p1 0, feature 0, p2 0)
+load1   cycles min 27576  med 27576  mean 27576  max 28219
+load1   us     min 275.76  med 275.76  max 282.19
+cfg1    cycles min 2582  med 2592  mean 2591  max 2592
+cfg1    us     min 25.82  med 25.92  max 25.92
+infer1  cycles min 12929  med 12929  mean 12929  max 12939
+infer1  us     min 129.29  med 129.29  max 129.39
+cpu     cycles min 84043  med 84043  mean 84043  max 84043
+cpu     us     min 840.43  med 840.43  max 840.43
+load2   cycles min 13367  med 13367  mean 13367  max 13367
+load2   us     min 133.67  med 133.67  max 133.67
+cfg2    cycles min 8929  med 8929  mean 8929  max 8929
+cfg2    us     min 89.29  med 89.29  max 89.29
+infer2  cycles min 58066  med 58066  mean 58066  max 58066
+infer2  us     min 580.66  med 580.66  max 580.66
+unload  cycles min 647  med 647  mean 647  max 647
+unload  us     min 6.47  med 6.47  max 6.47
+total   cycles min 208149  med 208149  mean 208149  max 208792
+total   us     min 2081.49  med 2081.49  max 2087.92
+=== PASS END ===
+=== PASS B (log32 new): 1000 iterations, output mismatches: 0  (p1 0, feature 0, p2 0)
+load1   cycles min 27586  med 27586  mean 27586  max 27627
+load1   us     min 275.86  med 275.86  max 276.27
+cfg1    cycles min 2592  med 2592  mean 2592  max 2592
+cfg1    us     min 25.92  med 25.92  max 25.92
+infer1  cycles min 12929  med 12929  mean 12929  max 12929
+infer1  us     min 129.29  med 129.29  max 129.29
+cpu     cycles min 70434  med 70434  mean 70434  max 70434
+cpu     us     min 704.34  med 704.34  max 704.34
+load2   cycles min 13367  med 13367  mean 13367  max 13367
+load2   us     min 133.67  med 133.67  max 133.67
+cfg2    cycles min 8929  med 8929  mean 8929  max 8929
+cfg2    us     min 89.29  med 89.29  max 89.29
+infer2  cycles min 58066  med 58066  mean 58066  max 58066
+infer2  us     min 580.66  med 580.66  max 580.66
+unload  cycles min 785  med 785  mean 785  max 785
+unload  us     min 7.85  med 7.85  max 7.85
+total   cycles min 194688  med 194688  mean 194688  max 194729
+total   us     min 1946.88  med 1946.88  max 1947.29
+=== PASS END ===
+=== END ===
+--- (16:38:09 종료)

@@ -1,0 +1,36 @@
+
+=== SafeSound NPU measure: safesound_fe8_v4d ===
+build Oct 25 2026 13:03:58  SystemCoreClock 100000000 Hz  N_ITER 1000
+two networks co-resident: p1 fe8 = Conv1d 64->64 k8 Abs 8bit (out shift -2) + sum Conv1d ->32 k8 wide, in 64 pos (weights 49152 B) + p2 1x32x16 (weights 156192 B)
+cpu stage reads 128 int32 words per decision (p1 layer-B frame positions), LO_Q8 1023 (includes -256)
+KAT p1 sampleoutput (chunk 3): PASS (bit-exact)
+KAT cpu feature vs host integer path: PASS (bit-exact) (0 / 512 mismatches)
+KAT sampleoutput: PASS (bit-exact)
+  class 0: raw 1388
+  class 1: raw -37500
+  class 2: raw 13120
+  class 3: raw -17276
+  class 4: raw 18168
+core clock 100000000 Hz  CNN clock PCLK 50000000 Hz / 1  wait: busy (no sleep)
+counter: SysTick (DWT CYCCNT not running)
+1000 iterations, output mismatches: 0  (p1 0, feature 0, p2 0)
+load1   cycles min 27182  med 27182  mean 27182  max 27890
+load1   us     min 271.82  med 271.82  max 278.90
+cfg1    cycles min 5058  med 5058  mean 5058  max 5068
+cfg1    us     min 50.58  med 50.58  max 50.68
+infer1  cycles min 16353  med 16353  mean 16353  max 16363
+infer1  us     min 163.53  med 163.53  max 163.63
+cpu     cycles min 17766  med 17766  mean 17766  max 17766
+cpu     us     min 177.66  med 177.66  max 177.66
+load2   cycles min 13363  med 13363  mean 13363  max 13363
+load2   us     min 133.63  med 133.63  max 133.63
+cfg2    cycles min 10323  med 10323  mean 10323  max 10323
+cfg2    us     min 103.23  med 103.23  max 103.23
+infer2  cycles min 58017  med 58017  mean 58017  max 58017
+infer2  us     min 580.17  med 580.17  max 580.17
+unload  cycles min 776  med 776  mean 776  max 776
+unload  us     min 7.76  med 7.76  max 7.76
+total   cycles min 148838  med 148838  mean 148838  max 149562
+total   us     min 1488.38  med 1488.38  max 1495.62
+=== END ===
+--- (16:31:02 종료)
